@@ -1,0 +1,43 @@
+// athyper Prisma
+
+// -----------------
+// Generators
+// -----------------
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "../generated/zod"
+}
+
+generator kysely {
+  provider = "prisma-kysely"
+  output   = "../generated/kysely"
+}
+
+// -----------------
+// Datasource
+// -----------------
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------
+// model
+// -----------------
+model Tenant {
+  id           String   @id @default(uuid()) @db.Uuid
+  code         String   @unique
+  name         String
+  status       String   @default("active")
+  subscription String   @default("base")
+
+  createdAt    DateTime @default(now()) @map("created_at")
+  createdBy    String   @map("created_by")
+
+  @@map("tenant")
+  @@schema("core")
+}

@@ -1,0 +1,1 @@
+// Tenant IdP registry stub

@@ -1,0 +1,80 @@
+{
+  "env": "local",
+  "mode": "api",
+  "serviceName": "athyper-runtime",
+  "port": 3000,
+
+  "logLevel": "info",
+  "shutdownTimeoutMs": 15000,
+
+  "publicBaseUrl": "http://localhost:3000",
+
+  "db": {
+    "url": "postgres://athyper_app@localhost:6432/athyper",
+    "adminUrl": "postgres://postgres@localhost:5432/postgres",
+    "poolMax": 10
+  },
+
+  "iam": {
+    "strategy": "multi_realm",
+    "defaultRealmKey": "atlas",
+    "defaultTenantKey": "rcu",
+    "defaultOrgKey": "HQ",
+    "realms": {
+      "atlas": {
+        "iam": {
+          "issuerUrl": "https://auth.example.com/realms/atlas",
+          "clientId": "athyper-runtime",
+          "clientSecretRef": "IAM_ATLAS_CLIENT_SECRET"
+        },
+        "defaults": {
+          "features": { "metaStudio": true },
+          "policies": { "strictTenantIsolation": true }
+        },
+        "tenants": {
+          "rcu": {
+            "defaults": { "country": "KSA" },
+            "orgs": {
+              "HQ": { "defaults": { "currency": "SAR" } },
+              "OPS": { "defaults": { "currency": "SAR" } }
+            }
+          }
+        }
+      },
+
+      "customerA": {
+        "iam": {
+          "issuerUrl": "https://auth.customerA.com/realms/customerA",
+          "clientId": "athyper-runtime",
+          "clientSecretRef": "IAM_CUSTOMERA_CLIENT_SECRET"
+        },
+        "defaults": {
+          "features": { "strictIsolation": true }
+        },
+        "tenants": {
+          "custA": {
+            "defaults": { "country": "UAE" }
+          }
+        }
+      }
+    }
+  },
+
+  "redis": {
+    "url": "redis://localhost:6379"
+  },
+
+  "s3": {
+    "endpoint": "http://localhost:9000",
+    "accessKey": "minio",
+    "secretKey": "minio123",
+    "region": "us-east-1",
+    "bucket": "athyper",
+    "useSSL": false
+  },
+
+  "telemetry": {
+    "otlpEndpoint": "http://localhost:4318",
+    "enabled": true
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "@athyper/runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist",
+    "dev": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@athyper/tsconfig": "workspace:*",
+    "@athyper/core": "workspace:*",
+    "@athyper/contracts": "workspace:*",
+    "@athyper/adapter-db": "workspace:*",
+    "@athyper/adapter-auth": "workspace:*",
+    "@athyper/adapter-memorycache": "workspace:*",
+    "@athyper/adapter-telemetry": "workspace:*",
+    "@athyper/adapter-objectstorage": "workspace:*",
+    "express": "^4.19.2",
+    "jose": "^5.9.4",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.6.3",
+    "@types/express": "^4.17.21"
+  }
+}

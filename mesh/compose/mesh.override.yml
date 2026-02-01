@@ -1,0 +1,12 @@
+# =======================================================================
+# Stack       : athyper Mesh – Core Infrastructure & Observability
+# Maintainer  : Atlas Digital Technology Solutions (athyper Team)
+# Environment : local-dev | staging | prod
+# Version     : 1.0.0
+# Compose     : mesh-mesh-override-prod-config
+#
+# Description :
+#
+# =======================================================================
+
+services: {}

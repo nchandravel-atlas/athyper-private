@@ -1,0 +1,15 @@
+{
+  "name": "@athyper/tsconfig",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./base": "./base.json",
+    "./next": "./next.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "base.json",
+    "next.json"
+  ]
+}

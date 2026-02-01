@@ -1,0 +1,21 @@
+{
+  "name": "@athyper/neon-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@athyper/ui": "workspace:*",
+    "@athyper/theme": "workspace:*",
+    "@athyper/auth": "workspace:*",
+    "@athyper/api-client": "workspace:*",
+    "@athyper/workbench-admin": "workspace:*",
+    "@athyper/workbench-partner": "workspace:*",
+    "@athyper/workbench-user": "workspace:*"
+  }
+}

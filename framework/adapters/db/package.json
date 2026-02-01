@@ -1,0 +1,53 @@
+{
+  "name": "@athyper/adapter-db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src",
+    "prisma",
+    "migrations",
+    "sql",
+    "seed",
+    "types",
+    "generated"
+  ],
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist",
+    "dev": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:codegen": "prisma generate --schema prisma/schema.prisma",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "prisma:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema prisma/schema.prisma",
+    "kysely:codegen": "prisma generate --schema prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@athyper/core": "workspace:*",
+    "@prisma/client": "6.19.2",
+    "kysely": "^0.27.4",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "prisma": "6.19.2",
+    "prisma-kysely": "^3.0.0",
+    "prisma-zod-generator": "^2.1.2",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.3"
+  }
+}

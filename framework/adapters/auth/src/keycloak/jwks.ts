@@ -1,0 +1,2 @@
+// JWKS verification stub
+export {};

@@ -1,0 +1,42 @@
+# =======================================================================
+# Stack       : athyper Mesh – Core Infrastructure & Observability
+# Maintainer  : Atlas Digital Technology Solutions (athyper Team)
+# Environment : local-dev | staging | prod
+# Version     : 1.0.0
+# Compose     : mesh-memorycacheexporter-config
+#
+# Description :
+#
+# =======================================================================
+
+services:
+  memorycache_exporter:
+    image: oliver006/redis_exporter:v1.80.1
+    profiles: ["mesh", "memorycache"]
+    mem_limit: "${MESH_MEMORYCACHE_EXPORTER_MEMORY_LIMIT}"
+    environment:
+      REDIS_ADDR: redis://:${MESH_MEMORYCACHE_PASSWORD}@memorycache:6379
+    networks: [internal]
+    depends_on:
+      memorycache:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "(echo >/dev/tcp/127.0.0.1/9121 >/dev/null 2>&1) || exit 1"
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    stop_grace_period: 10s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    init: true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

@@ -1,32 +1,34 @@
+export interface AuthVerifier {
+  /**
+   * Verify and decode a JWT token; return decoded claims.
+   */
+  verify(token: string): Promise<Record<string, unknown>>;
+}
 
-import { getRealmIamConfig } from "../../kernel/tenantContext";
-import { TOKENS } from "../../kernel/tokens";
+export interface AuthAdapter {
+  /**
+   * Get a realm-scoped verifier (cached per realm).
+   */
+  getVerifier(realmKey: string): Promise<AuthVerifier>;
 
-import type { AuthAdapter, AuthVerifier } from "./auth.types";
-import type { RuntimeConfig } from "../../kernel/config.schema";
-import type { Container } from "../../kernel/container";
+  /**
+   * Warm up verifier caches (e.g., during boot).
+   */
+  warmupRealms(realmKeys: string[]): Promise<void>;
 
-type VerifierFactory = (cfg: { issuerUrl: string; clientId: string; clientSecret?: string }) => Promise<AuthVerifier>;
+  /**
+   * Invalidate a realm's verifier cache (for JWKS key rotation).
+   */
+  invalidateRealm(realmKey: string): void;
+}
 
-export function createAuthAdapter(factory: VerifierFactory) {
-    return async (c: Container): Promise<AuthAdapter> => {
-        const cfg = await c.resolve<RuntimeConfig>(TOKENS.config);
+export class AuthAdapterError extends Error {
+  readonly code: string;
+  readonly meta?: Record<string, unknown>;
 
-        const cache = new Map<string, Promise<AuthVerifier>>();
-
-        return {
-            async getVerifier(realmKey: string) {
-                if (!cache.has(realmKey)) {
-                    cache.set(
-                        realmKey,
-                        (async () => {
-                            const realmCfg = getRealmIamConfig(cfg, realmKey);
-                            return factory(realmCfg);
-                        })(),
-                    );
-                }
-                return cache.get(realmKey)!;
-            },
-        };
-    };
+  constructor(code: string, message: string, meta?: Record<string, unknown>) {
+    super(message);
+    this.code = code;
+    this.meta = meta;
+  }
 }

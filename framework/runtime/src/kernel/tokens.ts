@@ -3,6 +3,9 @@ import type { AuditWriter } from "./audit";
 import type { RuntimeConfig } from "./config.schema";
 import type { Lifecycle } from "./lifecycle";
 import type { Logger } from "./logger";
+import type { DbAdapter } from "../adapters/db/db.adapter";
+import type { AuthAdapter } from "../adapters/auth/auth.adapter";
+import type { TelemetryAdapter } from "../adapters/telemetry/telemetry.adapter";
 
 /**
  * Global DI tokens for athyper runtime.
@@ -66,11 +69,18 @@ export interface TokenTypes {
     [TOKENS.tenantContext]: unknown;
     [TOKENS.authContext]: unknown;
 
+    // Adapters (fully typed)
+    [TOKENS.db]: DbAdapter;
+    [TOKENS.auth]: AuthAdapter;
+    [TOKENS.telemetry]: TelemetryAdapter;
+    [TOKENS.cache]: unknown;
+    [TOKENS.objectStorage]: unknown;
+
     // Governance
     [TOKENS.auditWriter]: AuditWriter;
     [TOKENS.featureFlags]: unknown;
 
-    // NOTE: adapters/runtime/registries can be added when concrete types exist.
+    // Runtime/Registries can be added when concrete types exist
 }
 
 export type TokenValue<T extends TokenName> = T extends keyof TokenTypes

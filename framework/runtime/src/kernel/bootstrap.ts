@@ -7,6 +7,7 @@ import { loadServices } from "../services/registry";
 import { TenantContextError } from "./tenantContext";
 import { makeAuditEvent, type AuditWriter } from "./audit";
 import { TOKENS } from "./tokens";
+import { registerAdapters } from "../adapters/register.adapters";
 
 export interface BootstrapResult {
     mode: RuntimeMode;
@@ -235,6 +236,9 @@ export async function bootstrap(): Promise<BootstrapResult> {
                 SERVICE_NAME: config.serviceName,
             },
         });
+
+        // Register adapters (DB, Auth, Telemetry) BEFORE DI resolution
+        await registerAdapters(container);
 
         // Now DI is ready: switch boot logs to container logger + get audit writer
         const logger = await container.resolve<any>(TOKENS.logger);

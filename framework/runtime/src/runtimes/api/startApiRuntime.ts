@@ -34,7 +34,7 @@ export async function startApiRuntime(container: Container) {
     await container.resolve(TOKENS.objectStorage);
 
     const routes = await container.resolve<RouteRegistry>(TOKENS.routeRegistry);
-    logger.info("[api] routes loaded", { routes: routes.list().length });
+    logger.info({ routes: routes.list().length }, "[api] routes loaded");
 
     const httpServer = await container.resolve<HttpServer>(TOKENS.httpServer);
 
@@ -42,7 +42,7 @@ export async function startApiRuntime(container: Container) {
     httpServer.mountRoutes(routes.list());
     await httpServer.listen(config.port);
 
-    logger.info("[api] listening", { service: config.serviceName, port: config.port });
+    logger.info({ service: config.serviceName, port: config.port }, "[api] listening");
 
     lifecycle.onShutdown(async () => {
         const stoppingEvent: AuditEvent = {

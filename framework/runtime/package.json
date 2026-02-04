@@ -20,28 +20,35 @@
   ],
   "scripts": {
     "clean": "rimraf dist",
-    "build": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist",
+    "build": "tsup src/index.ts --format esm --sourcemap --outDir dist && tsc --declaration --emitDeclarationOnly --outDir dist",
     "dev": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
-    "@athyper/tsconfig": "workspace:*",
-    "@athyper/core": "workspace:*",
-    "@athyper/contracts": "workspace:*",
-    "@athyper/adapter-db": "workspace:*",
     "@athyper/adapter-auth": "workspace:*",
+    "@athyper/adapter-db": "workspace:*",
     "@athyper/adapter-memorycache": "workspace:*",
-    "@athyper/adapter-telemetry": "workspace:*",
     "@athyper/adapter-objectstorage": "workspace:*",
+    "@athyper/adapter-telemetry": "workspace:*",
+    "@athyper/contracts": "workspace:*",
+    "@athyper/core": "workspace:*",
+    "@athyper/tsconfig": "workspace:*",
+    "bullmq": "^5.67.2",
     "express": "^4.19.2",
+    "ioredis": "^5.9.2",
     "jose": "^5.9.4",
+    "pino": "^9.7.0",
+    "pino-pretty": "^13.0.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "tsup": "^8.3.0",
+    "@types/express": "^4.17.21",
     "rimraf": "^6.0.1",
-    "typescript": "^5.6.3",
-    "@types/express": "^4.17.21"
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.3"
   }
 }

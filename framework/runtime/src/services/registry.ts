@@ -25,7 +25,7 @@ export async function loadServices(container: Container) {
     const logger = await container.resolve<Logger>(TOKENS.logger);
     const audit = await container.resolve<AuditWriter>(TOKENS.auditWriter);
 
-    logger.info("[services] loading", { count: modules.length });
+    logger.info({ count: modules.length }, "[services] loading");
 
     for (const m of modules) {
         await m.register?.(container);

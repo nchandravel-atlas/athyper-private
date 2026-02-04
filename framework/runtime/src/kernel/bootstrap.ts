@@ -2,6 +2,7 @@
 import { loadConfig, KernelConfigError } from "./config";
 import { createKernelContainer } from "./container";
 import { registerKernelDefaults, installSignalHandlers } from "./container.defaults";
+import { registerAdapters } from "./container.adapters";
 import type { RuntimeMode } from "./config.schema";
 import { loadServices } from "../services/registry";
 import { TenantContextError } from "./tenantContext";
@@ -235,6 +236,9 @@ export async function bootstrap(): Promise<BootstrapResult> {
                 SERVICE_NAME: config.serviceName,
             },
         });
+
+        // Register adapters (DB, cache, storage, telemetry, auth)
+        registerAdapters(container, config);
 
         // Now DI is ready: switch boot logs to container logger + get audit writer
         const logger = await container.resolve<any>(TOKENS.logger);

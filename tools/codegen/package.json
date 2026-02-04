@@ -7,7 +7,10 @@
   "bin": {
     "athyper-codegen": "./dist/index.js"
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "clean": "rimraf dist",
     "build": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist",

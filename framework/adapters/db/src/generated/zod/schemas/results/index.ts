@@ -1,0 +1,13 @@
+export { TenantFindUniqueResultSchema } from './TenantFindUniqueResult.schema';
+export { TenantFindFirstResultSchema } from './TenantFindFirstResult.schema';
+export { TenantFindManyResultSchema } from './TenantFindManyResult.schema';
+export { TenantCreateResultSchema } from './TenantCreateResult.schema';
+export { TenantCreateManyResultSchema } from './TenantCreateManyResult.schema';
+export { TenantUpdateResultSchema } from './TenantUpdateResult.schema';
+export { TenantUpdateManyResultSchema } from './TenantUpdateManyResult.schema';
+export { TenantUpsertResultSchema } from './TenantUpsertResult.schema';
+export { TenantDeleteResultSchema } from './TenantDeleteResult.schema';
+export { TenantDeleteManyResultSchema } from './TenantDeleteManyResult.schema';
+export { TenantAggregateResultSchema } from './TenantAggregateResult.schema';
+export { TenantGroupByResultSchema } from './TenantGroupByResult.schema';
+export { TenantCountResultSchema } from './TenantCountResult.schema';

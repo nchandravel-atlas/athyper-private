@@ -34,6 +34,13 @@ export const TOKENS = {
     jobQueue: "runtime.jobQueue",
     scheduler: "runtime.scheduler",
     workerPool: "runtime.workerPool",
+    circuitBreakers: "runtime.circuitBreakers",
+
+    // Observability
+    healthRegistry: "observability.health",
+    metricsRegistry: "observability.metrics",
+    requestContextStorage: "observability.requestContext",
+    gracefulShutdown: "observability.shutdown",
 
     // Registries
     routeRegistry: "registry.routes",

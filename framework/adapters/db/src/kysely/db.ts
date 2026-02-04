@@ -1,0 +1,79 @@
+// framework/adapters/db/src/kysely/db.ts
+import { Kysely } from "kysely";
+import type { DB } from "../generated/kysely/types.js";
+import { createPool, closePool, healthCheck, type PoolConfig } from "./pool.js";
+import { createPostgresDialect } from "./dialect.js";
+import type pg from "pg";
+
+export type DbClientConfig = {
+    /**
+     * Connection string for application queries (should point to PgBouncer)
+     */
+    connectionString: string;
+
+    /**
+     * Maximum pool size
+     * @default 10
+     */
+    poolMax?: number;
+
+    /**
+     * Statement timeout in milliseconds
+     * @default 30000
+     */
+    statementTimeout?: number;
+};
+
+/**
+ * Database client wrapper with Kysely instance and management methods.
+ */
+export class DbClient {
+    public readonly kysely: Kysely<DB>;
+    private readonly pool: pg.Pool;
+
+    constructor(config: DbClientConfig) {
+        // Create pool
+        const poolConfig: PoolConfig = {
+            connectionString: config.connectionString,
+            max: config.poolMax ?? 10,
+            statement_timeout: config.statementTimeout ?? 30000,
+        };
+
+        this.pool = createPool(poolConfig);
+
+        // Create Kysely instance
+        const dialect = createPostgresDialect(this.pool);
+        this.kysely = new Kysely<DB>({
+            dialect,
+        });
+    }
+
+    /**
+     * Gracefully close the database connection pool.
+     */
+    async close(): Promise<void> {
+        await this.kysely.destroy();
+        await closePool(this.pool);
+    }
+
+    /**
+     * Health check: verify database connectivity.
+     */
+    async health(): Promise<{ healthy: boolean; message?: string }> {
+        return healthCheck(this.pool);
+    }
+
+    /**
+     * Get the underlying pg.Pool (for advanced use cases).
+     */
+    getPool(): pg.Pool {
+        return this.pool;
+    }
+}
+
+/**
+ * Creates a new database client instance.
+ */
+export function createDbClient(config: DbClientConfig): DbClient {
+    return new DbClient(config);
+}

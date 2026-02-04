@@ -1,9 +1,9 @@
 import js from "@eslint/js";
-import tseslint from "typescript-eslint";
-import importPlugin from "eslint-plugin-import";
-import unusedImports from "eslint-plugin-unused-imports";
-import turbo from "eslint-plugin-turbo";
 import boundaries from "eslint-plugin-boundaries";
+import importPlugin from "eslint-plugin-import";
+import turbo from "eslint-plugin-turbo";
+import unusedImports from "eslint-plugin-unused-imports";
+import tseslint from "typescript-eslint";
 
 /** @type {import("eslint").Linter.FlatConfig[]} */
 export default [
@@ -142,10 +142,10 @@ export default [
         }
     },
 
-  /* ---------------------------
-   * Next.js Apps
-   * --------------------------- */
-  {
+    /* ---------------------------
+     * Next.js Apps
+     * --------------------------- */
+    {
         files: ["products/*/apps/*/**/*.{ts,tsx,js,jsx}"],
         rules: {
             "no-console": "off"

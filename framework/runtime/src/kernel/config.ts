@@ -4,6 +4,9 @@ import path from "node:path";
 
 import { RuntimeConfigSchema, type RuntimeConfig } from "./config.schema";
 
+// Re-export RuntimeConfig for use in other modules
+export type { RuntimeConfig };
+
 /**
  * Audit logger for kernel boot/config.
  * Keep it "safe": do not log secrets. This runs before DI container is ready.

@@ -14,19 +14,30 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "clean": "rimraf dist",
-    "build": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist",
+    "build": "tsup src/index.ts --format esm --sourcemap --outDir dist --external @athyper/runtime --external @opentelemetry/api && tsc --declaration --emitDeclarationOnly --outDir dist",
     "dev": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
     "@athyper/core": "workspace:*",
+    "@opentelemetry/api": "^1.9.0",
     "pino": "^9.4.0"
   },
+  "peerDependencies": {
+    "@athyper/runtime": "workspace:*"
+  },
   "devDependencies": {
+    "@athyper/tsconfig": "workspace:*",
     "tsup": "^8.3.0",
     "rimraf": "^6.0.1",
     "typescript": "^5.6.3"

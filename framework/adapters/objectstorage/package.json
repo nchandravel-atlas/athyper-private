@@ -17,10 +17,13 @@
   "files": ["dist", "src"],
   "scripts": {
     "clean": "rimraf dist",
-    "build": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist",
-    "dev": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --watch",
+    "build": "tsup src/index.ts src/types.ts src/s3/client.ts src/s3/operations.ts --format esm --sourcemap --outDir dist && tsc --declaration --emitDeclarationOnly --outDir dist",
+    "dev": "tsup src/index.ts src/types.ts src/s3/client.ts src/s3/operations.ts --format esm --dts --sourcemap --outDir dist --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
     "@athyper/core": "workspace:*",
@@ -28,6 +31,7 @@
     "@aws-sdk/s3-request-presigner": "^3.700.0"
   },
   "devDependencies": {
+    "@athyper/tsconfig": "workspace:*",
     "tsup": "^8.3.0",
     "rimraf": "^6.0.1",
     "typescript": "^5.6.3"

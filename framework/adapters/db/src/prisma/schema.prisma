@@ -23,6 +23,7 @@ generator kysely {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["public", "core", "mdm", "meta", "ref"]
 }
 
 // -----------------

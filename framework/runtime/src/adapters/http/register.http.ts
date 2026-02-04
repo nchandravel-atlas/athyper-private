@@ -1,15 +1,12 @@
-import type { Container } from "../../../kernel/container";
-import { TOKENS } from "../../../kernel/tokens";
-import { createExpressHttpServer } from "./express.httpServer";
+import type { Container } from "../../kernel/container.js";
+import { TOKENS } from "../../kernel/tokens.js";
+import { createExpressHttpServer } from "./express.httpServer.js";
 
 export function registerHttpServer(container: Container) {
     container.register(
         TOKENS.httpServer,
         async (c) => {
-            return createExpressHttpServer(c, {
-                defaultAuthRequired: true,
-                requestIdHeader: "x-request-id",
-            });
+            return createExpressHttpServer(c);
         },
         "singleton",
     );

@@ -14,3 +14,6 @@ export * from "./services/registry";
 export * from "./registries/routes.registry";
 export * from "./registries/jobs.registry";
 export * from "./registries/services.registry";
+
+// Telemetry adapters
+export * from "./adapters/telemetry/index";

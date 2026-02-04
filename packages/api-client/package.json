@@ -20,7 +20,10 @@
     "build": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist",
     "dev": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
     "@athyper/contracts": "workspace:*"

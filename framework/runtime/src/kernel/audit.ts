@@ -61,3 +61,26 @@ export function createNoopAuditWriter(): AuditWriter {
         },
     };
 }
+
+/**
+ * Helper to create an AuditEvent with the current timestamp.
+ * Simplifies audit event creation by auto-adding the timestamp.
+ */
+export function makeAuditEvent(data: {
+    type: string;
+    level: AuditLevel;
+    actor: AuditActor;
+    requestId?: string;
+    message?: string;
+    meta?: Record<string, unknown>;
+}): AuditEvent {
+    return {
+        ts: new Date().toISOString(),
+        type: data.type,
+        level: data.level,
+        actor: data.actor,
+        requestId: data.requestId,
+        message: data.message,
+        meta: data.meta,
+    };
+}

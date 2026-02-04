@@ -1,21 +1,32 @@
-import pino, { type Logger, type LoggerOptions } from "pino";
+import type { TelemetryAdapter, TelemetryLogger } from "@athyper/runtime";
+import { createLogEnvelope } from "@athyper/runtime";
+import { getOtelTraceContext } from "./traceContext.js";
 
-export type TelemetryLogger = Logger;
-
-export type CreateLoggerOptions = {
-  name?: string;
-  level?: string;
-  base?: Record<string, unknown>;
-  pino?: LoggerOptions;
+export type OTelTelemetryAdapterOptions = {
+    emit: (json: unknown) => void;
 };
 
-export function createLogger(opts: CreateLoggerOptions = {}): TelemetryLogger {
-  const { name, level, base, pino: pinoOpts } = opts;
+export function createTelemetryAdapter(opts: OTelTelemetryAdapterOptions): TelemetryAdapter {
+    const logger: TelemetryLogger = {
+        emit(envelope) {
+            opts.emit(envelope);
+        },
+        info(input) {
+            opts.emit(createLogEnvelope({ ...input, level: "info" }, getOtelTraceContext));
+        },
+        warn(input) {
+            opts.emit(createLogEnvelope({ ...input, level: "warn" }, getOtelTraceContext));
+        },
+        error(input) {
+            opts.emit(createLogEnvelope({ ...input, level: "error" }, getOtelTraceContext));
+        }
+    };
 
-  return pino({
-    name,
-    level,
-    base,
-    ...pinoOpts
-  });
+    return {
+        logger,
+        getTraceContext: getOtelTraceContext
+    };
 }
+
+// Export traceContext utilities
+export * from "./traceContext.js";

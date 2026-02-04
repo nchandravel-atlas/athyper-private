@@ -3,7 +3,14 @@ import { TOKENS } from "./tokens";
 import type { RuntimeConfig } from "./config.schema";
 import { Lifecycle } from "./lifecycle";
 import type { Container } from "./container";
-import { NoopAuditWriter, makeAuditEvent, type AuditWriter } from "./audit";
+import { createConsoleAuditWriter, makeAuditEvent, type AuditWriter } from "./audit";
+import { createPinoLogger, type LogLevel } from "./logger";
+import {
+    HealthCheckRegistry,
+    MetricsRegistry,
+    RequestContextStorage,
+    GracefulShutdown,
+} from "@athyper/core";
 
 import { ServiceRegistry } from "../registries/services.registry";
 import { RouteRegistry } from "../registries/routes.registry";
@@ -43,28 +50,28 @@ export function registerKernelDefaults(container: Container, config: RuntimeConf
     // Boot ID for correlation
     container.register(TOKENS.bootId, async () => options?.bootId ?? "boot-unknown", "singleton");
 
-    // Logger: minimal fallback (replace later with pino)
+    // Logger: Pino-based structured logging
     container.register(
         TOKENS.logger,
         async () => {
-            const level = config.logLevel ?? "info";
-            const write = (lvl: string, msg: string, meta?: any) => {
-                // eslint-disable-next-line no-console
-                console.log(JSON.stringify({ level: lvl ?? level, msg, ...meta }));
-            };
-            return {
-                info: (meta: any, msg?: string) => write("info", msg ?? "info", meta),
-                warn: (meta: any, msg?: string) => write("warn", msg ?? "warn", meta),
-                error: (meta: any, msg?: string) => write("error", msg ?? "error", meta),
-                debug: (meta: any, msg?: string) => write("debug", msg ?? "debug", meta),
-                log: (msg: string) => write(level, msg),
-            };
+            return createPinoLogger({
+                level: (config.logLevel ?? "info") as LogLevel,
+                serviceName: config.serviceName,
+                env: config.env,
+                pretty: config.env === "local", // Pretty print in local dev
+            });
         },
         "singleton",
     );
 
-    // Audit: default no-op (later replace with DB/stream writer)
-    container.register(TOKENS.auditWriter, async () => NoopAuditWriter, "singleton");
+    // Audit: console writer for development (replace with DB/stream writer in production)
+    container.register(TOKENS.auditWriter, async () => createConsoleAuditWriter(), "singleton");
+
+    // Observability
+    container.register(TOKENS.healthRegistry, async () => new HealthCheckRegistry(), "singleton");
+    container.register(TOKENS.metricsRegistry, async () => new MetricsRegistry(), "singleton");
+    container.register(TOKENS.requestContextStorage, async () => new RequestContextStorage(), "singleton");
+    container.register(TOKENS.gracefulShutdown, async () => new GracefulShutdown(), "singleton");
 
     // Registries (definition buckets)
     container.register(TOKENS.serviceRegistry, async () => new ServiceRegistry(), "singleton");

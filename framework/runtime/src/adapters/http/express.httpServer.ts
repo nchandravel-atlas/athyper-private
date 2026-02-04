@@ -109,7 +109,7 @@ function makeRouteMiddleware(root: Container, def: RouteDef) {
 
             return;
         } catch (err) {
-            logger.error("[http] route error", { err, requestId: reqCtx.requestId, path: req.path });
+            logger.error({ err, requestId: reqCtx.requestId, path: req.path }, "[http] route error");
             return next(err);
         }
     };
@@ -253,7 +253,7 @@ function makeErrorMiddleware(root: Container) {
         }
 
         // default
-        logger.error("[http] unhandled", { requestId, err });
+        logger.error({ requestId, err }, "[http] unhandled");
         return res.status(500).json({ error: "INTERNAL_ERROR", requestId });
     };
 }

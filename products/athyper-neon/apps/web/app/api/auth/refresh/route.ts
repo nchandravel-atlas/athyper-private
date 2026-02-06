@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionId, setSessionCookie, setCsrfCookie } from "@neon/auth/session";
 import { refreshTokens, decodeJwtPayload } from "@neon/auth/keycloak";
+import { emitBffAudit, AuthAuditEvent, hashSidForAudit } from "@neon/auth/audit";
 import { randomUUID, createHash } from "node:crypto";
 
 async function getRedisClient() {
@@ -14,13 +15,37 @@ async function getRedisClient() {
 /**
  * POST /api/auth/refresh (CSRF-protected via middleware)
  *
- * 1. Load Redis session
- * 2. If access token still has > 120s remaining, no-op
- * 3. Call Keycloak token refresh
- * 4. Rotate refresh token + session ID
- * 5. Update Redis session
- * 6. Set new cookies
- * 7. On failure: destroy session, clear cookies, return redirect
+ * Proactively refreshes the access token before it expires.
+ *
+ * Called by the client-side useSessionRefresh hook, which schedules
+ * this call at accessExpiresAt - 90s. Can also be triggered manually
+ * from the admin debug console.
+ *
+ * Flow:
+ *   1. Load Redis session by `neon_sid` cookie
+ *   2. SECURITY: Check idle timeout — if idle_expired, destroy session and reject.
+ *      This is a hard security control: even if the refresh token is still valid,
+ *      we refuse to extend an idle session. A stolen sid cannot silently keep
+ *      sessions alive by calling refresh.
+ *   3. If access token still has > 120s remaining, return no-op (avoids unnecessary
+ *      Keycloak calls when multiple tabs race to refresh)
+ *   4. Call Keycloak grant_type=refresh_token to get new tokens
+ *   5. Rotate session ID — generate new sid, new CSRF token, new Redis key.
+ *      The old sid/key is deleted. This prevents session fixation after refresh.
+ *   6. Update user_sessions index (old sid out, new sid in)
+ *   7. Set new neon_sid + __csrf cookies with the rotated values
+ *   8. Return { ok, accessExpiresAt, csrfToken } so the client can update
+ *      its in-memory bootstrap and schedule the next refresh
+ *
+ * Failure handling:
+ *   - If Keycloak rejects the refresh token (expired, revoked, rotated by
+ *     another instance), the session is destroyed and the client receives
+ *     { redirect: "/api/auth/login" } — triggering a full re-authentication.
+ *
+ * Audit:
+ *   - auth.refresh_success — on successful token refresh
+ *   - auth.refresh_failed — on Keycloak rejection or error
+ *   - auth.refresh_idle_blocked — when idle timeout prevents refresh
  */
 export async function POST() {
     const sid = getSessionId();
@@ -45,15 +70,32 @@ export async function POST() {
         const session = JSON.parse(raw);
         const now = Math.floor(Date.now() / 1000);
 
-        // Enforce idle timeout: if session has been idle beyond limit, destroy and reject
+        // ─── Idle timeout enforcement (hard security control) ───────
+        // If the user has been inactive for >= IDLE_TIMEOUT_SEC, we refuse
+        // to refresh even though the refresh token may be valid. This prevents
+        // stolen session cookies from being used to silently extend sessions.
         const IDLE_TIMEOUT_SEC = 900;
         const lastSeenAt = typeof session.lastSeenAt === "number" ? session.lastSeenAt : 0;
         if (lastSeenAt > 0 && (now - lastSeenAt) >= IDLE_TIMEOUT_SEC) {
+            // Destroy the session — it's idle-expired and unrecoverable
             await redis.del(`sess:${tenantId}:${sid}`);
+
+            // Audit — refresh blocked by idle timeout
+            await emitBffAudit(redis, AuthAuditEvent.REFRESH_IDLE_BLOCKED, {
+                tenantId,
+                userId: session.userId,
+                sidHash: hashSidForAudit(sid),
+                realm,
+                reason: "idle_expired",
+                meta: { lastSeenAt, idleSeconds: now - lastSeenAt },
+            });
+
             return NextResponse.json({ redirect: "/api/auth/login", reason: "idle_expired" }, { status: 401 });
         }
 
-        // Check if refresh is actually needed
+        // ─── Skip if token still has plenty of time ─────────────────
+        // Prevents unnecessary Keycloak calls when multiple browser tabs
+        // race to refresh, or when the client timer fires early.
         const remaining = (session.accessExpiresAt ?? 0) - now;
         if (remaining > 120) {
             return NextResponse.json({
@@ -63,21 +105,24 @@ export async function POST() {
             });
         }
 
-        // Check if we have a refresh token
+        // ─── Check refresh token availability ───────────────────────
         if (!session.refreshToken) {
-            // No refresh token available — session must re-auth
+            // No refresh token — Keycloak client config may not issue them,
+            // or this is a degraded session. Force re-authentication.
             await redis.del(`sess:${tenantId}:${sid}`);
             return NextResponse.json({ redirect: "/api/auth/login" }, { status: 401 });
         }
 
-        // Call Keycloak refresh
+        // ─── Call Keycloak token refresh ────────────────────────────
         const tokens = await refreshTokens({ baseUrl, realm, clientId, refreshToken: session.refreshToken });
 
-        // Rotate session ID
+        // ─── Rotate session ID ──────────────────────────────────────
+        // Generate new sid + CSRF token. This prevents session fixation:
+        // if the old sid was observed, it's now invalid.
         const newSid = createHash("sha256").update(randomUUID() + Date.now().toString()).digest("hex");
         const newCsrfToken = randomUUID();
 
-        // Decode new claims
+        // Decode refreshed claims (roles may have changed since last token)
         const claims = decodeJwtPayload(tokens.access_token);
         const roles: string[] = [];
         const realmAccess = claims.realm_access as { roles?: string[] } | undefined;
@@ -85,7 +130,7 @@ export async function POST() {
             roles.push(...realmAccess.roles.filter((r): r is string => typeof r === "string"));
         }
 
-        // Build updated session
+        // Build updated session with new tokens, new sid, refreshed roles
         const updatedSession = {
             ...session,
             sid: newSid,
@@ -99,19 +144,32 @@ export async function POST() {
             lastSeenAt: now,
         };
 
-        // Write new session, delete old
+        // Write new session key, delete old (atomic rotation)
         await redis.set(`sess:${tenantId}:${newSid}`, JSON.stringify(updatedSession), { EX: 28800 });
         await redis.del(`sess:${tenantId}:${sid}`);
 
-        // Update user session index
+        // Update user session index (swap old sid for new)
         if (session.userId) {
             await redis.sRem(`user_sessions:${tenantId}:${session.userId}`, sid);
             await redis.sAdd(`user_sessions:${tenantId}:${session.userId}`, newSid);
         }
 
-        // Set new cookies
+        // Set rotated cookies
         setSessionCookie(newSid, env);
         setCsrfCookie(newCsrfToken, env);
+
+        // Audit — refresh success
+        await emitBffAudit(redis, AuthAuditEvent.REFRESH_SUCCESS, {
+            tenantId,
+            userId: session.userId,
+            sidHash: hashSidForAudit(newSid),
+            realm,
+            meta: {
+                previousSidHash: hashSidForAudit(sid),
+                tokenExpiresIn: tokens.expires_in,
+                rolesChanged: JSON.stringify(session.roles) !== JSON.stringify(roles),
+            },
+        });
 
         return NextResponse.json({
             ok: true,
@@ -124,8 +182,18 @@ export async function POST() {
             await redis.del(`sess:${tenantId}:${sid}`);
         } catch { /* best effort */ }
 
+        const reason = e instanceof Error ? e.message : "Refresh failed";
+
+        // Audit — refresh failed
+        await emitBffAudit(redis, AuthAuditEvent.REFRESH_FAILED, {
+            tenantId,
+            sidHash: hashSidForAudit(sid),
+            realm,
+            reason,
+        });
+
         return NextResponse.json(
-            { redirect: "/api/auth/login", reason: e instanceof Error ? e.message : "Refresh failed" },
+            { redirect: "/api/auth/login", reason },
             { status: 401 },
         );
     } finally {

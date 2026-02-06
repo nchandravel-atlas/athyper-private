@@ -25,6 +25,7 @@ Production-ready infrastructure patterns
 
 ### [Security](./security/README.md)
 Security features and best practices
+- [Auth Architecture](./security/AUTH_ARCHITECTURE.md) - PKCE flow, Redis sessions, idle timeout, CSRF, tenant isolation
 - [Rate Limiting](./security/RATE_LIMITING.md)
 - [Input Validation](./security/VALIDATION.md)
 - [Sanitization](./security/SANITIZATION.md)

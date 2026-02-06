@@ -15,6 +15,10 @@
     "./keycloak": {
       "types": "./server/keycloak.ts",
       "default": "./server/keycloak.ts"
+    },
+    "./audit": {
+      "types": "./server/audit.ts",
+      "default": "./server/audit.ts"
     }
   },
   "dependencies": {

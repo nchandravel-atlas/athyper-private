@@ -1,11 +1,44 @@
 import "server-only";
 
+// products/athyper-neon/auth/server/keycloak.ts
+//
+// Keycloak OIDC integration — pure functions for the PKCE Authorization Code flow.
+//
+// This module replaces the old Direct Grant (password) flow with PKCE.
+// No passwords are ever handled by our app; all credential verification
+// happens at Keycloak's login form.
+//
+// PKCE (Proof Key for Code Exchange) flow summary:
+//   1. Client generates a random codeVerifier + SHA-256(codeVerifier) = codeChallenge
+//   2. Browser redirected to Keycloak with codeChallenge (login/route.ts)
+//   3. Keycloak authenticates user and redirects back with authorization code
+//   4. Server exchanges code + codeVerifier for tokens (callback/route.ts)
+//   5. Keycloak verifies SHA-256(codeVerifier) === codeChallenge → issues tokens
+//
+// This prevents authorization code interception attacks because the attacker
+// doesn't have the codeVerifier (stored server-side in Redis, never in browser).
+//
+// All functions use Keycloak's standard OIDC endpoints:
+//   - /realms/{realm}/protocol/openid-connect/auth    (authorization)
+//   - /realms/{realm}/protocol/openid-connect/token   (token exchange + refresh)
+//   - /realms/{realm}/protocol/openid-connect/logout   (backchannel + front-channel)
+//
+// Callers:
+//   - login/route.ts → generatePkceChallenge(), buildAuthorizationUrl()
+//   - callback/route.ts → exchangeCodeForTokens(), decodeJwtPayload()
+//   - refresh/route.ts → refreshTokens()
+//   - logout/route.ts → keycloakLogout(), buildFrontChannelLogoutUrl()
+
 import { createHash, randomBytes } from "node:crypto";
 
 // ─── PKCE Utilities ──────────────────────────────────────────────
 
 /**
- * Generate PKCE code verifier, code challenge (S256), and state parameter.
+ * Generate PKCE challenge parameters for the Authorization Code flow.
+ *
+ * - codeVerifier: 32 random bytes, base64url-encoded (stored in Redis, never in browser)
+ * - codeChallenge: SHA-256(codeVerifier), base64url-encoded (sent to Keycloak)
+ * - state: 16 random bytes, hex-encoded (CSRF protection for the auth redirect)
  */
 export function generatePkceChallenge(): {
     codeVerifier: string;
@@ -72,7 +105,16 @@ export interface ExchangeCodeParams {
 }
 
 /**
- * Exchange authorization code for tokens using PKCE.
+ * Exchange an authorization code for tokens at Keycloak's token endpoint.
+ *
+ * Called from callback/route.ts after the user successfully authenticates
+ * at Keycloak and is redirected back with an authorization code.
+ *
+ * The codeVerifier proves we initiated the flow (PKCE binding).
+ * Keycloak computes SHA-256(codeVerifier) and compares it to the
+ * codeChallenge sent during authorization — if they match, tokens are issued.
+ *
+ * Throws on failure (HTTP non-200 from Keycloak).
  */
 export async function exchangeCodeForTokens(params: ExchangeCodeParams): Promise<KeycloakTokenResponse> {
     const { baseUrl, realm, clientId, code, codeVerifier, redirectUri } = params;
@@ -110,7 +152,18 @@ export interface RefreshTokensParams {
 }
 
 /**
- * Refresh tokens using a refresh token. Rotates the refresh token.
+ * Refresh tokens using the current refresh token.
+ *
+ * Keycloak rotates the refresh token on each use (one-time-use policy).
+ * The caller MUST store the new refresh_token from the response and
+ * discard the old one. Using a stale refresh token will fail and may
+ * revoke the entire session (depending on Keycloak realm settings).
+ *
+ * Called from refresh/route.ts on the proactive refresh schedule
+ * (90 seconds before access token expiry).
+ *
+ * Throws on failure — the caller should destroy the session and
+ * redirect to login when this happens.
  */
 export async function refreshTokens(params: RefreshTokensParams): Promise<KeycloakTokenResponse> {
     const { baseUrl, realm, clientId, refreshToken } = params;
@@ -147,8 +200,15 @@ export interface LogoutParams {
 }
 
 /**
- * End Keycloak session (server-side backchannel logout).
- * This revokes the refresh token but does NOT end the browser SSO session.
+ * Server-side backchannel logout — revokes tokens at Keycloak's logout endpoint.
+ *
+ * This revokes the refresh token so it can't be used even if leaked.
+ * However, it does NOT end the Keycloak SSO session (browser cookie).
+ * For that, the browser must visit the front-channel logout URL
+ * (see buildFrontChannelLogoutUrl below).
+ *
+ * This is best-effort — Keycloak may be unreachable, but we still
+ * destroy the local Redis session regardless. Errors are silently caught.
  */
 export async function keycloakLogout(params: LogoutParams): Promise<void> {
     const { baseUrl, realm, clientId, idToken, refreshToken } = params;
@@ -170,8 +230,15 @@ export async function keycloakLogout(params: LogoutParams): Promise<void> {
 }
 
 /**
- * Build Keycloak front-channel logout URL (RP-Initiated Logout).
- * The browser must visit this URL to end the Keycloak SSO session.
+ * Build Keycloak front-channel logout URL (RP-Initiated Logout / OIDC spec).
+ *
+ * The browser must navigate to this URL to end the Keycloak SSO session.
+ * Without this, the user's Keycloak SSO cookie remains valid and clicking
+ * "Login" again would silently re-authenticate without showing the login form
+ * (unless prompt=login is used, which we do as defense-in-depth).
+ *
+ * After visiting this URL, Keycloak redirects to postLogoutRedirectUri
+ * (typically /login) to complete the logout flow.
  */
 export function buildFrontChannelLogoutUrl(params: {
     baseUrl: string;
@@ -186,7 +253,15 @@ export function buildFrontChannelLogoutUrl(params: {
     return logoutUrl.toString();
 }
 
-// ─── JWT Decode (no verification — for extracting claims post-exchange) ───
+// ─── JWT Decode (no verification) ────────────────────────────────
+//
+// Used in callback/route.ts to extract claims (sub, roles, email, name)
+// from the access token AFTER it was received directly from Keycloak's
+// token endpoint over HTTPS. Since the token came from a trusted source
+// (not from a browser), signature verification is not needed here.
+//
+// Framework-level JWT verification (via jose JWKS) happens at the
+// runtime API boundary (express.httpServer.ts), not in the BFF.
 
 export function decodeJwtPayload(token: string): Record<string, unknown> {
     const parts = token.split(".");

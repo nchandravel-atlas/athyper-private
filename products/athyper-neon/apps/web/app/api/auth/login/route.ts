@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { generatePkceChallenge, buildAuthorizationUrl } from "@neon/auth/keycloak";
+import { emitBffAudit, AuthAuditEvent } from "@neon/auth/audit";
 
-// Lazy Redis client for PKCE state storage
 async function getRedisClient() {
     const { createClient } = await import("redis");
     const url = process.env.REDIS_URL ?? "redis://localhost:6379/0";
@@ -13,10 +13,36 @@ async function getRedisClient() {
 /**
  * GET /api/auth/login?workbench=admin&returnUrl=/dashboard
  *
- * Initiates PKCE Authorization Code flow:
- * 1. Generate PKCE challenge + state
- * 2. Store { codeVerifier, state, workbench, returnUrl } in Redis (TTL 300s)
- * 3. Redirect to Keycloak authorization endpoint
+ * Initiates the PKCE Authorization Code flow by redirecting the browser
+ * to the Keycloak authorization endpoint.
+ *
+ * This endpoint does NOT handle credentials — all authentication happens
+ * at Keycloak. The browser is redirected there and Keycloak redirects back
+ * to /api/auth/callback with an authorization code.
+ *
+ * Flow:
+ *   1. Generate PKCE challenge (codeVerifier + codeChallenge using SHA-256)
+ *   2. Generate random `state` parameter (CSRF protection for the auth flow)
+ *   3. Store { codeVerifier, workbench, returnUrl } in Redis under
+ *      `pkce_state:{state}` with 300s TTL (5 minutes to complete login)
+ *   4. Redirect browser to Keycloak authorization URL with:
+ *      - response_type=code (Authorization Code flow)
+ *      - code_challenge + code_challenge_method=S256 (PKCE)
+ *      - state (anti-CSRF)
+ *      - prompt=login (force re-authentication, prevent SSO session reuse)
+ *
+ * Query parameters:
+ *   - workbench: "admin" | "user" | "partner" (determines post-login routing)
+ *   - returnUrl: URL to redirect to after successful login (default "/")
+ *
+ * Security notes:
+ *   - prompt=login ensures Keycloak shows the login form even if the user
+ *     has an active SSO session. This prevents confusion after logout
+ *     (without it, clicking "Login" would silently re-authenticate).
+ *   - PKCE state TTL is 300s — if the user takes longer than 5 minutes
+ *     at the Keycloak login form, the callback will fail with "expired state".
+ *   - The codeVerifier is stored in Redis, never sent to the browser.
+ *     Only the codeChallenge (SHA-256 hash) goes to Keycloak.
  */
 export async function GET(req: Request) {
     const url = new URL(req.url);
@@ -28,10 +54,11 @@ export async function GET(req: Request) {
     const clientId = process.env.KEYCLOAK_CLIENT_ID ?? "neon-web";
     const publicBaseUrl = process.env.PUBLIC_BASE_URL ?? "http://localhost:3000";
     const redirectUri = `${publicBaseUrl}/api/auth/callback`;
+    const tenantId = process.env.DEFAULT_TENANT_ID ?? "default";
 
     const { codeVerifier, codeChallenge, state } = generatePkceChallenge();
 
-    // Store PKCE state in Redis (short TTL)
+    // Store PKCE state in Redis (short TTL — 5 min to complete login)
     const redis = await getRedisClient();
     try {
         await redis.set(
@@ -39,6 +66,16 @@ export async function GET(req: Request) {
             JSON.stringify({ codeVerifier, workbench, returnUrl }),
             { EX: 300 },
         );
+
+        // Audit — login flow initiated
+        await emitBffAudit(redis, AuthAuditEvent.LOGIN_INITIATED, {
+            tenantId,
+            ip: req.headers.get("x-forwarded-for") ?? "unknown",
+            userAgent: req.headers.get("user-agent") ?? "unknown",
+            realm,
+            workbench,
+            meta: { returnUrl },
+        });
     } finally {
         await redis.quit();
     }

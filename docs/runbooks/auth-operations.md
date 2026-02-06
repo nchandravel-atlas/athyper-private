@@ -1,7 +1,7 @@
 # Auth Operations Runbook
 
 > **Audience:** Platform operators, on-call SREs, security engineers.
-> **Last updated:** 2025-02-04
+> **Last updated:** 2025-02-06
 > **Applicable stack:** athyper Runtime, Keycloak (IdP), Redis (session store), PostgreSQL (IAM tables).
 
 ---
@@ -17,6 +17,8 @@
 7. [Debugging Auth Failures](#7-debugging-auth-failures)
 8. [CSRF Issues Troubleshooting](#8-csrf-issues-troubleshooting)
 9. [Session Fixation Prevention Verification](#9-session-fixation-prevention-verification)
+10. [Idle Timeout and Auto-Logout](#10-idle-timeout-and-auto-logout)
+11. [Token Refresh Troubleshooting](#11-token-refresh-troubleshooting)
 
 ---
 
@@ -717,3 +719,139 @@ Add this to your security review checklist:
 - [ ] `auth.session_rotated` audit events are being generated for every login.
 - [ ] Session cookies have `Secure; HttpOnly; SameSite=Lax` attributes in production.
 - [ ] Session cookies use `__Host-` prefix in production (binds to origin, prevents subdomain attacks).
+
+---
+
+## 10. Idle Timeout and Auto-Logout
+
+**When:** Investigating idle timeout behavior, users reporting unexpected logouts, or verifying the idle security control works correctly.
+
+### How Idle Timeout Works
+
+The platform enforces a **900-second (15-minute) idle timeout** as a hard security control. This is enforced both client-side and server-side.
+
+#### Server-Side Enforcement
+
+Every session stores a `lastSeenAt` timestamp (epoch seconds). The following endpoints enforce the idle timeout:
+
+| Endpoint | Behavior when idle expired |
+| --- | --- |
+| `POST /api/auth/touch` | Returns `401 { reason: "idle_expired" }` — does NOT update `lastSeenAt` |
+| `POST /api/auth/refresh` | Destroys session in Redis, returns `401 { redirect: "/api/auth/login", reason: "idle_expired" }` |
+| `GET /api/auth/debug` | Reports `sessionState: idle_expired`, `verdict: reauth_required` |
+
+**Key security property:** An idle-expired session **blocks token refresh**, even if the refresh token is still valid. A stolen `neon_sid` cookie cannot call `/touch` or `/refresh` to silently keep a session alive once the user has been inactive for 15 minutes.
+
+#### Client-Side (`useIdleTracker` hook)
+
+1. Tracks user activity (mousemove, keydown, touchstart, scroll, click).
+2. Every second, computes `idleRemaining = max(0, 900 - secondsSinceLastActivity)`.
+3. At `idleRemaining <= 180s`: shows warning banner with live countdown.
+4. Calls `POST /api/auth/touch` every 60s (only when user was recently active).
+5. "Stay signed in" button: resets local timer + calls touch to reset server `lastSeenAt`.
+6. At `idleRemaining <= 0`: calls `POST /api/auth/logout` and follows the Keycloak logout redirect.
+
+### Debugging Idle Timeout Issues
+
+#### User Reports "Logged Out Unexpectedly"
+
+1. Check the session's `lastSeenAt` vs current time:
+   ```bash
+   redis-cli -u redis://admin:<password>@<host>:6379 \
+     GET "sess:<tenantId>:<sid>" | python3 -m json.tool | grep lastSeenAt
+   ```
+2. If `now - lastSeenAt >= 900`, the idle timeout fired correctly.
+3. If the session no longer exists, check audit logs for the cause:
+   ```sql
+   SELECT occurred_at, action, payload
+   FROM core.audit_log
+   WHERE payload->>'userId' = '<user-id>'
+     AND action IN ('auth.logout', 'auth.session_killed')
+   ORDER BY occurred_at DESC
+   LIMIT 10;
+   ```
+
+#### Touch Endpoint Not Updating `lastSeenAt`
+
+1. Verify CSRF is correct — `POST /api/auth/touch` requires `x-csrf-token` header.
+2. Check browser DevTools Network tab for `touch` requests: should return `200 { ok: true }`.
+3. If returning `403`, the CSRF token is stale or missing. See [CSRF Troubleshooting](#8-csrf-issues-troubleshooting).
+4. If returning `401 { reason: "idle_expired" }`, the session already exceeded the 900s limit.
+
+#### Idle Warning Banner Not Showing
+
+1. Verify `window.__SESSION_BOOTSTRAP__` exists and contains `idleTimeoutSec: 900`.
+2. Check that the `useIdleTracker` hook is mounted in the page component.
+3. The warning appears at `idleRemaining <= 180s` — wait or reduce activity to test.
+
+### Adjusting Idle Timeout
+
+The idle timeout is currently hardcoded at 900 seconds in multiple files. To change it, update all of:
+
+- `products/athyper-neon/apps/web/app/api/auth/touch/route.ts` — `IDLE_TIMEOUT_SEC`
+- `products/athyper-neon/apps/web/app/api/auth/refresh/route.ts` — `IDLE_TIMEOUT_SEC`
+- `products/athyper-neon/apps/web/app/api/auth/debug/route.ts` — `IDLE_TIMEOUT_SEC`
+- `products/athyper-neon/apps/web/lib/session-bootstrap.ts` — `IDLE_TIMEOUT_SEC`
+
+The warning threshold (180s before timeout) is configured in:
+
+- `products/athyper-neon/apps/web/app/api/auth/debug/route.ts` — `IDLE_WARNING_SEC`
+- `products/athyper-neon/apps/web/lib/idle-tracker.ts` — `warningBeforeSec` default
+
+---
+
+## 11. Token Refresh Troubleshooting
+
+**When:** Token refresh is not firing, users see expired tokens, or the debug console shows `shouldRefreshNow: true` but refresh never executes.
+
+### How Refresh Works
+
+1. **Client-side timer** (`useSessionRefresh` hook): Schedules `POST /api/auth/refresh` at `accessExpiresAt - 90s`.
+2. **Server-side** (`POST /api/auth/refresh`): Calls Keycloak `grant_type=refresh_token`, rotates session ID, updates cookies.
+3. **After refresh**: Client updates `window.__SESSION_BOOTSTRAP__` with new `accessExpiresAt` and `csrfToken`, reschedules timer.
+
+### Common Failures
+
+#### Refresh Not Firing (Debug Shows `shouldRefreshNow: YES`)
+
+1. **Check that `useSessionRefresh` is mounted** in the page component. The hook must be called for the timer to start.
+2. **Check browser DevTools Console** for errors from the refresh fetch.
+3. **Check Network tab** for `POST /api/auth/refresh` requests:
+   - If absent: the hook is not mounted or `accessExpiresAt` is not in the bootstrap.
+   - If `403`: CSRF token mismatch — the `__csrf` cookie may be stale after a previous rotation.
+   - If `401 { reason: "idle_expired" }`: the idle timeout blocked the refresh (by design).
+
+#### Refresh Returns `401`
+
+| Response body | Cause | Fix |
+| --- | --- | --- |
+| `{ redirect: "/api/auth/login" }` | Session not found in Redis | Session expired or was destroyed — user must re-authenticate |
+| `{ reason: "idle_expired" }` | Idle timeout exceeded | User was inactive > 900s — refresh is blocked by design |
+| No refresh token in session | Keycloak didn't issue a refresh token | Check Keycloak client config: "Enable refresh token rotation" must be on |
+
+#### Refresh Succeeds but UI Doesn't Update
+
+1. Verify the `onRefreshSuccess` callback is wired. Example:
+   ```typescript
+   useSessionRefresh({ onRefreshSuccess: () => fetchDebug() });
+   ```
+2. After successful refresh, the hook updates `window.__SESSION_BOOTSTRAP__` with new `accessExpiresAt` and `csrfToken`. Check that subsequent fetch calls use the new CSRF token.
+
+#### Refresh Loop (Continuous Refresh Attempts)
+
+1. If Keycloak returns tokens with very short `expires_in` (e.g., < 95s), the client will immediately schedule another refresh.
+2. Check Keycloak realm settings: access token lifespan should be >= 300s for local, >= 600s for staging.
+
+### Verifying Refresh in Redis
+
+```bash
+# Check session before refresh
+redis-cli GET "sess:<tenantId>:<sid>" | python3 -m json.tool | grep -E "accessExpiresAt|lastSeenAt|sid"
+
+# After refresh, the OLD sid key should be gone and a NEW sid key should exist
+redis-cli EXISTS "sess:<tenantId>:<old-sid>"
+# Expected: (integer) 0
+
+redis-cli SMEMBERS "user_sessions:<tenantId>:<userId>"
+# Expected: contains new sid, not old sid
+```

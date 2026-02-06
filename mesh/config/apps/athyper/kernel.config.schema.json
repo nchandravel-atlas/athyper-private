@@ -1,0 +1,282 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "kernel.config.schema.json",
+  "title": "athyper Kernel Runtime Configuration",
+  "description": "Schema for kernel.config.*.parameter.json files. Mirrors the Zod RuntimeConfigSchema in framework/runtime/src/kernel/config.schema.ts",
+  "type": "object",
+  "required": ["db", "redis", "s3", "iam"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference (ignored by loader)"
+    },
+    "$comment": {
+      "type": "string",
+      "description": "Human-readable comment (ignored by loader)"
+    },
+    "env": {
+      "type": "string",
+      "enum": ["local", "staging", "production"],
+      "default": "local",
+      "description": "Environment identifier"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["api", "worker", "scheduler"],
+      "default": "api",
+      "description": "Runtime mode"
+    },
+    "serviceName": {
+      "type": "string",
+      "minLength": 1,
+      "default": "athyper-runtime",
+      "description": "Service name for telemetry and logging"
+    },
+    "port": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 3000,
+      "description": "HTTP listen port"
+    },
+    "logLevel": {
+      "type": "string",
+      "enum": ["fatal", "error", "warn", "info", "debug", "trace"],
+      "default": "info",
+      "description": "Minimum log level"
+    },
+    "shutdownTimeoutMs": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 15000,
+      "description": "Graceful shutdown timeout in milliseconds"
+    },
+    "publicBaseUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Public URL for the Runtime API (e.g. https://api.athyper.local)"
+    },
+    "publicWebUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Public URL for the Neon web app (e.g. https://neon.athyper.local)"
+    },
+    "db": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "description": "PostgreSQL connection URL via PgBouncer (port 6432)"
+        },
+        "adminUrl": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Direct PostgreSQL connection URL for admin/migrations (port 5432)"
+        },
+        "poolMax": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 10,
+          "description": "Maximum connection pool size"
+        }
+      },
+      "additionalProperties": false
+    },
+    "iam": {
+      "type": "object",
+      "required": ["realms"],
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["single_realm", "multi_realm"],
+          "default": "single_realm",
+          "description": "Realm routing strategy"
+        },
+        "defaultRealmKey": {
+          "type": "string",
+          "minLength": 1,
+          "default": "main",
+          "description": "Default realm key (must exist in realms map)"
+        },
+        "defaultTenantKey": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "description": "Default tenant key for jobs/scheduler bootstrap"
+        },
+        "defaultOrgKey": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "description": "Default org key for jobs/scheduler bootstrap"
+        },
+        "requireTenantClaimsInProd": {
+          "type": "boolean",
+          "default": true,
+          "description": "Require tenant claims in JWT for production environments"
+        },
+        "realms": {
+          "type": "object",
+          "description": "Map of realm keys to realm configurations",
+          "additionalProperties": {
+            "$ref": "#/definitions/RealmConfig"
+          },
+          "default": {}
+        }
+      },
+      "additionalProperties": false
+    },
+    "redis": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Redis connection URL (e.g. redis://:password@host:6379/0)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "s3": {
+      "type": "object",
+      "required": ["endpoint", "accessKey", "secretKey"],
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "minLength": 1,
+          "description": "S3/MinIO endpoint URL"
+        },
+        "accessKey": {
+          "type": "string",
+          "minLength": 1,
+          "description": "S3 access key (also MinIO root user)"
+        },
+        "secretKey": {
+          "type": "string",
+          "minLength": 1,
+          "description": "S3 secret key (also MinIO root password)"
+        },
+        "region": {
+          "type": "string",
+          "minLength": 1,
+          "default": "us-east-1",
+          "description": "S3 region"
+        },
+        "bucket": {
+          "type": "string",
+          "minLength": 1,
+          "default": "athyper",
+          "description": "S3 bucket name"
+        },
+        "useSSL": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use SSL/TLS for S3 connections"
+        }
+      },
+      "additionalProperties": false
+    },
+    "telemetry": {
+      "type": "object",
+      "properties": {
+        "otlpEndpoint": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OpenTelemetry collector endpoint (e.g. http://logshipper:4318)"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable telemetry export"
+        },
+        "serviceName": {
+          "type": "string",
+          "description": "Service name for telemetry spans"
+        },
+        "serviceVersion": {
+          "type": "string",
+          "description": "Service version for telemetry spans"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "RealmConfig": {
+      "type": "object",
+      "required": ["iam"],
+      "properties": {
+        "defaults": {
+          "type": "object",
+          "description": "Free-form realm-level defaults (feature flags, policies, etc.)",
+          "additionalProperties": true,
+          "default": {}
+        },
+        "iam": {
+          "type": "object",
+          "required": ["issuerUrl", "clientId"],
+          "properties": {
+            "issuerUrl": {
+              "type": "string",
+              "format": "uri",
+              "description": "OIDC issuer URL (e.g. https://iam.mesh.athyper.local/realms/athyper)"
+            },
+            "clientId": {
+              "type": "string",
+              "minLength": 1,
+              "description": "OIDC client ID"
+            },
+            "clientSecretRef": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Reference name for SUPERSTAR env secret resolution (ATHYPER_SUPER__IAM_SECRET__<ref>)"
+            }
+          },
+          "additionalProperties": false
+        },
+        "tenants": {
+          "type": "object",
+          "description": "Map of tenant keys to tenant configurations",
+          "additionalProperties": {
+            "$ref": "#/definitions/TenantConfig"
+          },
+          "default": {}
+        }
+      },
+      "additionalProperties": false
+    },
+    "TenantConfig": {
+      "type": "object",
+      "properties": {
+        "defaults": {
+          "type": "object",
+          "description": "Free-form tenant-level defaults (country, currency, timezone, etc.)",
+          "additionalProperties": true,
+          "default": {}
+        },
+        "orgs": {
+          "type": "object",
+          "description": "Map of org keys to org configurations",
+          "additionalProperties": {
+            "$ref": "#/definitions/OrgConfig"
+          },
+          "default": {}
+        }
+      },
+      "additionalProperties": false
+    },
+    "OrgConfig": {
+      "type": "object",
+      "properties": {
+        "defaults": {
+          "type": "object",
+          "description": "Free-form org-level defaults",
+          "additionalProperties": true,
+          "default": {}
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

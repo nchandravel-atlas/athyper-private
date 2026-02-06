@@ -4,12 +4,12 @@ import pino, { type Logger as PinoLogger, type LoggerOptions } from "pino";
 export type LogLevel = "fatal" | "error" | "warn" | "info" | "debug" | "trace";
 
 export interface Logger {
-    info(meta: any, msg?: string): void;
-    warn(meta: any, msg?: string): void;
-    error(meta: any, msg?: string): void;
-    debug(meta: any, msg?: string): void;
-    trace(meta: any, msg?: string): void;
-    fatal(meta: any, msg?: string): void;
+    info(metaOrMsg: any, msgOrMeta?: any): void;
+    warn(metaOrMsg: any, msgOrMeta?: any): void;
+    error(metaOrMsg: any, msgOrMeta?: any): void;
+    debug(metaOrMsg: any, msgOrMeta?: any): void;
+    trace(metaOrMsg: any, msgOrMeta?: any): void;
+    fatal(metaOrMsg: any, msgOrMeta?: any): void;
     log(msg: string): void;
 }
 

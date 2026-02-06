@@ -1,6 +1,6 @@
 {
     "$schema": "https://json.schemastore.org/tsconfig",
-    "extends": "@athyper/tsconfig/base",
+    "extends": "../../tooling/tsconfig/base.json",
     "compilerOptions": {
         "rootDir": "src",
         "outDir": "dist",
@@ -10,7 +10,9 @@
             "DOM.Iterable"
         ],
         "jsx": "react-jsx",
-        "verbatimModuleSyntax": true
+        "verbatimModuleSyntax": true,
+        "composite": false,
+        "incremental": false
     },
     "include": [
         "src"

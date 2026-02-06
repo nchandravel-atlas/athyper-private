@@ -3,6 +3,7 @@ import { loadConfig, KernelConfigError } from "./config";
 import { createKernelContainer } from "./container";
 import { registerKernelDefaults, installSignalHandlers } from "./container.defaults";
 import { registerAdapters } from "./container.adapters";
+import { registerMetaServices } from "./container.meta";
 import type { RuntimeMode } from "./config.schema";
 import { loadServices } from "../services/registry";
 import { TenantContextError } from "./tenantContext";
@@ -23,6 +24,12 @@ const EXIT_CODES: Record<string, number> = {
     CONFIG_VALIDATION_ERROR: 3,
     IAM_SECRET_REF_MISSING: 4,
     IAM_DEFAULT_REALM_MISSING: 5,
+
+    // Auth safety
+    ISSUER_REALM_MISMATCH: 6,
+    PROD_NONPROD_IDP: 7,
+    PROD_MISSING_BASE_URL: 8,
+    PROD_WILDCARD_REDIRECT: 9,
 
     // Tenant/realm resolution
     UNKNOWN_REALM: 20,
@@ -106,6 +113,13 @@ function errorToMeta(err: unknown): Record<string, unknown> {
     }
     if (err instanceof TenantContextError) {
         return { kind: "TenantContextError", code: err.code, message: err.message, meta: err.meta ?? null };
+    }
+    // RealmSafetyError has same shape (code + meta)
+    if (err instanceof Error && "code" in err && typeof (err as any).code === "string") {
+        const e = err as Error & { code: string; meta?: Record<string, unknown> };
+        if (EXIT_CODES[e.code]) {
+            return { kind: e.constructor.name, code: e.code, message: e.message, meta: e.meta ?? null };
+        }
     }
     if (err instanceof Error) {
         return { kind: "Error", name: err.name, message: err.message, stack: err.stack ?? null };
@@ -225,6 +239,15 @@ export async function bootstrap(): Promise<BootstrapResult> {
 
         boot.info("boot.summary", { bootId, ...bootSummary(config) });
 
+        // Environment guardrails (fail fast before DI setup)
+        {
+            const { assertEnvironmentGuardrails } = await import(
+                "../services/platform/foundation/security/realm-safety"
+            );
+            assertEnvironmentGuardrails(config);
+            boot.info("boot.env_guardrails.passed", { bootId, env: config.env });
+        }
+
         const container = createKernelContainer();
 
         // Pass env snapshot from config loader; do NOT read process.env elsewhere
@@ -239,6 +262,18 @@ export async function bootstrap(): Promise<BootstrapResult> {
 
         // Register adapters (DB, cache, storage, telemetry, auth)
         registerAdapters(container, config);
+
+        // Register META Engine services
+        await registerMetaServices(container, config);
+
+        // Boot-time realm safety: verify IdP issuer matches config (staging/production only)
+        {
+            const { assertBootRealmSafety } = await import(
+                "../services/platform/foundation/security/realm-safety"
+            );
+            await assertBootRealmSafety(config);
+            boot.info("boot.realm_safety.passed", { bootId, env: config.env });
+        }
 
         // Now DI is ready: switch boot logs to container logger + get audit writer
         const logger = await container.resolve<any>(TOKENS.logger);

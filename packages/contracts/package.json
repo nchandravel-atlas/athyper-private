@@ -26,12 +26,12 @@
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
-    "zod": "^3.24.0"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@athyper/tsconfig": "workspace:*",
     "tsup": "^8.3.0",
     "rimraf": "^6.0.1",
-    "typescript": "^5.6.3"
+    "typescript": "^5.9.3"
   }
 }

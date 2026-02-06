@@ -1,0 +1,21 @@
+# =======================================================================
+# Stack       : athyper Mesh – Core Infrastructure & Observability
+# Maintainer  : Atlas Digital Technology Solutions (athyper Team)
+# Environment : local
+# Version     : 1.0.0
+# Compose     : mesh-override-local-config
+#
+# Description :
+#   Local development environment overrides for athyper Mesh stack.
+#   Add local-specific service configurations here (e.g., debug settings,
+#   development volumes, hot-reload mounts).
+#
+# =======================================================================
+
+services:
+  memorycache:
+    ports:
+      - "6379:6379"
+    networks:
+      internal: null
+      edge: null

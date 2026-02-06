@@ -53,11 +53,44 @@ const RealmConfigSchema = z.object({
         clientSecretRef: z.string().min(1).optional(),
     }),
 
+    /**
+     * Redirect URI allowlist for this realm.
+     * In production, no wildcards are permitted.
+     */
+    redirectUriAllowlist: z.array(z.string()).default([]),
+
+    /**
+     * Auth feature flags for gradual rollout.
+     */
+    featureFlags: z.object({
+        /** Enable Redis-backed BFF sessions (vs. cookie-only). */
+        bffSessions: Bool.default(false),
+        /** Enable refresh token rotation on every use. */
+        refreshRotation: Bool.default(false),
+        /** Enable CSRF double-submit enforcement. */
+        csrfProtection: Bool.default(false),
+        /** Enable strict JWT issuer validation at API boundary. */
+        strictIssuerCheck: Bool.default(false),
+        /** Enable PKCE authorization code flow (vs. direct grant). */
+        pkceFlow: Bool.default(false),
+    }).default({}),
+
+    /**
+     * Platform-level IAM security minimums.
+     * Tenants cannot configure values weaker than these.
+     */
+    platformMinimums: z.object({
+        passwordMinLength: z.coerce.number().int().min(1).default(8),
+        passwordHistory: z.coerce.number().int().min(0).default(1),
+        maxLoginFailures: z.coerce.number().int().min(1).default(10),
+        lockoutDurationMinutes: z.coerce.number().int().min(1).default(5),
+    }).default({}),
+
     tenants: z.record(TenantConfigSchema).default({}),
 });
 
 export const RuntimeConfigSchema = z.object({
-    env: z.enum(["local", "staging", "prod"]).default("local"),
+    env: z.enum(["local", "staging", "production"]).default("local"),
     mode: RuntimeModeSchema.default("api"),
     serviceName: z.string().min(1).default("athyper-runtime"),
     port: z.coerce.number().int().positive().default(3000),

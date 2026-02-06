@@ -33,9 +33,14 @@ Security features and best practices
 ### [Deployment](./deployment/README.md)
 Deployment guides for all environments
 - [Quick Start](./deployment/QUICKSTART.md)
+- [Environments](./deployment/ENVIRONMENTS.md) - Local, Staging, Production setup
 - [Configuration](./deployment/CONFIGURATION.md)
 - [Environment Variables](./deployment/ENVIRONMENT_VARIABLES.md)
 - [Production Deployment](./deployment/PRODUCTION.md)
+
+### [MESH Infrastructure](../mesh/README.md)
+
+Local infrastructure stack documentation
 
 ### [API Reference](./api/README.md)
 Complete API documentation

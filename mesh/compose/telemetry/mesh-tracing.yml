@@ -1,7 +1,7 @@
 # =======================================================================
 # Stack       : athyper Mesh – Core Infrastructure & Observability
 # Maintainer  : Atlas Digital Technology Solutions (athyper Team)
-# Environment : local-dev | staging | prod
+# Environment : local | staging | production
 # Version     : 1.0.0
 # Compose     : mesh-tracing-config
 #
@@ -13,7 +13,7 @@ services:
   tracing:
     image: grafana/tempo:2.9.0
     profiles: ["mesh", "telemetry"]
-    mem_limit: "${MESH_TRACING_MEMORY_LIMIT}"
+    mem_limit: "${TRACING_MEMORY_LIMIT}"
     command: ["-config.file=/etc/tempo.yml"]
     volumes:
       - ${MESH_CONFIG}/telemetry/tracing/config.yml:/etc/tempo.yml:ro
@@ -38,8 +38,8 @@ services:
       - traefik.docker.network=athyper-mesh-edge
       - traefik.enable=true
       - traefik.http.routers.tracing.entrypoints=websecure
-      - traefik.http.routers.tracing.middlewares=${MESH_DASHBOARD_AUTH_MW}
-      - traefik.http.routers.tracing.rule=Host(`${MESH_TRACES_HOST}`)
-      - traefik.http.routers.tracing.tls.options=${MESH_TLS_OPTIONS}
+      - traefik.http.routers.tracing.middlewares=${DASHBOARD_AUTH_MW}
+      - traefik.http.routers.tracing.rule=Host(`${TRACES_HOST}`)
+      - traefik.http.routers.tracing.tls.options=${GATEWAY_TLS_OPTIONS}
       - traefik.http.routers.tracing.tls=true
       - traefik.http.services.tracing.loadbalancer.server.port=3200

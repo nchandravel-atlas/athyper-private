@@ -1,15 +1,32 @@
 # =======================================================================
 # Stack       : athyper Mesh – Core Infrastructure & Observability
 # Maintainer  : Atlas Digital Technology Solutions (athyper Team)
-# Environment : local-dev | staging | prod
+# Environment : local | staging | production
 # Version     : 1.0.0
 # Compose     : mesh-apps-athyper-config
 #
 # Description :
+#   Neon App (athyper-web) serves workbench UIs at neon.athyper.local
+#   with path-based routing for different personas:
+#     - /buyer    → Buyer Workbench (public, role-gated)
+#     - /partner  → Partner Workbench (public, role-gated)
+#     - /admin    → Admin Workbench (restricted: role + IP)
+#     - /network  → Network Workbench (public, role-gated)
+#     - /ops      → Ops Workbench (restricted: role + IP)
+#
+#   Runtime API (athyper-api) serves the backend at api.athyper.local
+#
+#   Workbench routes are configured in:
+#     mesh/config/gateway/dynamic/mesh.workbench.yml
 #
 # =======================================================================
 
 services:
+  # -------------------------------------------------------------------------
+  # Neon App - Single app serving all workbench personas via path routing
+  # Host: neon.athyper.local
+  # Paths: /buyer, /partner, /admin, /network, /ops
+  # -------------------------------------------------------------------------
   athyper-web:
     image: traefik/whoami:v1.10
     profiles: ["mesh", "gateway", "apps"]
@@ -36,14 +53,15 @@ services:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
     labels:
+      # Service discovery only - routing defined in mesh.workbench.yml
       - traefik.enable=true
       - traefik.docker.network=athyper-mesh-edge
-      - traefik.http.routers.athyper-web.entrypoints=websecure
-      - traefik.http.routers.athyper-web.rule=Host(`${APPS_ATHYPER_WEB_HOST}`)
-      - traefik.http.routers.athyper-web.tls.options=${MESH_TLS_OPTIONS}
-      - traefik.http.routers.athyper-web.tls=true
       - traefik.http.services.athyper-web.loadbalancer.server.port=80
 
+  # -------------------------------------------------------------------------
+  # Runtime API - Backend services
+  # Host: api.athyper.local
+  # -------------------------------------------------------------------------
   athyper-api:
     image: traefik/whoami:v1.10
     profiles: ["mesh", "gateway", "apps"]
@@ -74,6 +92,6 @@ services:
       - traefik.docker.network=athyper-mesh-edge
       - traefik.http.routers.athyper-api.entrypoints=websecure
       - traefik.http.routers.athyper-api.rule=Host(`${APPS_ATHYPER_API_HOST}`)
-      - traefik.http.routers.athyper-api.tls.options=${MESH_TLS_OPTIONS}
+      - traefik.http.routers.athyper-api.tls.options=${GATEWAY_TLS_OPTIONS}
       - traefik.http.routers.athyper-api.tls=true
       - traefik.http.services.athyper-api.loadbalancer.server.port=80

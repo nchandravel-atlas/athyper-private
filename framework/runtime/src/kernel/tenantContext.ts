@@ -86,7 +86,7 @@ export function resolveContextFromRequest(
     cfg: RuntimeConfig,
     req: RequestLike,
 ): TenantContext {
-    const isProd = cfg.env === "prod";
+    const isProd = cfg.env === "production";
     const strict = isProd && cfg.iam.requireTenantClaimsInProd === true;
 
     const hRealm = getHeader(req, "x-realm");

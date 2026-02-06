@@ -1,14 +1,54 @@
-﻿/**
- *  ()
- * Depends on: 
- * Tenant scoped: 
- * Subscription: 
+/**
+ * Identity & Access Management Module
  *
- * This is the module composition root. Export public wiring only:
- * - routers (REST/GraphQL), service factories, DI bindings, etc.
+ * Provides identity mapping, role binding, group sync, and tenant resolution services.
  */
-export const moduleCode = "";
-export const moduleName = "";
 
-// TODO: export router/bindings when implemented
-export {};
+export const moduleCode = "identity-access";
+export const moduleName = "Identity & Access Management";
+
+// Services
+export { EntitlementSnapshotService } from "./entitlement-snapshot.service.js";
+export { GroupSyncService } from "./group-sync.service.js";
+export { IdentityMapperService } from "./identity-mapper.service.js";
+export { OUMembershipService } from "./ou-membership.service.js";
+export { RoleBindingService } from "./role-binding.service.js";
+export { TenantResolverService } from "./tenant-resolver.service.js";
+
+// Factory
+export { createIAMServices, type IAMServices } from "./iam-factory.service.js";
+
+// Types re-exported from services
+export type {
+  PrincipalType,
+  PrincipalStatus,
+  IdpIdentityInfo,
+  PrincipalResult,
+} from "./identity-mapper.service.js";
+
+export type {
+  TenantStatus,
+  SubscriptionTier,
+  TenantInfo,
+  TenantProfileInfo,
+} from "./tenant-resolver.service.js";
+
+export type {
+  GroupSourceType,
+  GroupInfo,
+  GroupMemberInfo,
+} from "./group-sync.service.js";
+
+export type {
+  ScopeKind,
+  ScopeMode,
+  RoleInfo,
+  RoleBindingInfo,
+} from "./role-binding.service.js";
+
+export type {
+  OUNodeInfo,
+  PrincipalAttributeInfo,
+} from "./ou-membership.service.js";
+
+export type { EntitlementSnapshot } from "./entitlement-snapshot.service.js";

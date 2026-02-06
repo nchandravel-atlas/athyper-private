@@ -1,0 +1,68 @@
+{
+  "$schema": "./kernel.config.schema.json",
+  "$comment": "Production Environment - live production system",
+
+  "env": "production",
+  "mode": "api",
+  "serviceName": "athyper-runtime",
+  "port": 3000,
+
+  "logLevel": "warn",
+  "shutdownTimeoutMs": 60000,
+
+  "publicBaseUrl": "https://api.athyper.com",
+  "publicWebUrl": "https://neon.athyper.com",
+
+  "db": {
+    "url": "${DATABASE_URL}",
+    "adminUrl": "${DATABASE_ADMIN_URL}",
+    "poolMax": 50
+  },
+
+  "redis": {
+    "url": "${REDIS_URL}"
+  },
+
+  "s3": {
+    "endpoint": "${S3_ENDPOINT}",
+    "accessKey": "${S3_ACCESS_KEY}",
+    "secretKey": "${S3_SECRET_KEY}",
+    "region": "${S3_REGION}",
+    "bucket": "${S3_BUCKET}",
+    "useSSL": true
+  },
+
+  "iam": {
+    "strategy": "single_realm",
+    "defaultRealmKey": "athyper",
+    "defaultTenantKey": null,
+    "defaultOrgKey": null,
+    "requireTenantClaimsInProd": true,
+    "realms": {
+      "athyper": {
+        "iam": {
+          "issuerUrl": "${IAM_ISSUER_URL}",
+          "clientId": "${IAM_CLIENT_ID}",
+          "clientSecretRef": "IAM_ATHYPER_CLIENT_SECRET"
+        },
+        "defaults": {
+          "features": {
+            "metaStudio": false,
+            "debugMode": false
+          },
+          "policies": {
+            "strictTenantIsolation": true
+          }
+        },
+        "tenants": {}
+      }
+    }
+  },
+
+  "telemetry": {
+    "enabled": true,
+    "otlpEndpoint": "${OTLP_ENDPOINT}",
+    "serviceName": "athyper-runtime",
+    "serviceVersion": "${SERVICE_VERSION}"
+  }
+}

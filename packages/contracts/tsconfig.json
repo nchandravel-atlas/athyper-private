@@ -8,6 +8,8 @@
             "ES2022"
         ],
         "verbatimModuleSyntax": true,
+        "composite": false,
+        "incremental": false,
         "types": [
             "node"
         ]

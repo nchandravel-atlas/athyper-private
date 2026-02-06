@@ -4,25 +4,45 @@ export const TenantAggregateResultSchema = z.object({  _count: z.object({
     code: z.number(),
     name: z.number(),
     status: z.number(),
+    region: z.number(),
     subscription: z.number(),
     createdAt: z.number(),
-    createdBy: z.number()
+    createdBy: z.number(),
+    updatedAt: z.number(),
+    updatedBy: z.number(),
+    principals: z.number(),
+    groups: z.number(),
+    tenantProfile: z.number(),
+    idpIdentities: z.number(),
+    groupMembers: z.number(),
+    roles: z.number(),
+    roleBindings: z.number(),
+    ouNodes: z.number(),
+    principalAttributes: z.number(),
+    entitlementSnapshots: z.number(),
+    principalProfiles: z.number()
   }).optional(),
   _min: z.object({
     id: z.string().nullable(),
     code: z.string().nullable(),
     name: z.string().nullable(),
     status: z.string().nullable(),
+    region: z.string().nullable(),
     subscription: z.string().nullable(),
     createdAt: z.date().nullable(),
-    createdBy: z.string().nullable()
+    createdBy: z.string().nullable(),
+    updatedAt: z.date().nullable(),
+    updatedBy: z.string().nullable()
   }).nullable().optional(),
   _max: z.object({
     id: z.string().nullable(),
     code: z.string().nullable(),
     name: z.string().nullable(),
     status: z.string().nullable(),
+    region: z.string().nullable(),
     subscription: z.string().nullable(),
     createdAt: z.date().nullable(),
-    createdBy: z.string().nullable()
+    createdBy: z.string().nullable(),
+    updatedAt: z.date().nullable(),
+    updatedBy: z.string().nullable()
   }).nullable().optional()});

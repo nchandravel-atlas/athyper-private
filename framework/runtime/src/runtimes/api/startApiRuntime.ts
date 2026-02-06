@@ -8,7 +8,7 @@ import type { Container } from "../../kernel/container";
 import type { HttpServer } from "../../kernel/httpServer";
 import type { Lifecycle } from "../../kernel/lifecycle";
 import type { Logger } from "../../kernel/logger";
-import type { RouteRegistry } from "../../registries/routes.registry";
+import type { RouteRegistry } from "../../services/platform/foundation/registries/routes.registry.js";
 
 export async function startApiRuntime(container: Container) {
     const config = await container.resolve<RuntimeConfig>(TOKENS.config);

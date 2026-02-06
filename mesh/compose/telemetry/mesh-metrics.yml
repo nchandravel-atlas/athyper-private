@@ -1,7 +1,7 @@
 # =======================================================================
 # Stack       : athyper Mesh – Core Infrastructure & Observability
 # Maintainer  : Atlas Digital Technology Solutions (athyper Team)
-# Environment : local-dev | staging | prod
+# Environment : local | staging | production
 # Version     : 1.0.0
 # Compose     : mesh-metrics-config
 #
@@ -13,7 +13,7 @@ services:
   metrics:
     image: prom/prometheus:v3.9.1
     profiles: ["mesh", "telemetry"]
-    mem_limit: "${MESH_METRICS_MEMORY_LIMIT}"
+    mem_limit: "${METRICS_MEMORY_LIMIT}"
     volumes:
       - ${MESH_CONFIG}/telemetry/metrics/config.yml:/etc/prometheus/prometheus.yml:ro
       - ${MESH_DATA}/telemetry/metrics:/prometheus
@@ -40,8 +40,8 @@ services:
       - traefik.docker.network=athyper-mesh-edge
       - traefik.enable=true
       - traefik.http.routers.metrics.entrypoints=websecure
-      - traefik.http.routers.metrics.middlewares=${MESH_DASHBOARD_AUTH_MW}
-      - traefik.http.routers.metrics.rule=Host(`${MESH_METRICS_HOST}`)
-      - traefik.http.routers.metrics.tls.options=${MESH_TLS_OPTIONS}
+      - traefik.http.routers.metrics.middlewares=${DASHBOARD_AUTH_MW}
+      - traefik.http.routers.metrics.rule=Host(`${METRICS_HOST}`)
+      - traefik.http.routers.metrics.tls.options=${GATEWAY_TLS_OPTIONS}
       - traefik.http.routers.metrics.tls=true
       - traefik.http.services.metrics.loadbalancer.server.port=9090

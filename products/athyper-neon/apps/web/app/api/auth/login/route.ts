@@ -1,31 +1,57 @@
 import { NextResponse } from "next/server";
-import { keycloakPasswordGrant } from "@neon/auth/keycloak";
-import { setSession } from "@neon/auth/session";
+import { generatePkceChallenge, buildAuthorizationUrl } from "@neon/auth/keycloak";
 
-export async function POST(req: Request) {
-  try {
-    const { username, password, workbench } = await req.json();
+// Lazy Redis client for PKCE state storage
+async function getRedisClient() {
+    const { createClient } = await import("redis");
+    const url = process.env.REDIS_URL ?? "redis://localhost:6379/0";
+    const client = createClient({ url });
+    if (!client.isOpen) await client.connect();
+    return client;
+}
 
-    if (!username || !password || !workbench) {
-      return new NextResponse("Missing username/password/workbench", { status: 400 });
-    }
+/**
+ * GET /api/auth/login?workbench=admin&returnUrl=/dashboard
+ *
+ * Initiates PKCE Authorization Code flow:
+ * 1. Generate PKCE challenge + state
+ * 2. Store { codeVerifier, state, workbench, returnUrl } in Redis (TTL 300s)
+ * 3. Redirect to Keycloak authorization endpoint
+ */
+export async function GET(req: Request) {
+    const url = new URL(req.url);
+    const workbench = url.searchParams.get("workbench") ?? "user";
+    const returnUrl = url.searchParams.get("returnUrl") ?? "/";
 
     const baseUrl = process.env.KEYCLOAK_BASE_URL ?? "http://keycloak.local";
     const realm = process.env.KEYCLOAK_REALM ?? "neon-dev";
     const clientId = process.env.KEYCLOAK_CLIENT_ID ?? "neon-web";
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL ?? "http://localhost:3000";
+    const redirectUri = `${publicBaseUrl}/api/auth/callback`;
 
-    const session = await keycloakPasswordGrant({
-      baseUrl,
-      realm,
-      clientId,
-      username,
-      password,
-      workbench
+    const { codeVerifier, codeChallenge, state } = generatePkceChallenge();
+
+    // Store PKCE state in Redis (short TTL)
+    const redis = await getRedisClient();
+    try {
+        await redis.set(
+            `pkce_state:${state}`,
+            JSON.stringify({ codeVerifier, workbench, returnUrl }),
+            { EX: 300 },
+        );
+    } finally {
+        await redis.quit();
+    }
+
+    const authUrl = buildAuthorizationUrl({
+        baseUrl,
+        realm,
+        clientId,
+        redirectUri,
+        codeChallenge,
+        state,
+        prompt: "login", // Force Keycloak to show login form (prevents SSO session reuse after logout)
     });
 
-    setSession(session);
-    return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return new NextResponse(e?.message ?? "Login error", { status: 401 });
-  }
+    return NextResponse.redirect(authUrl);
 }

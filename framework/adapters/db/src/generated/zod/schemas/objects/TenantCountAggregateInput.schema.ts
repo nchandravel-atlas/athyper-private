@@ -7,9 +7,12 @@ const makeSchema = () => z.object({
   code: z.literal(true).optional(),
   name: z.literal(true).optional(),
   status: z.literal(true).optional(),
+  region: z.literal(true).optional(),
   subscription: z.literal(true).optional(),
   createdAt: z.literal(true).optional(),
   createdBy: z.literal(true).optional(),
+  updatedAt: z.literal(true).optional(),
+  updatedBy: z.literal(true).optional(),
   _all: z.literal(true).optional()
 }).strict();
 export const TenantCountAggregateInputObjectSchema: z.ZodType<Prisma.TenantCountAggregateInputType> = makeSchema() as unknown as z.ZodType<Prisma.TenantCountAggregateInputType>;

@@ -12,9 +12,9 @@ import {
     GracefulShutdown,
 } from "@athyper/core";
 
-import { ServiceRegistry } from "../registries/services.registry";
-import { RouteRegistry } from "../registries/routes.registry";
-import { JobRegistry } from "../registries/jobs.registry";
+import { ServiceRegistry } from "../services/platform/foundation/registries/services.registry.js";
+import { RouteRegistry } from "../services/platform/foundation/registries/routes.registry.js";
+import { JobRegistry } from "../services/platform/foundation/registries/jobs.registry.js";
 
 export interface KernelDefaultsOptions {
     /**

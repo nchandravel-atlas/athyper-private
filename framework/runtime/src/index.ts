@@ -11,9 +11,9 @@ export * from "./kernel/tokens";
 export * from "./services/registry";
 
 // Registries (optional export if other packages contribute definitions)
-export * from "./registries/routes.registry";
-export * from "./registries/jobs.registry";
-export * from "./registries/services.registry";
+export * from "./services/platform/foundation/registries/routes.registry.js";
+export * from "./services/platform/foundation/registries/jobs.registry.js";
+export * from "./services/platform/foundation/registries/services.registry.js";
 
 // Telemetry adapters
 export * from "./adapters/telemetry/index";

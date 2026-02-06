@@ -42,17 +42,7 @@ echo Generating mesh TLS certificates...
 mkcert.exe ^
   -cert-file "%CERT_DIR%\mesh.tls.local.crt" ^
   -key-file  "%CERT_DIR%\mesh.tls.local.key" ^
-  mesh.gateway.local ^
-  mesh.iam.local ^
-  mesh.objectstorage.local ^
-  mesh.objectstorage.console.local ^
-  mesh.memorycache.local ^
-  mesh.telemetry.local ^
-  mesh.metrics.local ^
-  mesh.traces.local ^
-  mesh.logs.local ^
-  athyper.local ^
-  athyper.api.local
+  *.athyper.local *.mesh.athyper.local
 
 if errorlevel 1 (
   echo ❌ Certificate generation failed

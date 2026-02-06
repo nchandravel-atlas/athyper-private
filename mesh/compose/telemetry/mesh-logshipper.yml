@@ -1,7 +1,7 @@
 # =======================================================================
 # Stack       : athyper Mesh – Core Infrastructure & Observability
 # Maintainer  : Atlas Digital Technology Solutions (athyper Team)
-# Environment : local-dev | staging | prod
+# Environment : local | staging | production
 # Version     : 1.0.0
 # Compose     : mesh-logshipper-config
 #
@@ -13,7 +13,7 @@ services:
   logshipper:
     image: grafana/alloy:v1.12.2
     profiles: ["mesh", "telemetry"]
-    mem_limit: "${MESH_LOGSHIPPER_MEMORY_LIMIT}"
+    mem_limit: "${LOGSHIPPER_MEMORY_LIMIT}"
     command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

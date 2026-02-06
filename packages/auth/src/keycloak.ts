@@ -31,7 +31,11 @@ export async function keycloakPasswordGrant(params: {
     throw new Error(`Keycloak login failed (${res.status}): ${txt}`);
   }
 
-  const json = await res.json();
+  const json = await res.json() as {
+    access_token: string;
+    refresh_token: string;
+    expires_in?: number;
+  };
   const now = Math.floor(Date.now() / 1000);
   const expiresIn = Number(json.expires_in ?? 300);
 
@@ -43,7 +47,7 @@ export async function keycloakPasswordGrant(params: {
 
   let roles: string[] = [];
   if (uiRes.ok) {
-    const ui = await uiRes.json();
+    const ui = await uiRes.json() as { realm_access?: { roles?: string[] } };
     roles = ui?.realm_access?.roles ?? [];
   }
 

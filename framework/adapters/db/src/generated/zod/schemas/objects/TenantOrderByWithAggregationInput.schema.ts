@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
 import { SortOrderSchema } from '../enums/SortOrder.schema';
+import { SortOrderInputObjectSchema as SortOrderInputObjectSchema } from './SortOrderInput.schema';
 import { TenantCountOrderByAggregateInputObjectSchema as TenantCountOrderByAggregateInputObjectSchema } from './TenantCountOrderByAggregateInput.schema';
 import { TenantMaxOrderByAggregateInputObjectSchema as TenantMaxOrderByAggregateInputObjectSchema } from './TenantMaxOrderByAggregateInput.schema';
 import { TenantMinOrderByAggregateInputObjectSchema as TenantMinOrderByAggregateInputObjectSchema } from './TenantMinOrderByAggregateInput.schema'
@@ -10,9 +11,12 @@ const makeSchema = () => z.object({
   code: SortOrderSchema.optional(),
   name: SortOrderSchema.optional(),
   status: SortOrderSchema.optional(),
+  region: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   subscription: SortOrderSchema.optional(),
   createdAt: SortOrderSchema.optional(),
   createdBy: SortOrderSchema.optional(),
+  updatedAt: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
+  updatedBy: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   _count: z.lazy(() => TenantCountOrderByAggregateInputObjectSchema).optional(),
   _max: z.lazy(() => TenantMaxOrderByAggregateInputObjectSchema).optional(),
   _min: z.lazy(() => TenantMinOrderByAggregateInputObjectSchema).optional()

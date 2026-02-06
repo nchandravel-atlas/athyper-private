@@ -27,18 +27,569 @@ datasource db {
 }
 
 // -----------------
-// model
+// Core Models
 // -----------------
 model Tenant {
-  id           String   @id @default(uuid()) @db.Uuid
-  code         String   @unique
+  id           String    @id @default(uuid()) @db.Uuid
+  code         String    @unique
   name         String
-  status       String   @default("active")
-  subscription String   @default("base")
+  status       String    @default("active") // active, suspended, archived
+  region       String?
+  subscription String    @default("base") // base, professional, enterprise
+
+  createdAt    DateTime  @default(now()) @map("created_at")
+  createdBy    String    @map("created_by")
+  updatedAt    DateTime? @map("updated_at")
+  updatedBy    String?   @map("updated_by")
+
+  // Relations
+  principals         Principal[]
+  groups             Group[]
+  tenantProfile      TenantProfile?
+  idpIdentities      IdpIdentity[]
+  groupMembers       GroupMember[]
+  roles              Role[]
+  roleBindings       RoleBinding[]
+  ouNodes            OuNode[]
+  principalAttributes PrincipalAttribute[]
+  entitlementSnapshots EntitlementSnapshot[]
+  principalProfiles  PrincipalProfile[]
+
+  @@map("tenant")
+  @@schema("core")
+}
+
+// -----------------
+// IAM Models (B1-B6) - Aligned with existing SQL tables
+// -----------------
+
+/// B1: Principal - Canonical athyper actor (user/service/external)
+model Principal {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  principalType  String   @map("principal_type") // user, service, external
+  status         String   @default("active") // active, disabled, archived
+  displayName    String?  @map("display_name")
+  email          String?
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String   @map("created_by")
+
+  // Relations
+  tenant         Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  idpIdentities  IdpIdentity[]
+  profile        PrincipalProfile?
+  groupMemberships GroupMember[]
+  roleBindings   RoleBinding[]
+  attributes     PrincipalAttribute[]
+  entitlementSnapshots EntitlementSnapshot[]
+
+  @@index([tenantId])
+  @@index([principalType])
+  @@index([status])
+  @@map("principal")
+  @@schema("core")
+}
+
+/// B1: IdP Identity - Maps external IdP (realm/provider/subject) to principal
+model IdpIdentity {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  principalId   String   @map("principal_id") @db.Uuid
+  realm         String   // Keycloak realm
+  provider      String   // keycloak, auth0, okta, etc.
+  subject       String   // user.sub from IdP (immutable)
+  username      String?  // Optional username
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  createdBy     String   @map("created_by")
+
+  // Relations
+  principal     Principal @relation(fields: [principalId], references: [id], onDelete: Cascade)
+  tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, realm, provider, subject])
+  @@index([principalId])
+  @@index([tenantId])
+  @@index([subject])
+  @@map("idp_identity")
+  @@schema("core")
+}
+
+/// B1: Principal Profile - Extended profile attributes
+model PrincipalProfile {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  principalId  String   @unique @map("principal_id") @db.Uuid
+  locale       String?
+  language     String?
+  uiPrefs      Json?    @map("ui_prefs")
+  avatarUrl    String?  @map("avatar_url")
 
   createdAt    DateTime @default(now()) @map("created_at")
   createdBy    String   @map("created_by")
+  updatedAt    DateTime? @map("updated_at")
+  updatedBy    String?  @map("updated_by")
 
-  @@map("tenant")
+  // Relations
+  principal    Principal @relation(fields: [principalId], references: [id], onDelete: Cascade)
+  tenant       Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, principalId])
+  @@map("principal_profile")
+  @@schema("core")
+}
+
+/// B2: Tenant Profile - Tenant operational defaults
+model TenantProfile {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @unique @map("tenant_id") @db.Uuid
+  currency   String?
+  locale     String?
+  timezone   String?
+  fiscalYearStartMonth Int? @map("fiscal_year_start_month")
+  securityDefaults Json? @map("security_defaults")
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdBy  String   @map("created_by")
+  updatedAt  DateTime? @map("updated_at")
+  updatedBy  String?  @map("updated_by")
+
+  // Relations
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("tenant_profile")
+  @@schema("core")
+}
+
+/// B3: Group - Groups (local/idp/import source)
+model Group {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  code        String   // Unique within tenant
+  name        String
+  sourceType  String   @default("local") @map("source_type") // local, idp, import
+  sourceRef   String?  @map("source_ref") // External IdP group ID
+  isActive    Boolean  @default(true) @map("is_active")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   String   @map("created_by")
+
+  // Relations
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members     GroupMember[]
+  roleBindings RoleBinding[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([sourceType])
+  @@index([sourceRef])
+  @@index([isActive])
+  @@map("group")
+  @@schema("core")
+}
+
+/// B3: Group Member - Group membership with optional validity period
+model GroupMember {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  groupId     String    @map("group_id") @db.Uuid
+  principalId String    @map("principal_id") @db.Uuid
+  validFrom   DateTime? @map("valid_from")
+  validUntil  DateTime? @map("valid_until")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   String   @map("created_by")
+
+  // Relations
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  group       Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  principal   Principal @relation(fields: [principalId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, groupId, principalId])
+  @@index([groupId])
+  @@index([tenantId, principalId])
+  @@map("group_member")
+  @@schema("core")
+}
+
+/// B4: Role - Role definitions with scope mode
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  code        String   // Unique within tenant
+  name        String
+  scopeMode   String   @default("tenant") @map("scope_mode") // tenant, ou, entity
+  isActive    Boolean  @default(true) @map("is_active")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   String   @map("created_by")
+
+  // Relations
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  roleBindings RoleBinding[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([code])
+  @@index([isActive])
+  @@map("role")
+  @@schema("core")
+}
+
+/// B4: Role Binding - Binds roles to principals or groups with scoping
+model RoleBinding {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  roleId      String    @map("role_id") @db.Uuid
+  principalId String?   @map("principal_id") @db.Uuid
+  groupId     String?   @map("group_id") @db.Uuid
+  scopeKind   String    @default("tenant") @map("scope_kind") // tenant, ou, entity
+  scopeKey    String?   @map("scope_key") // ou_node_id or entity_name/id
+  priority    Int       @default(100)
+  validFrom   DateTime? @map("valid_from")
+  validUntil  DateTime? @map("valid_until")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  createdBy   String    @map("created_by")
+
+  // Relations
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  role        Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  principal   Principal? @relation(fields: [principalId], references: [id], onDelete: Cascade)
+  group       Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([roleId])
+  @@index([principalId])
+  @@index([groupId])
+  @@index([tenantId])
+  @@index([scopeKind, scopeKey])
+  @@index([validFrom, validUntil])
+  @@map("role_binding")
+  @@schema("core")
+}
+
+/// B5: OU Node - Organizational Unit hierarchy (materialized path)
+model OuNode {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  parentId      String?  @map("parent_id") @db.Uuid
+  code          String   // Unique within tenant
+  name          String
+  path          String   // Materialized path for subtree checks
+  depth         Int      @default(0)
+  isActive      Boolean  @default(true) @map("is_active")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  createdBy     String   @map("created_by")
+
+  // Relations
+  tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parentNode    OuNode? @relation("OuNodeHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  childNodes    OuNode[] @relation("OuNodeHierarchy")
+
+  @@unique([tenantId, code])
+  @@unique([tenantId, path])
+  @@index([tenantId])
+  @@index([parentId])
+  @@index([tenantId, path])
+  @@map("ou_node")
+  @@schema("core")
+}
+
+/// B5: Principal Attribute - ABAC attributes + OU membership
+model PrincipalAttribute {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  principalId    String    @map("principal_id") @db.Uuid
+  attrKey        String    @map("attr_key")
+  attrValue      String    @map("attr_value")
+  validFrom      DateTime? @map("valid_from")
+  validUntil     DateTime? @map("valid_until")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String   @map("created_by")
+
+  // Relations
+  tenant         Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  principal      Principal @relation(fields: [principalId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, principalId, attrKey])
+  @@map("principal_attribute")
+  @@schema("core")
+}
+
+/// B6: Entitlement Snapshot - Cached effective entitlements with TTL
+model EntitlementSnapshot {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  principalId String   @map("principal_id") @db.Uuid
+  snapshot    Json     // Cached entitlement data
+  expiresAt   DateTime @map("expires_at")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  principal   Principal @relation(fields: [principalId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, principalId])
+  @@index([tenantId])
+  @@index([principalId])
+  @@index([expiresAt])
+  @@map("entitlement_snapshot")
+  @@schema("core")
+}
+
+// -----------------
+// META Engine Models
+// -----------------
+
+/// Entity definition (top-level entity like "Invoice", "Order")
+model MetaEntity {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String   @unique
+  description    String?
+  activeVersion  String?  @map("active_version")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  createdBy      String   @map("created_by")
+
+  // Relations
+  versions       MetaVersion[]
+
+  @@map("meta_entities")
+  @@schema("meta")
+}
+
+/// Entity version with schema definition
+model MetaVersion {
+  id          String   @id @default(uuid()) @db.Uuid
+  entityName  String   @map("entity_name")
+  version     String
+  schema      Json     // EntitySchema as JSON (fields, policies, etc.)
+  isActive    Boolean  @default(false) @map("is_active")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   String   @map("created_by")
+
+  // Relations
+  entity      MetaEntity @relation(fields: [entityName], references: [name], onDelete: Cascade)
+
+  @@unique([entityName, version])
+  @@index([entityName])
+  @@index([entityName, isActive])
+  @@map("meta_versions")
+  @@schema("meta")
+}
+
+/// Audit log for metadata changes and policy decisions
+model MetaAudit {
+  id           String   @id @default(uuid()) @db.Uuid
+  eventId      String   @unique @map("event_id")
+  eventType    String   @map("event_type")
+  timestamp    DateTime @default(now())
+
+  // Actor
+  userId       String   @map("user_id")
+  tenantId     String   @map("tenant_id")
+  realmId      String   @map("realm_id")
+
+  // Context
+  action       String
+  resource     String
+
+  // Details
+  details      Json?
+
+  // Result
+  result       String   // "success" | "failure"
+  errorMessage String?  @map("error_message")
+
+  @@index([tenantId, timestamp(sort: Desc)])
+  @@index([userId, timestamp(sort: Desc)])
+  @@index([resource, timestamp(sort: Desc)])
+  @@index([eventType])
+  @@map("meta_audit")
+  @@schema("meta")
+}
+
+// -----------------
+// META Policy Models (Authorization)
+// -----------------
+
+/// Operation catalog - defines all operations (ENTITY.READ, WF.APPROVE, etc.)
+model Operation {
+  id          String   @id @default(uuid()) @db.Uuid
+  namespace   String   // ENTITY, WORKFLOW, UTIL, DELEGATION, COLLAB
+  code        String   // READ, CREATE, UPDATE, DELETE, APPROVE, etc.
+  sortOrder   Int?     @map("sort_order")
+  name        String
+  description String?
+  sourceType  String   @default("system") @map("source_type")
+  sourceRef   String?  @map("source_ref")
+  isActive    Boolean  @default(true) @map("is_active")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   String   @map("created_by")
+  updatedAt   DateTime? @map("updated_at")
+  updatedBy   String?  @map("updated_by")
+
+  // Relations
+  ruleOperations PermissionRuleOperation[]
+
+  @@unique([namespace, code])
+  @@map("operation")
+  @@schema("meta")
+}
+
+/// Permission policy container
+model PermissionPolicy {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  name        String
+  description String?
+  scopeType   String   @map("scope_type") // global, module, entity, entity_version
+  scopeKey    String?  @map("scope_key")
+  sourceType  String   @default("system") @map("source_type")
+  sourceRef   String?  @map("source_ref")
+  isActive    Boolean  @default(true) @map("is_active")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   String   @map("created_by")
+  updatedAt   DateTime? @map("updated_at")
+  updatedBy   String?  @map("updated_by")
+
+  // Relations
+  versions    PermissionPolicyVersion[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([scopeType, scopeKey])
+  @@map("permission_policy")
+  @@schema("meta")
+}
+
+/// Permission policy version (draft/published/archived)
+model PermissionPolicyVersion {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  policyId         String    @map("permission_policy_id") @db.Uuid
+  versionNo        Int       @default(1) @map("version_no")
+  status           String    @default("draft") // draft, published, archived
+  publishedAt      DateTime? @map("published_at")
+  publishedBy      String?   @map("published_by")
+
+  createdAt        DateTime  @default(now()) @map("created_at")
+  createdBy        String    @map("created_by")
+
+  // Relations
+  policy           PermissionPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  rules            PermissionRule[]
+  compiledPolicies PermissionPolicyCompiled[]
+
+  @@unique([tenantId, policyId, versionNo])
+  @@index([tenantId])
+  @@index([status])
+  @@map("permission_policy_version")
+  @@schema("meta")
+}
+
+/// Permission rule (subject + scope + operations + conditions + effect)
+model PermissionRule {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  policyVersionId String   @map("policy_version_id") @db.Uuid
+  scopeType       String   @map("scope_type") // global, module, entity, entity_version, record
+  scopeKey        String?  @map("scope_key")
+  subjectType     String   @map("subject_type") // kc_role, kc_group, user, service
+  subjectKey      String   @map("subject_key")
+  effect          String   // allow, deny
+  conditions      Json?    // ABAC conditions
+  priority        Int      @default(100)
+  isActive        Boolean  @default(true) @map("is_active")
+  comment         String?
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  createdBy       String   @map("created_by")
+
+  // Relations
+  policyVersion   PermissionPolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
+  operations      PermissionRuleOperation[]
+
+  @@index([tenantId, policyVersionId])
+  @@index([scopeType, scopeKey])
+  @@index([subjectType, subjectKey])
+  @@index([priority])
+  @@map("permission_rule")
+  @@schema("meta")
+}
+
+/// Permission rule operation mapping
+model PermissionRuleOperation {
+  id                   String   @id @default(uuid()) @db.Uuid
+  tenantId             String   @map("tenant_id") @db.Uuid
+  ruleId               String   @map("permission_rule_id") @db.Uuid
+  operationId          String   @map("operation_id") @db.Uuid
+  operationConstraints Json?    @map("operation_constraints")
+
+  createdAt            DateTime @default(now()) @map("created_at")
+  createdBy            String   @map("created_by")
+
+  // Relations
+  rule                 PermissionRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  operation            Operation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, ruleId, operationId])
+  @@index([operationId])
+  @@map("permission_rule_operation")
+  @@schema("meta")
+}
+
+/// Compiled policy snapshot for fast evaluation
+model PermissionPolicyCompiled {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  policyVersionId String   @map("policy_version_id") @db.Uuid
+  compiledJson    Json     @map("compiled_json") // Decision tree
+  compiledHash    String   @map("compiled_hash")
+  generatedAt     DateTime @default(now()) @map("generated_at")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  createdBy       String   @map("created_by")
+
+  // Relations
+  policyVersion   PermissionPolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, policyVersionId, compiledHash])
+  @@index([tenantId])
+  @@map("permission_policy_compiled")
+  @@schema("meta")
+}
+
+/// Permission decision log (audit trail for all access decisions)
+model PermissionDecisionLog {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tenantId              String    @map("tenant_id") @db.Uuid
+  occurredAt            DateTime  @default(now()) @map("occurred_at")
+  actorPrincipalId      String?   @map("actor_principal_id") @db.Uuid
+  subjectSnapshot       Json?     @map("subject_snapshot")
+  entityName            String?   @map("entity_name")
+  entityId              String?   @map("entity_id")
+  entityVersionId       String?   @map("entity_version_id") @db.Uuid
+  operationCode         String    @map("operation_code")
+  effect                String    // allow, deny
+  matchedRuleId         String?   @map("matched_rule_id") @db.Uuid
+  matchedPolicyVersionId String?  @map("matched_policy_version_id") @db.Uuid
+  reason                String?
+  correlationId         String?   @map("correlation_id")
+
+  @@index([tenantId, occurredAt(sort: Desc)])
+  @@index([actorPrincipalId])
+  @@index([entityName, entityId])
+  @@index([operationCode])
+  @@map("permission_decision_log")
   @@schema("core")
 }

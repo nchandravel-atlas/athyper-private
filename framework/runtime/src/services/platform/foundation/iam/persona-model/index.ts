@@ -1,0 +1,9 @@
+/**
+ * Persona Model Module
+ *
+ * Permission Action Model with personas, operations, and capability matrix.
+ */
+
+export * from "./types.js";
+export * from "./persona-capability.repository.js";
+export * from "./persona-capability.service.js";

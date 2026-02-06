@@ -7,8 +7,12 @@ Get the Athyper platform running locally in under 10 minutes.
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Starting the Platform](#starting-the-platform)
+  - [Step 1: Start MESH Infrastructure](#step-1-start-mesh-infrastructure)
+  - [Step 2: Initialize Data](#step-2-initialize-data)
+  - [Step 3: Start Kernel](#step-3-start-kernel)
 - [Verifying Installation](#verifying-installation)
 - [Running Tests](#running-tests)
+- [Daily Development Workflow](#daily-development-workflow)
 - [Next Steps](#next-steps)
 
 ## Prerequisites
@@ -132,115 +136,100 @@ ATHYPER_KERNEL_CONFIG_PATH=mesh/config/apps/athyper/kernel.config.local.paramete
 
 ## Starting the Platform
 
-### 1. Start Local Infrastructure
+The platform uses a two-phase startup: **MESH** (infrastructure) first, then **Kernel** (application).
 
-The platform requires PostgreSQL, Redis, Keycloak, MinIO, and observability stack. Start everything with:
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                    STARTUP SEQUENCE                              │
+├─────────────────────────────────────────────────────────────────┤
+│  Phase 1: MESH Infrastructure                                    │
+│  ├── Gateway (Traefik)                                          │
+│  ├── IAM (Keycloak)                                             │
+│  ├── MemoryCache (Redis)                                        │
+│  ├── ObjectStorage (MinIO)                                      │
+│  └── Telemetry (Grafana, Loki, Tempo, Prometheus)              │
+│                           ↓                                      │
+│  Phase 2: Kernel (Application)                                   │
+│  └── Runtime API Server                                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Step 1: Start MESH Infrastructure
+
+Navigate to the mesh scripts directory and run the startup script:
 
 ```bash
-# Start complete local mesh
-pnpm mesh:up
-
-# This starts:
-# - PostgreSQL (port 5432)
-# - PgBouncer (port 6432)
-# - Redis (port 6379)
-# - Keycloak (http://mesh.iam.local)
-# - MinIO (http://mesh.objectstorage.local)
-# - Grafana (http://mesh.telemetry.local)
-# - Prometheus, Tempo, Loki
+cd mesh/scripts
+./up.sh
 ```
+
+**First-time setup**: The script will prompt you to select an environment:
+
+```
+WARNING: .env not found: /path/to/mesh/env/.env
+
+Select env template [local | staging | production] (blank=local): local
+
+ENV_DIR       = /path/to/mesh/env
+ENV TEMPLATE  = local
+TEMPLATE_FILE = /path/to/mesh/env/local.env.example
+TARGET_ENV    = /path/to/mesh/env/.env
+
+Creating .env from template...
+✅ Created: /path/to/mesh/env/.env
+```
+
+The script automatically:
+1. Creates `.env` from the selected template
+2. Reads `ENVIRONMENT` variable to determine which override file to use
+3. Starts all Docker services with the correct configuration
 
 **Expected output**:
-```
-[+] Running 12/12
- ✔ Container mesh-db-1              Started
- ✔ Container mesh-pgbouncer-1       Started
- ✔ Container mesh-redis-1           Started
- ✔ Container mesh-keycloak-1        Started
- ✔ Container mesh-minio-1           Started
- ✔ Container mesh-prometheus-1      Started
- ✔ Container mesh-tempo-1           Started
- ✔ Container mesh-loki-1            Started
- ✔ Container mesh-grafana-1         Started
+
+```text
+==========================
+COMPOSE_DIR  = /path/to/mesh/compose
+ENV_FILE     = /path/to/mesh/env/.env
+ENVIRONMENT  = local
+RUN_PROFILE  = mesh
+OVERRIDE     = /path/to/mesh/compose/mesh.override.local.yml
+==========================
+
+✅ Mesh is UP (profile=mesh, env=local)
 ```
 
 **Wait for services to be healthy** (30-60 seconds):
 ```bash
 # Check status
-docker compose -f mesh/compose/docker-compose.yml ps
-
-# All services should show "healthy" status
+./logs.sh   # View service logs
 ```
 
-### 2. Configure Hosts File
+### Step 2: Initialize Data
 
-Add these entries to your hosts file:
-
-**Linux/macOS** (`/etc/hosts`):
-```bash
-sudo nano /etc/hosts
-```
-
-**Windows** (`C:\Windows\System32\drivers\etc\hosts`):
-```bash
-notepad C:\Windows\System32\drivers\etc\hosts
-```
-
-Add:
-```
-127.0.0.1 mesh.gateway.local
-127.0.0.1 mesh.iam.local
-127.0.0.1 mesh.objectstorage.local
-127.0.0.1 mesh.telemetry.local
-127.0.0.1 athyper.local
-127.0.0.1 athyper.api.local
-```
-
-### 3. Run Database Migrations
+Run the initialization script to set up database and IAM:
 
 ```bash
-# Run migrations
-pnpm db:migrate
-
-# Or manually
-cd framework/adapters/db
-pnpm kysely migrate:latest
+./init-data.sh
 ```
 
-**Expected output**:
-```
-Running migrations...
-Migration "001_initial_schema.ts" was executed successfully
-Migration "002_add_tenants.ts" was executed successfully
-Migrations complete!
-```
+This runs:
+- Database migrations
+- IAM realm configuration
+- Initial seed data
 
-### 4. Start Runtime
+### Step 3: Start Kernel
 
-**Option A: Development Mode (with hot reload)**
+Open a **new terminal** and start the kernel:
 
 ```bash
-# Start API server
-pnpm dev
+# Return to repository root
+cd ../..
 
-# Server starts on http://localhost:3000
-```
+# Development mode (with hot reload)
+pnpm runtime:start:dev
 
-**Option B: Production Mode**
-
-```bash
-# Build first
-pnpm turbo run build
-
-# Start in API mode
-MODE=api pnpm start
-```
-
-**Option C: Worker Mode**
-
-```bash
-# Start worker
-MODE=worker pnpm start
+# Or with file watching
+pnpm runtime:start:watch
 ```
 
 **Expected output**:
@@ -249,6 +238,36 @@ MODE=worker pnpm start
 {"level":"info","msg":"database_connected"}
 {"level":"info","msg":"redis_connected"}
 {"level":"info","msg":"http_server_listening","port":3000}
+```
+
+### Configure Hosts File
+
+Add these entries to your hosts file for local development:
+
+**Linux/macOS** (`/etc/hosts`):
+```bash
+sudo nano /etc/hosts
+```
+
+**Windows** (`C:\Windows\System32\drivers\etc\hosts`):
+
+```bash
+notepad C:\Windows\System32\drivers\etc\hosts
+```
+
+Add:
+
+```text
+127.0.0.1 gateway.mesh.athyper.local
+127.0.0.1 iam.mesh.athyper.local
+127.0.0.1 objectstorage.mesh.athyper.local
+127.0.0.1 objectstorage.console.mesh.athyper.local
+127.0.0.1 telemetry.mesh.athyper.local
+127.0.0.1 metrics.mesh.athyper.local
+127.0.0.1 traces.mesh.athyper.local
+127.0.0.1 logs.mesh.athyper.local
+127.0.0.1 neon.athyper.local
+127.0.0.1 api.athyper.local
 ```
 
 ## Verifying Installation
@@ -292,15 +311,18 @@ curl http://localhost:3000/metrics
 ### 4. Access Web Interfaces
 
 **Keycloak** (IAM):
-- URL: http://mesh.iam.local
+
+- URL: <http://iam.mesh.athyper.local>
 - Admin: `admin` / `admin`
 
 **MinIO** (Object Storage):
-- URL: http://mesh.objectstorage.local
+
+- Console: <http://objectstorage.console.mesh.athyper.local>
 - Admin: `admin` / `password`
 
 **Grafana** (Observability):
-- URL: http://mesh.telemetry.local
+
+- URL: <http://telemetry.mesh.athyper.local>
 - Admin: `admin` / `admin`
 
 ## Running Tests
@@ -339,7 +361,8 @@ pnpm --filter @athyper/core test -- --watch
 ```
 
 **Expected output**:
-```
+
+```text
 ✓ framework/core/src/resilience/retry.test.ts (14)
 ✓ framework/core/src/resilience/circuit-breaker.test.ts (12)
 ✓ framework/core/src/observability/health.test.ts (13)
@@ -352,6 +375,52 @@ Test Files  6 passed (6)
   Start at  10:30:00
   Duration  2.5s (transform 150ms, setup 0ms, collect 800ms, tests 1.2s, environment 0ms, prepare 300ms)
 ```
+
+## Daily Development Workflow
+
+Once initial setup is complete, use this workflow for daily development:
+
+```bash
+# ═══════════════════════════════════════════════════════════
+# Terminal 1: Start/verify MESH infrastructure
+# ═══════════════════════════════════════════════════════════
+cd mesh/scripts
+./up.sh                    # Starts if not running, no-op if already up
+
+# ═══════════════════════════════════════════════════════════
+# Terminal 2: Start kernel with hot-reload
+# ═══════════════════════════════════════════════════════════
+pnpm runtime:start:watch   # Auto-restarts on file changes
+
+# ═══════════════════════════════════════════════════════════
+# When done: Shutdown
+# ═══════════════════════════════════════════════════════════
+# Stop kernel: Ctrl+C in Terminal 2
+
+# Stop MESH infrastructure (optional - can leave running)
+cd mesh/scripts
+./down.sh
+```
+
+### Available MESH Scripts
+
+| Script | Description |
+| ------ | ----------- |
+| `./up.sh` | Start all MESH services |
+| `./up.sh mesh` | Start only core mesh profile |
+| `./up.sh telemetry` | Start only telemetry profile |
+| `./up.sh all` | Start all profiles |
+| `./down.sh` | Stop all services |
+| `./logs.sh` | View service logs |
+| `./init-data.sh` | Initialize database and IAM |
+
+### Available Kernel Scripts
+
+| Script | Description |
+| ------ | ----------- |
+| `pnpm runtime:start` | Start kernel (production build) |
+| `pnpm runtime:start:dev` | Start kernel (development mode) |
+| `pnpm runtime:start:watch` | Start kernel with file watching |
 
 ## Next Steps
 
@@ -375,10 +444,12 @@ curl -X POST \
 
 ```bash
 # View mesh service logs
-pnpm mesh:logs
+cd mesh/scripts
+./logs.sh
 
-# View specific service
-docker compose -f mesh/compose/docker-compose.yml logs -f keycloak
+# View specific service logs
+./logs.sh iam
+./logs.sh gateway
 
 # View runtime logs (if running in background)
 tail -f runtime.log
@@ -390,10 +461,8 @@ tail -f runtime.log
 # Stop runtime (Ctrl+C if running in foreground)
 
 # Stop mesh services
-pnpm mesh:down
-
-# Stop and remove volumes (clean slate)
-pnpm mesh:clean
+cd mesh/scripts
+./down.sh
 ```
 
 ### 4. Read Documentation

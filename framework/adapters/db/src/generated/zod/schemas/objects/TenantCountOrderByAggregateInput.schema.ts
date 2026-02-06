@@ -7,9 +7,12 @@ const makeSchema = () => z.object({
   code: SortOrderSchema.optional(),
   name: SortOrderSchema.optional(),
   status: SortOrderSchema.optional(),
+  region: SortOrderSchema.optional(),
   subscription: SortOrderSchema.optional(),
   createdAt: SortOrderSchema.optional(),
-  createdBy: SortOrderSchema.optional()
+  createdBy: SortOrderSchema.optional(),
+  updatedAt: SortOrderSchema.optional(),
+  updatedBy: SortOrderSchema.optional()
 }).strict();
 export const TenantCountOrderByAggregateInputObjectSchema: z.ZodType<Prisma.TenantCountOrderByAggregateInput> = makeSchema() as unknown as z.ZodType<Prisma.TenantCountOrderByAggregateInput>;
 export const TenantCountOrderByAggregateInputObjectZodSchema = makeSchema();

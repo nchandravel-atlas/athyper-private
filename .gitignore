@@ -168,3 +168,9 @@ tools/**/output/
 .lock-wscript
 .tern-port
 lib-cov/
+
+
+# Generated
+**/generated/
+**/codegen/
+**/.prisma/

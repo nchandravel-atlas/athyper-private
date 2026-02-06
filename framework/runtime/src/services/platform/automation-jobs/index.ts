@@ -1,14 +1,12 @@
-﻿/**
- *  ()
- * Depends on: 
- * Tenant scoped: 
- * Subscription: 
+/**
+ * Automation Jobs Services
  *
- * This is the module composition root. Export public wiring only:
- * - routers (REST/GraphQL), service factories, DI bindings, etc.
+ * Job infrastructure: worker pools, queues, and job management.
  */
-export const moduleCode = "";
-export const moduleName = "";
 
-// TODO: export router/bindings when implemented
-export {};
+export const moduleCode = "platform-automation-jobs";
+export const moduleName = "Automation Jobs";
+
+// Core job infrastructure
+export * from "./worker-pool.js";
+export * from "./redis-queue.js";

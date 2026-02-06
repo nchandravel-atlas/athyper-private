@@ -1,7 +1,7 @@
 # =======================================================================
 # Stack       : athyper Mesh – Core Infrastructure & Observability
 # Maintainer  : Atlas Digital Technology Solutions (athyper Team)
-# Environment : local-dev | staging | prod
+# Environment : local | staging | production
 # Version     : 1.0.0
 # Compose     : mesh-telemetry-config
 #
@@ -13,10 +13,10 @@ services:
   telemetry:
     image: grafana/grafana:12.3.1
     profiles: ["mesh", "telemetry"]
-    mem_limit: "${MESH_TELEMETRY_MEMORY_LIMIT}"
+    mem_limit: "${TELEMETRY_MEMORY_LIMIT}"
     environment:
-      GF_SECURITY_ADMIN_USER: ${MESH_TELEMETRY_SECURITY_ADMIN_USER}
-      GF_SECURITY_ADMIN_PASSWORD: ${MESH_TELEMETRY_SECURITY_ADMIN_PASSWORD}
+      GF_SECURITY_ADMIN_USER: ${TELEMETRY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${TELEMETRY_ADMIN_PASSWORD}
     volumes:
       - ${MESH_CONFIG}/telemetry/provisioning:/etc/grafana/provisioning:ro
       - ${MESH_DATA}/telemetry/observability:/var/lib/grafana
@@ -49,8 +49,8 @@ services:
       - traefik.docker.network=athyper-mesh-edge
       - traefik.enable=true
       - traefik.http.routers.telemetry.entrypoints=websecure
-      - traefik.http.routers.telemetry.middlewares=${MESH_DASHBOARD_AUTH_MW}
-      - traefik.http.routers.telemetry.rule=Host(`${MESH_TELEMETRY_HOST}`)
-      - traefik.http.routers.telemetry.tls.options=${MESH_TLS_OPTIONS}
+      - traefik.http.routers.telemetry.middlewares=${DASHBOARD_AUTH_MW}
+      - traefik.http.routers.telemetry.rule=Host(`${TELEMETRY_HOST}`)
+      - traefik.http.routers.telemetry.tls.options=${GATEWAY_TLS_OPTIONS}
       - traefik.http.routers.telemetry.tls=true
       - traefik.http.services.telemetry.loadbalancer.server.port=3000

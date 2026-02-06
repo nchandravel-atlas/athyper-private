@@ -1,0 +1,33 @@
+{
+  "name": "@neon/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./server/index.ts",
+      "default": "./server/index.ts"
+    },
+    "./session": {
+      "types": "./server/session.ts",
+      "default": "./server/session.ts"
+    },
+    "./keycloak": {
+      "types": "./server/keycloak.ts",
+      "default": "./server/keycloak.ts"
+    }
+  },
+  "dependencies": {
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "next": "^14.2.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "peerDependencies": {
+    "next": "^14.0.0"
+  }
+}

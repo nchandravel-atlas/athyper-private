@@ -7,9 +7,12 @@ const makeSchema = () => z.object({
   code: z.string(),
   name: z.string(),
   status: z.string().optional(),
+  region: z.string().optional().nullable(),
   subscription: z.string().optional(),
   createdAt: z.coerce.date().optional(),
-  createdBy: z.string()
+  createdBy: z.string(),
+  updatedAt: z.coerce.date().optional().nullable(),
+  updatedBy: z.string().optional().nullable()
 }).strict();
 export const TenantCreateManyInputObjectSchema: z.ZodType<Prisma.TenantCreateManyInput> = makeSchema() as unknown as z.ZodType<Prisma.TenantCreateManyInput>;
 export const TenantCreateManyInputObjectZodSchema = makeSchema();

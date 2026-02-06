@@ -16,6 +16,23 @@
     "@athyper/api-client": "workspace:*",
     "@athyper/workbench-admin": "workspace:*",
     "@athyper/workbench-partner": "workspace:*",
-    "@athyper/workbench-user": "workspace:*"
+    "@athyper/workbench-user": "workspace:*",
+    "@neon/auth": "workspace:*",
+    "@neon/ui": "workspace:*",
+    "@neon/theme": "workspace:*",
+    "next": "^14.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "redis": "^4.7.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.9.3"
   }
 }

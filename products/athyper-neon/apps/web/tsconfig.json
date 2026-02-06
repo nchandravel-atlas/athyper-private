@@ -1,10 +1,26 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "extends": "@athyper/tsconfig/next",
+  "extends": "../../../../tooling/tsconfig/next.json",
+  "compilerOptions": {
+    "composite": false,
+    "incremental": false,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "allowJs": true
+  },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

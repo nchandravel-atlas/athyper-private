@@ -1,6 +1,6 @@
 // framework/runtime/src/kernel/httpServer.ts
 
-import type { RouteDef } from "../registries/routes.registry";
+import type { RouteDef } from "../services/platform/foundation/registries/routes.registry.js";
 
 export interface HttpServer {
     mountRoutes(routes: readonly RouteDef[]): void;

@@ -1,0 +1,77 @@
+{
+  "$schema": "./kernel.config.schema.json",
+  "$comment": "Local Development Environment - connects to MESH Docker services",
+
+  "env": "local",
+  "mode": "api",
+  "serviceName": "athyper-runtime",
+  "port": 3000,
+
+  "logLevel": "debug",
+  "shutdownTimeoutMs": 15000,
+
+  "publicBaseUrl": "https://api.athyper.local",
+  "publicWebUrl": "https://neon.athyper.local",
+
+  "db": {
+    "url": "postgresql://athyper_user:athyperadmin@mesh.dbpool.atlasdigitaltech.com:6432/athyper_dev1",
+    "adminUrl": "postgresql://athyper_user:athyperadmin@mesh.dbpool.atlasdigitaltech.com:5432/athyper_dev1",
+    "poolMax": 5
+  },
+
+  "redis": {
+    "url": "redis://:athyperadmin@memorycache:6379/0"
+  },
+
+  "s3": {
+    "endpoint": "http://objectstorage:9000",
+    "accessKey": "athyperadmin",
+    "secretKey": "athyperadmin",
+    "region": "us-east-1",
+    "bucket": "athyper-local",
+    "useSSL": false
+  },
+
+  "iam": {
+    "strategy": "single_realm",
+    "defaultRealmKey": "athyper",
+    "defaultTenantKey": "default",
+    "defaultOrgKey": null,
+    "requireTenantClaimsInProd": false,
+    "realms": {
+      "athyper": {
+        "iam": {
+          "issuerUrl": "https://iam.mesh.athyper.local/realms/athyper",
+          "clientId": "athyper-api",
+          "clientSecretRef": "IAM_ATHYPER_CLIENT_SECRET"
+        },
+        "defaults": {
+          "features": {
+            "metaStudio": true,
+            "debugMode": true
+          },
+          "policies": {
+            "strictTenantIsolation": false
+          }
+        },
+        "tenants": {
+          "default": {
+            "defaults": {
+              "country": "US",
+              "currency": "USD",
+              "timezone": "UTC"
+            },
+            "orgs": {}
+          }
+        }
+      }
+    }
+  },
+
+  "telemetry": {
+    "enabled": true,
+    "otlpEndpoint": "http://logshipper:4318",
+    "serviceName": "athyper-runtime",
+    "serviceVersion": "1.0.0"
+  }
+}

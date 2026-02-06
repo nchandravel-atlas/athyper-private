@@ -86,9 +86,9 @@ REM ----------------------------
 REM Pick override compose based on ENVIRONMENT (or default)
 REM ----------------------------
 set "OVERRIDE="
-if /I "!ENVIRONMENT!"=="localdev" set "OVERRIDE=%COMPOSE_DIR%\mesh.override.localdev.yml"
-if /I "!ENVIRONMENT!"=="staging"  set "OVERRIDE=%COMPOSE_DIR%\mesh.override.staging.yml"
-if /I "!ENVIRONMENT!"=="prod"     set "OVERRIDE=%COMPOSE_DIR%\mesh.override.yml"
+if /I "!ENVIRONMENT!"=="local"      set "OVERRIDE=%COMPOSE_DIR%\mesh.override.local.yml"
+if /I "!ENVIRONMENT!"=="staging"    set "OVERRIDE=%COMPOSE_DIR%\mesh.override.staging.yml"
+if /I "!ENVIRONMENT!"=="production" set "OVERRIDE=%COMPOSE_DIR%\mesh.override.production.yml"
 if "!OVERRIDE!"=="" set "OVERRIDE=%COMPOSE_DIR%\mesh.override.yml"
 
 if not exist "!OVERRIDE!" (
@@ -138,7 +138,7 @@ call :addfile "%COMPOSE_DIR%\telemetry\mesh-tracing.yml"
 call :addfile "%COMPOSE_DIR%\telemetry\mesh-logging.yml"
 call :addfile "%COMPOSE_DIR%\telemetry\mesh-logshipper.yml"
 call :addfile "%COMPOSE_DIR%\telemetry\mesh-telemetry.yml"
-call :addfile "%COMPOSE_DIR%\apps\athyper.yml"
+call :addfile "%COMPOSE_DIR%\apps\mesh-athyper.yml"
 call :addfile "!OVERRIDE!"
 
 goto :after_addfile

@@ -23,16 +23,16 @@ if not exist "%ENV_FILE%" (
   echo.
 
   set "PROFILE="
-  set /p "PROFILE=Select profile [localdev | staging | prod] (blank=prod): "
+  set /p "PROFILE=Select profile [local | staging | production] (blank=local): "
 
-  REM normalize empty -> prod
-  if "!PROFILE!"=="" set "PROFILE=prod"
+  REM normalize empty -> local
+  if "!PROFILE!"=="" set "PROFILE=local"
 
-  REM choose template file (adjust names if your files differ)
+  REM choose template file
   set "TEMPLATE_FILE=%ENV_DIR%\.env.example"
-  if /I "!PROFILE!"=="localdev" set "TEMPLATE_FILE=%ENV_DIR%\localdev.env.example"
-  if /I "!PROFILE!"=="staging"  set "TEMPLATE_FILE=%ENV_DIR%\staging.env.example"
-  if /I "!PROFILE!"=="prod"     set "TEMPLATE_FILE=%ENV_DIR%\.env.example"
+  if /I "!PROFILE!"=="local"      set "TEMPLATE_FILE=%ENV_DIR%\local.env.example"
+  if /I "!PROFILE!"=="staging"    set "TEMPLATE_FILE=%ENV_DIR%\staging.env.example"
+  if /I "!PROFILE!"=="production" set "TEMPLATE_FILE=%ENV_DIR%\production.env.example"
 
   echo.
   echo ENV_DIR       = "%ENV_DIR%"

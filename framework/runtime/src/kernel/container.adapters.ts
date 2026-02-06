@@ -8,7 +8,7 @@ import {
     protectCacheAdapter,
     protectObjectStorageAdapter,
     protectAuthAdapter,
-} from "../resilience/adapter-protection.js";
+} from "../services/platform/foundation/resilience/adapter-protection.js";
 
 /**
  * Registers adapter implementations into the container.
@@ -156,26 +156,64 @@ export async function registerAdapters(container: Container, config: RuntimeConf
     );
 
     // Auth Adapter (Keycloak OIDC with circuit breaker protection)
+    // Builds per-realm verifiers and registers JWKS health check.
     container.register(
         TOKENS.auth,
         async () => {
             const { createAuthAdapter } = await import("@athyper/adapter-auth");
 
-            // Get the default realm configuration
             const defaultRealmKey = config.iam.defaultRealmKey;
-            const realmConfig = config.iam.realms[defaultRealmKey];
+            const defaultRealmConfig = config.iam.realms[defaultRealmKey];
 
-            if (!realmConfig) {
+            if (!defaultRealmConfig) {
                 throw new Error(`Default realm not found: ${defaultRealmKey}`);
             }
 
-            // Client secret is already resolved from SUPERSTAR env var during config loading
-            // It's stored directly in realmConfig.iam after resolution
+            // Build additional realm map (all realms except default)
+            const additionalRealms: Record<string, { issuerUrl: string; clientId: string }> = {};
+            for (const [key, realmCfg] of Object.entries(config.iam.realms)) {
+                if (key !== defaultRealmKey) {
+                    additionalRealms[key] = {
+                        issuerUrl: realmCfg.iam.issuerUrl,
+                        clientId: realmCfg.iam.clientId,
+                    };
+                }
+            }
+
+            // Optionally pass Redis client for JWKS warm-start
+            let redisClient: { get(key: string): Promise<string | null>; set(key: string, value: string, options?: { EX?: number }): Promise<unknown> } | undefined;
+            try {
+                const cache = await container.resolve<any>(TOKENS.cache);
+                if (cache?.get && cache?.set) {
+                    redisClient = cache;
+                }
+            } catch {
+                // Cache may not be registered yet or unavailable; JWKS works without it
+            }
+
             const adapter = createAuthAdapter({
-                issuerUrl: realmConfig.iam.issuerUrl,
-                clientId: realmConfig.iam.clientId,
-                clientSecret: (realmConfig.iam as any).clientSecret || "",
+                issuerUrl: defaultRealmConfig.iam.issuerUrl,
+                clientId: defaultRealmConfig.iam.clientId,
+                clientSecret: (defaultRealmConfig.iam as any).clientSecret || "",
+                additionalRealms: Object.keys(additionalRealms).length > 0 ? additionalRealms : undefined,
+                redisClient,
             });
+
+            // Register JWKS health check
+            healthRegistry.register(
+                "auth_jwks",
+                async () => {
+                    const health = adapter.getJwksHealth();
+                    const allHealthy = Object.values(health).every((h) => h.healthy);
+                    return {
+                        status: allHealthy ? "healthy" : "unhealthy",
+                        message: allHealthy ? "JWKS keys available" : "JWKS fetch issues detected",
+                        timestamp: new Date(),
+                        details: health,
+                    };
+                },
+                { type: "auth", required: true }
+            );
 
             return protectAuthAdapter(adapter, circuitBreakers);
         },

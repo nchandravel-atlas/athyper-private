@@ -21,6 +21,9 @@ packages:
   # Products (deployables)
   # ─────────────────────────────────────────────
   - "products/*/apps/*" # Next.js apps (athyper-neon/apps/web)
+  - "products/*/auth" # Product-specific auth packages
+  - "products/*/shared/*" # Product-specific shared packages
+  - "products/*/themes" # Product-specific theme packages
 
 
   # OPTIONAL (enable only if product root has package.json)

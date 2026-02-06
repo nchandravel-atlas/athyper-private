@@ -2,15 +2,16 @@
 import { describe, it, expect } from "vitest";
 import { createKernelContainer } from "./container";
 import { registerAdapters } from "./container.adapters";
+import { registerKernelDefaults } from "./container.defaults";
 import type { RuntimeConfig } from "./config.schema";
 import { TOKENS } from "./tokens";
 
 describe("Adapter Registration Smoke Tests", () => {
-    it("should register all adapters", () => {
+    it("should register all adapters", async () => {
         const container = createKernelContainer();
 
         const mockConfig: RuntimeConfig = {
-            env: "test",
+            env: "local",
             mode: "api",
             serviceName: "test-service",
             port: 3000,
@@ -50,15 +51,18 @@ describe("Adapter Registration Smoke Tests", () => {
             },
         };
 
+        // Register kernel defaults first (provides healthRegistry, logger, etc.)
+        registerKernelDefaults(container, mockConfig);
+
         // Should not throw
-        expect(() => registerAdapters(container, mockConfig)).not.toThrow();
+        await expect(registerAdapters(container, mockConfig)).resolves.not.toThrow();
     });
 
     it("should resolve database adapter", async () => {
         const container = createKernelContainer();
 
         const mockConfig: RuntimeConfig = {
-            env: "test",
+            env: "local",
             mode: "api",
             serviceName: "test",
             port: 3000,
@@ -72,7 +76,8 @@ describe("Adapter Registration Smoke Tests", () => {
             telemetry: { enabled: false },
         };
 
-        registerAdapters(container, mockConfig);
+        registerKernelDefaults(container, mockConfig);
+        await registerAdapters(container, mockConfig);
 
         const db = await container.resolve(TOKENS.db);
         expect(db).toBeDefined();
@@ -85,11 +90,11 @@ describe("Adapter Registration Smoke Tests", () => {
         await db.close();
     });
 
-    it("should register cache adapter (skip instantiation)", () => {
+    it("should register cache adapter (skip instantiation)", async () => {
         const container = createKernelContainer();
 
         const mockConfig: RuntimeConfig = {
-            env: "test",
+            env: "local",
             mode: "api",
             serviceName: "test",
             port: 3000,
@@ -103,27 +108,18 @@ describe("Adapter Registration Smoke Tests", () => {
             telemetry: { enabled: false },
         };
 
+        registerKernelDefaults(container, mockConfig);
+
         // Just verify registration doesn't throw
-        expect(() => registerAdapters(container, mockConfig)).not.toThrow();
+        await expect(registerAdapters(container, mockConfig)).resolves.not.toThrow();
         // Actual instantiation skipped (requires real Redis)
     });
 
     it("should register telemetry adapter", async () => {
         const container = createKernelContainer();
 
-        // Mock logger for telemetry (required dependency)
-        container.register(TOKENS.logger, async () => ({
-            info: () => {},
-            warn: () => {},
-            error: () => {},
-            debug: () => {},
-            trace: () => {},
-            fatal: () => {},
-            log: () => {},
-        }), "singleton");
-
         const mockConfig: RuntimeConfig = {
-            env: "test",
+            env: "local",
             mode: "api",
             serviceName: "test",
             port: 3000,
@@ -137,7 +133,9 @@ describe("Adapter Registration Smoke Tests", () => {
             telemetry: { enabled: false },
         };
 
-        registerAdapters(container, mockConfig);
+        // Register kernel defaults (provides logger, healthRegistry, etc.)
+        registerKernelDefaults(container, mockConfig);
+        await registerAdapters(container, mockConfig);
 
         const telemetry = await container.resolve(TOKENS.telemetry);
         expect(telemetry).toBeDefined();
@@ -149,7 +147,7 @@ describe("Adapter Registration Smoke Tests", () => {
         const container = createKernelContainer();
 
         const mockConfig: RuntimeConfig = {
-            env: "test",
+            env: "local",
             mode: "api",
             serviceName: "test",
             port: 3000,
@@ -175,7 +173,8 @@ describe("Adapter Registration Smoke Tests", () => {
             telemetry: { enabled: false },
         };
 
-        registerAdapters(container, mockConfig);
+        registerKernelDefaults(container, mockConfig);
+        await registerAdapters(container, mockConfig);
 
         const auth = await container.resolve(TOKENS.auth);
         expect(auth).toBeDefined();
@@ -187,7 +186,7 @@ describe("Adapter Registration Smoke Tests", () => {
         const container = createKernelContainer();
 
         const mockConfig: RuntimeConfig = {
-            env: "test",
+            env: "local",
             mode: "api",
             serviceName: "test",
             port: 3000,
@@ -208,7 +207,8 @@ describe("Adapter Registration Smoke Tests", () => {
             telemetry: { enabled: false },
         };
 
-        registerAdapters(container, mockConfig);
+        registerKernelDefaults(container, mockConfig);
+        await registerAdapters(container, mockConfig);
 
         const objectStorage = await container.resolve(TOKENS.objectStorage);
         expect(objectStorage).toBeDefined();

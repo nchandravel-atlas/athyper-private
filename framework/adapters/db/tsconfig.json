@@ -10,10 +10,12 @@
     "verbatimModuleSyntax": true,
     "types": [
       "node"
-    ]
+    ],
+    "incremental": false,
+    "composite": false
   },
   "include": [
-    "src"
+    "src/**/*.ts"
   ],
   "exclude": [
     "dist",

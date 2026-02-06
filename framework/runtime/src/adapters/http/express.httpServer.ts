@@ -10,7 +10,7 @@ import { TOKENS } from "../../kernel/tokens";
 import type { Container } from "../../kernel/container";
 import type { HttpServer } from "../../kernel/httpServer";
 import type { Logger } from "../../kernel/logger";
-import type { RouteDef } from "../../registries/routes.registry";
+import type { RouteDef } from "../../services/platform/foundation/registries/routes.registry.js";
 import type { RouteHandler, RoutePolicy, HttpHandlerContext, AuthContext } from "../../services/platform/foundation/http/types";
 import type { Request, Response, NextFunction } from "express";
 import type { Server } from "node:http";
@@ -116,9 +116,15 @@ function makeRouteMiddleware(root: Container, def: RouteDef) {
 }
 
 /**
- * Auth building:
- * - If authRequired and no token => throw marker error -> 401
+ * Auth building (defense in depth):
+ * - If authRequired and no token => throw AUTH_REQUIRED -> 401
  * - If token present: realm-aware verification via TOKENS.auth
+ * - jose validates: signature, iss, aud, exp
+ * - Post-verification defense-in-depth:
+ *   1. typ === "Bearer" (reject refresh/ID tokens used as access tokens)
+ *   2. azp matches expected clientId (reject tokens from other clients)
+ *   3. tenant claim cross-check
+ * - Maps jose errors to specific error codes
  */
 async function buildAuthContext(scope: Container, tenant: TenantContext, required: boolean, req: Request): Promise<AuthContext> {
     const token = extractBearer(req);
@@ -140,7 +146,60 @@ async function buildAuthContext(scope: Container, tenant: TenantContext, require
 
     const auth = await scope.resolve<AuthAdapter>(TOKENS.auth);
     const verifier = await auth.getVerifier(tenant.realmKey);
-    const { claims } = await verifier.verifyJwt(token);
+
+    let claims: Record<string, unknown>;
+    try {
+        const result = await verifier.verifyJwt(token);
+        claims = result.claims;
+    } catch (err) {
+        const e = new Error(err instanceof Error ? err.message : "JWT verification failed") as Error & { code?: string };
+        if (err instanceof Error) {
+            const msg = err.message.toLowerCase();
+            if (msg.includes("expired") || msg.includes('"exp"')) e.code = "JWT_EXPIRED";
+            else if (msg.includes("signature")) e.code = "JWT_INVALID_SIGNATURE";
+            else if (msg.includes("issuer") || msg.includes('"iss"')) e.code = "JWT_ISSUER_MISMATCH";
+            else if (msg.includes("audience") || msg.includes('"aud"')) e.code = "JWT_AUDIENCE_MISMATCH";
+            else e.code = "JWT_INVALID";
+        } else {
+            e.code = "JWT_INVALID";
+        }
+        throw e;
+    }
+
+    // ─── Defense-in-depth: post-verification claim checks ─────
+
+    // 1. typ must be "Bearer" — reject refresh tokens, ID tokens, or other token types
+    //    Keycloak sets typ:"Bearer" on access tokens, typ:"Refresh" on refresh tokens,
+    //    and typ:"ID" on ID tokens. Accepting anything else is a token confusion attack.
+    const typ = typeof claims.typ === "string" ? claims.typ : undefined;
+    if (typ && typ !== "Bearer") {
+        const e = new Error(`JWT typ "${typ}" is not "Bearer" — only access tokens are accepted`) as Error & { code?: string };
+        e.code = "JWT_INVALID_TYPE";
+        throw e;
+    }
+
+    // 2. azp (authorized party) must match expected clientId for this realm.
+    //    Prevents tokens issued to a different client from being accepted here,
+    //    even if the JWKS signature is valid (same Keycloak realm, different client).
+    const azp = typeof claims.azp === "string" ? claims.azp : undefined;
+    if (azp) {
+        const config = await scope.resolve<{ iam: { realms: Record<string, { iam: { clientId: string } }> } }>(TOKENS.config);
+        const realmConfig = config.iam.realms[tenant.realmKey];
+        const expectedClientId = realmConfig?.iam?.clientId;
+        if (expectedClientId && azp !== expectedClientId) {
+            const e = new Error(`JWT azp "${azp}" does not match expected client "${expectedClientId}"`) as Error & { code?: string };
+            e.code = "JWT_AZP_MISMATCH";
+            throw e;
+        }
+    }
+
+    // 3. Validate tenant claim if present — cross-tenant token reuse protection
+    const claimTenantKey = typeof claims.tenant_key === "string" ? claims.tenant_key : undefined;
+    if (claimTenantKey && tenant.tenantKey && claimTenantKey !== tenant.tenantKey) {
+        const e = new Error(`JWT tenant "${claimTenantKey}" does not match context "${tenant.tenantKey}"`) as Error & { code?: string };
+        e.code = "JWT_TENANT_MISMATCH";
+        throw e;
+    }
 
     return normalizeClaimsToAuthContext(claims, tenant);
 }
@@ -153,10 +212,10 @@ function extractBearer(req: Request): string | undefined {
 }
 
 /**
- * Normalize Keycloak claims -> stable AuthContext
- * - aud/azp already validated in jose verifier
- * - roles extracted from realm_access + resource_access
- * - groups extracted from "groups"
+ * Normalize Keycloak claims -> stable AuthContext.
+ * At this point all security checks have passed:
+ *   jose: signature, iss, aud, exp
+ *   defense-in-depth: typ=Bearer, azp=clientId, tenant_key match
  */
 function normalizeClaimsToAuthContext(claims: Record<string, unknown>, tenant: TenantContext): AuthContext {
     const sub = typeof claims.sub === "string" ? claims.sub : undefined;
@@ -226,6 +285,16 @@ function makeErrorMiddleware(root: Container) {
             return res.status(401).json({ error: "UNAUTHORIZED", requestId, message: "Bearer token required" });
         }
 
+        // JWT verification errors → 401
+        if (isJwtError(err)) {
+            return res.status(401).json({ error: (err as any).code, requestId, message: (err as Error).message });
+        }
+
+        // Authorization / policy errors → 403
+        if (isForbiddenError(err)) {
+            return res.status(403).json({ error: "FORBIDDEN", requestId, message: (err as Error).message });
+        }
+
         // Strict routing missing: 401 if route requires auth, else 400
         if (err instanceof TenantContextError && err.code === "TENANT_CONTEXT_REQUIRED") {
             const authRequired = (req as RequestWithAuthFlag).__authRequired === true;
@@ -260,4 +329,18 @@ function makeErrorMiddleware(root: Container) {
 
 function isAuthRequiredError(err: unknown): err is { code: "AUTH_REQUIRED" } {
     return !!err && typeof err === "object" && (err as Record<string, unknown>).code === "AUTH_REQUIRED";
+}
+
+const JWT_ERROR_CODES = new Set([
+    "JWT_EXPIRED", "JWT_INVALID", "JWT_INVALID_SIGNATURE",
+    "JWT_ISSUER_MISMATCH", "JWT_AUDIENCE_MISMATCH",
+    "JWT_INVALID_TYPE", "JWT_AZP_MISMATCH", "JWT_TENANT_MISMATCH",
+]);
+
+function isJwtError(err: unknown): boolean {
+    return !!err && typeof err === "object" && JWT_ERROR_CODES.has((err as Record<string, unknown>).code as string);
+}
+
+function isForbiddenError(err: unknown): boolean {
+    return !!err && typeof err === "object" && (err as Record<string, unknown>).code === "FORBIDDEN";
 }

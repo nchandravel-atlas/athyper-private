@@ -1,14 +1,11 @@
-﻿/**
- *  ()
- * Depends on: 
- * Tenant scoped: 
- * Subscription: 
+/**
+ * Audit & Governance Services
  *
- * This is the module composition root. Export public wiring only:
- * - routers (REST/GraphQL), service factories, DI bindings, etc.
+ * Audit trails, compliance reporting, and retention jobs.
  */
-export const moduleCode = "";
-export const moduleName = "";
 
-// TODO: export router/bindings when implemented
-export {};
+export const moduleCode = "platform-audit-governance";
+export const moduleName = "Audit & Governance";
+
+// Audit retention job
+export * from "./audit-log-retention.job.js";

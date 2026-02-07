@@ -10,7 +10,8 @@ const nextConfig = {
     "@athyper/api-client",
     "@athyper/workbench-admin",
     "@athyper/workbench-partner",
-    "@athyper/workbench-user"
+    "@athyper/workbench-user",
+    "@athyper/i18n"
   ],
   experimental: {
     serverActions: { allowedOrigins: ["neon.athyper.local", "localhost:3000"] }

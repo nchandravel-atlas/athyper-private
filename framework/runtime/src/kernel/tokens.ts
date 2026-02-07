@@ -50,6 +50,11 @@ export const TOKENS = {
     // Governance
     auditWriter: "governance.audit",
     featureFlags: "governance.featureFlags",
+
+    // UI Services
+    dashboardService: "ui.dashboard",
+    widgetRegistry: "ui.widgetRegistry",
+    contributionLoader: "ui.contributionLoader",
 } as const;
 
 export type TokenName = (typeof TOKENS)[keyof typeof TOKENS]; // "kernel.config" | ...

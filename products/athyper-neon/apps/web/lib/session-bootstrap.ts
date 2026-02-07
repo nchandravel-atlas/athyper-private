@@ -51,6 +51,8 @@ export interface SessionBootstrap {
     idleTimeoutSec: number;
     /** CSRF token for double-submit pattern. Used by all client-side fetches. */
     csrfToken: string;
+    /** User locale (e.g. "en", "ms", "ta"). Read from neon_locale cookie. */
+    locale: string;
 }
 
 async function getRedisClient() {
@@ -100,6 +102,7 @@ export async function getSessionBootstrap(): Promise<SessionBootstrap | null> {
             accessExpiresAt: session.accessExpiresAt ?? 0,
             idleTimeoutSec: IDLE_TIMEOUT_SEC,
             csrfToken: session.csrfToken ?? "",
+            locale: cookies().get("neon_locale")?.value ?? "en",
         };
     } catch {
         // Redis failure during SSR — return null (no bootstrap).

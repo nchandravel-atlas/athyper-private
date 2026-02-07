@@ -174,7 +174,7 @@ export class MigrationRunner {
             console.log(JSON.stringify({ msg: "migration_reset_start" }));
 
             // Drop schemas (in reverse order of dependencies)
-            const schemas = ["mdm", "ref", "core", "meta"];
+            const schemas = ["ui", "mdm", "ref", "core", "meta"];
             for (const schema of schemas) {
                 await client.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
             }

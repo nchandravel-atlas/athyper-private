@@ -36,6 +36,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const SID_COOKIE = "neon_sid";
+const LOCALE_COOKIE = "neon_locale";
+const SUPPORTED_LOCALES = new Set(["en", "ms", "ta", "hi", "ar"]);
+const DEFAULT_LOCALE = "en";
 
 // Routes that don't require a session cookie.
 // Public pages and the auth flow entry points.
@@ -79,10 +82,9 @@ export function middleware(req: NextRequest) {
         }
     }
 
-    // ─── Auth API routes pass through ────────────────────────────
-    // Auth route handlers (login, callback, session, refresh, touch, logout)
-    // manage their own session validation and error responses.
-    if (pathname.startsWith("/api/auth")) {
+    // ─── API routes pass through ─────────────────────────────────
+    // Auth, UI, and Data API route handlers manage their own validation.
+    if (pathname.startsWith("/api/auth") || pathname.startsWith("/api/ui") || pathname.startsWith("/api/data")) {
         return NextResponse.next();
     }
 
@@ -109,6 +111,27 @@ export function middleware(req: NextRequest) {
     // Full session validation (Redis lookup, idle check, IP/UA binding)
     // happens in the route handlers, not here. This keeps the middleware
     // fast and avoids Redis I/O at the edge.
+
+    // ─── Locale detection ─────────────────────────────────────────
+    // Sets `neon_locale` cookie if not already present.
+    // Priority: existing cookie → Accept-Language header → default (en).
+    const existingLocale = req.cookies.get(LOCALE_COOKIE)?.value;
+    if (!existingLocale) {
+        const acceptLang = req.headers.get("accept-language") ?? "";
+        const preferred = acceptLang
+            .split(",")
+            .map((part) => part.split(";")[0].trim().split("-")[0].toLowerCase())
+            .find((lang) => SUPPORTED_LOCALES.has(lang));
+
+        const response = NextResponse.next();
+        response.cookies.set(LOCALE_COOKIE, preferred ?? DEFAULT_LOCALE, {
+            path: "/",
+            httpOnly: false,
+            sameSite: "lax",
+            maxAge: 365 * 24 * 60 * 60,
+        });
+        return response;
+    }
 
     return NextResponse.next();
 }

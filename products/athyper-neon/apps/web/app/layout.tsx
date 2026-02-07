@@ -1,6 +1,8 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { getSessionBootstrap } from "../lib/session-bootstrap";
+import { Toaster } from "../components/ui/toaster";
 
 export const metadata: Metadata = {
     title: "Neon",
@@ -9,9 +11,11 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
     const bootstrap = await getSessionBootstrap();
+    const cookieStore = await cookies();
+    const locale = cookieStore.get("neon_locale")?.value ?? "en";
 
     return (
-        <html lang="en">
+        <html lang={locale}>
             <body className="min-h-screen">
                 {bootstrap && (
                     <script
@@ -21,6 +25,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     />
                 )}
                 {children}
+                <Toaster />
             </body>
         </html>
     );

@@ -23,7 +23,7 @@ generator kysely {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["public", "core", "mdm", "meta", "ref"]
+  schemas  = ["public", "core", "mdm", "meta", "ref", "ui"]
 }
 
 // -----------------
@@ -54,6 +54,11 @@ model Tenant {
   principalAttributes PrincipalAttribute[]
   entitlementSnapshots EntitlementSnapshot[]
   principalProfiles  PrincipalProfile[]
+
+  // UI Relations
+  dashboards         UiDashboard[]
+  dashboardVersions  UiDashboardVersion[]
+  dashboardAcls      UiDashboardAcl[]
 
   @@map("tenant")
   @@schema("core")
@@ -592,4 +597,94 @@ model PermissionDecisionLog {
   @@index([operationCode])
   @@map("permission_decision_log")
   @@schema("core")
+}
+
+// -----------------
+// UI Dashboard Models
+// -----------------
+
+/// Dashboard definition (system, tenant, or user-scoped)
+model UiDashboard {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String?   @map("tenant_id") @db.Uuid
+  code           String
+  titleKey       String    @map("title_key")
+  descriptionKey String?   @map("description_key")
+  moduleCode     String    @map("module_code")
+  workbench      String    // user, admin, partner
+  visibility     String    @default("system") // system, tenant, user
+  icon           String?
+  sortOrder      Int       @default(100) @map("sort_order")
+  isHidden       Boolean   @default(false) @map("is_hidden")
+  forkedFromId   String?   @map("forked_from_id") @db.Uuid
+  ownerId        String?   @map("owner_id") @db.Uuid
+
+  createdAt      DateTime  @default(now()) @map("created_at")
+  createdBy      String    @map("created_by")
+  updatedAt      DateTime? @map("updated_at")
+  updatedBy      String?   @map("updated_by")
+
+  // Relations
+  tenant         Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  forkedFrom     UiDashboard?  @relation("DashboardFork", fields: [forkedFromId], references: [id], onDelete: SetNull)
+  forks          UiDashboard[] @relation("DashboardFork")
+  versions       UiDashboardVersion[]
+  acls           UiDashboardAcl[]
+
+  @@unique([tenantId, code, workbench])
+  @@index([tenantId, moduleCode])
+  @@index([tenantId, workbench])
+  @@index([visibility])
+  @@index([moduleCode, workbench])
+  @@map("dashboard")
+  @@schema("ui")
+}
+
+/// Dashboard version (immutable with grid layout JSON)
+model UiDashboardVersion {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String?   @map("tenant_id") @db.Uuid
+  dashboardId  String    @map("dashboard_id") @db.Uuid
+  versionNo    Int       @default(1) @map("version_no")
+  status       String    @default("draft") // draft, published, archived
+  layout       Json      // DashboardLayout JSON
+  publishedAt  DateTime? @map("published_at")
+  publishedBy  String?   @map("published_by")
+
+  createdAt    DateTime  @default(now()) @map("created_at")
+  createdBy    String    @map("created_by")
+
+  // Relations
+  tenant       Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  dashboard    UiDashboard  @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, dashboardId, versionNo])
+  @@index([dashboardId])
+  @@index([status])
+  @@index([dashboardId, status])
+  @@map("dashboard_version")
+  @@schema("ui")
+}
+
+/// Dashboard ACL entry (persona/role/group/user → view/edit)
+model UiDashboardAcl {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String?  @map("tenant_id") @db.Uuid
+  dashboardId   String   @map("dashboard_id") @db.Uuid
+  principalType String   @map("principal_type") // role, group, user, persona
+  principalKey  String   @map("principal_key")
+  permission    String   @default("view") // view, edit
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  createdBy     String   @map("created_by")
+
+  // Relations
+  tenant        Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  dashboard     UiDashboard  @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, dashboardId, principalType, principalKey])
+  @@index([dashboardId])
+  @@index([tenantId, principalType, principalKey])
+  @@map("dashboard_acl")
+  @@schema("ui")
 }

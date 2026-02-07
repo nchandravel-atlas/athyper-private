@@ -48,6 +48,7 @@
     "@athyper/adapter-telemetry": "workspace:*",
     "@athyper/contracts": "workspace:*",
     "@athyper/core": "workspace:*",
+    "@athyper/dashboard": "workspace:*",
     "@athyper/tsconfig": "workspace:*",
     "bullmq": "^5.67.2",
     "express": "^4.19.2",

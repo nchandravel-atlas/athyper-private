@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Card, Button } from "@neon/ui";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useWidgetData } from "../../../lib/dashboard/use-widget-data";
 import { useBreakpoint } from "../../../lib/hooks/use-breakpoint";
 
@@ -37,23 +38,23 @@ export function ListWidget({ params, resolvedTitle }: ListWidgetProps) {
     return (
         <Card>
             <div className="flex flex-col h-full">
-                <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                <div className="flex items-center justify-between p-4 border-b border-border">
                     <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+                        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
                         {refreshing && (
-                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" aria-hidden="true" />
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary animate-pulse" aria-hidden="true" />
                         )}
                     </div>
                     <div className="flex items-center gap-2">
                         {meta && (
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-muted-foreground">
                                 {meta.total} total
                             </span>
                         )}
                         <button
                             type="button"
                             onClick={reload}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            className="text-muted-foreground hover:text-muted-foreground transition-colors"
                             aria-label="Refresh list data"
                             title="Refresh"
                         >
@@ -70,15 +71,15 @@ export function ListWidget({ params, resolvedTitle }: ListWidgetProps) {
                         <div className="p-3 space-y-3">
                             {loading ? (
                                 Array.from({ length: Math.min(params.page_size, 3) }).map((_, i) => (
-                                    <div key={i} className="h-20 bg-gray-100 rounded animate-pulse" />
+                                    <div key={i} className="h-20 bg-muted rounded animate-pulse" />
                                 ))
                             ) : error ? (
-                                <p className="py-6 text-center text-sm text-red-500">{error}</p>
+                                <p className="py-6 text-center text-sm text-destructive">{error}</p>
                             ) : !data || data.length === 0 ? (
-                                <p className="py-6 text-center text-xs text-gray-400">No data available</p>
+                                <p className="py-6 text-center text-xs text-muted-foreground">No data available</p>
                             ) : (
                                 data.map((record, rowIdx) => (
-                                    <dl key={rowIdx} className="rounded-md border border-gray-100 p-3 space-y-1.5">
+                                    <dl key={rowIdx} className="rounded-md border border-border p-3 space-y-1.5">
                                         {params.columns.map((col, colIdx) => {
                                             const cellValue = String(record[col] ?? "");
                                             const isFirstCol = colIdx === 0;
@@ -86,14 +87,14 @@ export function ListWidget({ params, resolvedTitle }: ListWidgetProps) {
 
                                             return (
                                                 <div key={col} className="flex justify-between gap-2">
-                                                    <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide shrink-0">
+                                                    <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide shrink-0">
                                                         {col}
                                                     </dt>
-                                                    <dd className="text-xs text-gray-700 text-right truncate">
+                                                    <dd className="text-xs text-foreground text-right truncate">
                                                         {hasLink ? (
                                                             <a
                                                                 href={resolveLinkTemplate(params.link_template!, record)}
-                                                                className="text-blue-600 hover:underline"
+                                                                className="text-primary hover:underline"
                                                             >
                                                                 {cellValue}
                                                             </a>
@@ -112,11 +113,11 @@ export function ListWidget({ params, resolvedTitle }: ListWidgetProps) {
                         /* Desktop/Tablet: table layout */
                         <table className="w-full text-xs">
                             <thead>
-                                <tr className="border-b border-gray-100">
+                                <tr className="border-b border-border">
                                     {params.columns.map((col) => (
                                         <th
                                             key={col}
-                                            className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wide"
+                                            className="px-3 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide"
                                         >
                                             {col}
                                         </th>
@@ -126,10 +127,10 @@ export function ListWidget({ params, resolvedTitle }: ListWidgetProps) {
                             <tbody>
                                 {loading ? (
                                     Array.from({ length: Math.min(params.page_size, 5) }).map((_, i) => (
-                                        <tr key={i} className="border-b border-gray-50">
+                                        <tr key={i} className="border-b border-border">
                                             {params.columns.map((col) => (
                                                 <td key={col} className="px-3 py-2">
-                                                    <div className="h-4 bg-gray-100 rounded animate-pulse" />
+                                                    <div className="h-4 bg-muted rounded animate-pulse" />
                                                 </td>
                                             ))}
                                         </tr>
@@ -138,7 +139,7 @@ export function ListWidget({ params, resolvedTitle }: ListWidgetProps) {
                                     <tr>
                                         <td
                                             colSpan={params.columns.length}
-                                            className="px-3 py-6 text-center text-red-500"
+                                            className="px-3 py-6 text-center text-destructive"
                                         >
                                             {error}
                                         </td>
@@ -147,25 +148,25 @@ export function ListWidget({ params, resolvedTitle }: ListWidgetProps) {
                                     <tr>
                                         <td
                                             colSpan={params.columns.length}
-                                            className="px-3 py-6 text-center text-gray-400"
+                                            className="px-3 py-6 text-center text-muted-foreground"
                                         >
                                             No data available
                                         </td>
                                     </tr>
                                 ) : (
                                     data.map((record, rowIdx) => (
-                                        <tr key={rowIdx} className="border-b border-gray-50 hover:bg-gray-50">
+                                        <tr key={rowIdx} className="border-b border-border hover:bg-muted/50">
                                             {params.columns.map((col, colIdx) => {
                                                 const cellValue = String(record[col] ?? "");
                                                 const isFirstCol = colIdx === 0;
                                                 const hasLink = isFirstCol && params.link_template;
 
                                                 return (
-                                                    <td key={col} className="px-3 py-2 text-gray-700">
+                                                    <td key={col} className="px-3 py-2 text-foreground">
                                                         {hasLink ? (
                                                             <a
                                                                 href={resolveLinkTemplate(params.link_template!, record)}
-                                                                className="text-blue-600 hover:underline"
+                                                                className="text-primary hover:underline"
                                                             >
                                                                 {cellValue}
                                                             </a>
@@ -185,8 +186,8 @@ export function ListWidget({ params, resolvedTitle }: ListWidgetProps) {
 
                 {/* Pagination */}
                 {meta && meta.totalPages > 1 && (
-                    <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100">
-                        <span role="status" className="text-xs text-gray-400">
+                    <div className="flex items-center justify-between px-4 py-2 border-t border-border">
+                        <span role="status" className="text-xs text-muted-foreground">
                             Page {meta.page} of {meta.totalPages}
                         </span>
                         <div className="flex gap-1">

@@ -33,6 +33,8 @@ services:
     depends_on:
       gateway:
         condition: service_healthy
+      dbpool-auth:
+        condition: service_healthy
     healthcheck:
       test:
         [

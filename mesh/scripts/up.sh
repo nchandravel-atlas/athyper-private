@@ -156,6 +156,9 @@ add_file() {
 }
 
 add_file "$COMPOSE_DIR/mesh.base.yml"
+add_file "$COMPOSE_DIR/db/mesh-db.yml"
+add_file "$COMPOSE_DIR/db/mesh-dbpool-apps.yml"
+add_file "$COMPOSE_DIR/db/mesh-dbpool-auth.yml"
 add_file "$COMPOSE_DIR/gateway/mesh-gateway.yml"
 add_file "$COMPOSE_DIR/iam/mesh-iam.yml"
 add_file "$COMPOSE_DIR/objectstorage/mesh-objectstorage.yml"

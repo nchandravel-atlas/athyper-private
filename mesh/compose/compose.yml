@@ -18,6 +18,9 @@
 
 include:
   - mesh.base.yml
+  - db/mesh-db.yml
+  - db/mesh-dbpool-apps.yml
+  - db/mesh-dbpool-auth.yml
   - gateway/mesh-gateway.yml
   - iam/mesh-iam.yml
   - memorycache/mesh-memorycache.yml

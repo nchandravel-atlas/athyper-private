@@ -13,6 +13,24 @@
 # =======================================================================
 
 services:
+  db:
+    ports:
+      - "5432:5432"
+    networks:
+      internal: null
+      edge: null
+  dbpool-apps:
+    ports:
+      - "6432:6432"
+    networks:
+      internal: null
+      edge: null
+  dbpool-auth:
+    ports:
+      - "6433:6433"
+    networks:
+      internal: null
+      edge: null
   memorycache:
     ports:
       - "6379:6379"

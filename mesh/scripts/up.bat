@@ -162,6 +162,9 @@ REM ----------------------------
 set "COMPOSE_FILES="
 
 call :addfile "%COMPOSE_DIR%\mesh.base.yml"
+call :addfile "%COMPOSE_DIR%\db\mesh-db.yml"
+call :addfile "%COMPOSE_DIR%\db\mesh-dbpool-apps.yml"
+call :addfile "%COMPOSE_DIR%\db\mesh-dbpool-auth.yml"
 call :addfile "%COMPOSE_DIR%\gateway\mesh-gateway.yml"
 call :addfile "%COMPOSE_DIR%\iam\mesh-iam.yml"
 call :addfile "%COMPOSE_DIR%\objectstorage\mesh-objectstorage.yml"

@@ -34,14 +34,22 @@ cd mesh/scripts
 │  ┌───────────┐            ┌─────────────────┐          ┌─────────────┐     │
 │  │    IAM    │            │  ObjectStorage  │          │  Telemetry  │     │
 │  │ (Keycloak)│            │     (MinIO)     │          │  (Grafana)  │     │
-│  └───────────┘            └─────────────────┘          └─────────────┘     │
-│                                                               │              │
-│                                                    ┌──────────┴──────────┐  │
-│                                                    │                     │  │
-│                                              ┌─────────┐ ┌───────┐ ┌─────┐  │
-│                                              │ Metrics │ │Traces │ │Logs │  │
-│                                              │(Prometheus)│(Tempo)│(Loki)│  │
-│                                              └─────────┘ └───────┘ └─────┘  │
+│  └─────┬─────┘            └─────────────────┘          └─────────────┘     │
+│        │                                                      │              │
+│        │                                           ┌──────────┴──────────┐  │
+│        │                                           │                     │  │
+│        │                                     ┌─────────┐ ┌───────┐ ┌─────┐  │
+│        │                                     │ Metrics │ │Traces │ │Logs │  │
+│        │                                     │(Prometheus)│(Tempo)│(Loki)│  │
+│        │                                     └─────────┘ └───────┘ └─────┘  │
+│        │                                                                     │
+│  ┌─────┴───────────────────────────────────────────────────────────────┐    │
+│  │                     Database (PostgreSQL 16)                         │    │
+│  │              athyper_dev1 (App) + athyperauth_dev1 (IAM)            │    │
+│  ├─────────────────────────────┬───────────────────────────────────────┤    │
+│  │   PgBouncer Apps (:6432)   │   PgBouncer Auth (:6433)             │    │
+│  │   Transaction mode          │   Session mode (Keycloak)            │    │
+│  └─────────────────────────────┴───────────────────────────────────────┘    │
 │                                                                              │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
 │  │                       MemoryCache (Redis)                            │    │
@@ -61,6 +69,7 @@ mesh/
 │   ├── mesh.override.local.yml       # Local environment overrides
 │   ├── mesh.override.staging.yml     # Staging environment overrides
 │   ├── mesh.override.production.yml  # Production environment overrides
+│   ├── db/                    # PostgreSQL + PgBouncer
 │   ├── gateway/               # Traefik gateway
 │   ├── iam/                   # Keycloak identity
 │   ├── memorycache/           # Redis cache
@@ -68,6 +77,8 @@ mesh/
 │   ├── telemetry/             # Observability stack
 │   └── apps/                  # Application services
 ├── config/                    # Service configurations
+│   ├── db/local/              # PostgreSQL & PgBouncer config (local)
+│   ├── db/stagingenv/         # PostgreSQL & PgBouncer config (staging)
 │   ├── gateway/               # Traefik dynamic config
 │   ├── iam/                   # Keycloak realm exports
 │   ├── telemetry/             # Grafana dashboards, Alloy config
@@ -233,7 +244,8 @@ MESH uses Docker Compose profiles to organize services:
 
 | Profile | Services |
 | ------- | -------- |
-| `mesh` | gateway, iam, memorycache, objectstorage |
+| `mesh` | db, dbpool-apps, dbpool-auth, gateway, iam, memorycache, objectstorage |
+| `db` | db, dbpool-apps, dbpool-auth |
 | `telemetry` | metrics, tracing, logging, logshipper, telemetry (Grafana) |
 | `apps` | athyper (runtime application) |
 
@@ -243,6 +255,9 @@ MESH uses Docker Compose profiles to organize services:
 
 | Service | Internal Port | Host Port | Notes |
 | ------- | ------------- | --------- | ----- |
+| Database (PostgreSQL) | 5432 | 5432 | Direct access (admin/migrations) |
+| PgBouncer Apps | 6432 | 6432 | App DB connection pool (transaction mode) |
+| PgBouncer Auth | 6433 | 6433 | IAM DB connection pool (session mode) |
 | Gateway | 80 | 80 | HTTP |
 | Gateway | 443 | 443 | HTTPS |
 | Gateway | 8080 | 8080 | Dashboard |
@@ -300,6 +315,69 @@ For local development, add these entries to your hosts file:
 127.0.0.1 api.athyper.local
 ```
 
+## Database Architecture
+
+The local development stack runs PostgreSQL with PgBouncer connection pooling, matching the staging/production topology.
+
+### Components
+
+| Component | Image | Purpose |
+| --------- | ----- | ------- |
+| **db** | `postgres:16.11-bookworm` | PostgreSQL server with two databases |
+| **dbpool-apps** | `edoburu/pgbouncer:v1.25.1-p0` | Connection pooler for app DB (transaction mode) |
+| **dbpool-auth** | `edoburu/pgbouncer:v1.25.1-p0` | Connection pooler for IAM DB (session mode) |
+
+### Databases
+
+| Database | Purpose | Pooler Port | Pool Mode |
+| -------- | ------- | ----------- | --------- |
+| `athyper_dev1` | Application database | 6432 | Transaction |
+| `athyperauth_dev1` | Keycloak IAM database | 6433 | Session |
+
+### Connection Strings (Local)
+
+| Purpose | Connection URL |
+| ------- | -------------- |
+| App DB (admin/migrations) | `postgresql://athyperadmin:athyperadmin@localhost:5432/athyper_dev1` |
+| Auth DB (admin/migrations) | `postgresql://athyperadmin:athyperadmin@localhost:5432/athyperauth_dev1` |
+| App DB (runtime, pooled) | `postgresql://athyperadmin:athyperadmin@localhost:6432/athyper_dev1` |
+| Auth DB (runtime, pooled) | `postgresql://athyperadmin:athyperadmin@localhost:6433/athyperauth_dev1` |
+
+### Connection Flow
+
+```text
+Application ──► PgBouncer Apps (:6432) ──► PostgreSQL (:5432) ──► athyper_dev1
+                 transaction mode
+
+Keycloak    ──► PgBouncer Auth (:6433) ──► PostgreSQL (:5432) ──► athyperauth_dev1
+                 session mode
+```
+
+### Configuration Files
+
+```text
+mesh/config/db/local/
+├── postgresql.conf            # PostgreSQL tuning (256MB shared_buffers)
+├── pg_hba.conf                # Client authentication (scram-sha-256)
+├── init-databases.sh          # Creates both databases on first run
+└── dbpool/
+    ├── pgbouncer-apps.ini     # Apps pool config (transaction mode, port 6432)
+    ├── pgbouncer-auth.ini     # Auth pool config (session mode, port 6433)
+    └── userlist.txt           # PgBouncer credentials
+```
+
+### Startup Order
+
+The database services start in dependency order (handled automatically by `depends_on`):
+
+1. **db** (PostgreSQL) - runs `init-databases.sh` on first boot
+2. **dbpool-apps** + **dbpool-auth** (PgBouncer) - wait for db healthy
+3. **iam** (Keycloak) - waits for dbpool-auth healthy
+
+### Data Persistence
+
+PostgreSQL data is stored at `mesh/data/db/`. The init script only runs when this directory is empty (first boot). To reinitialize the database, stop containers and delete `mesh/data/db/`.
+
 ## Troubleshooting
 
 ### Services Not Starting
@@ -342,12 +420,32 @@ docker volume prune -f
 ### Database Connection Issues
 
 ```bash
+# Test direct PostgreSQL connection
+psql postgresql://athyperadmin:athyperadmin@localhost:5432/athyper_dev1 -c "SELECT 1"
+psql postgresql://athyperadmin:athyperadmin@localhost:5432/athyperauth_dev1 -c "SELECT 1"
+
+# Test PgBouncer pooled connections
+psql postgresql://athyperadmin:athyperadmin@localhost:6432/athyper_dev1 -c "SELECT 1"
+psql postgresql://athyperadmin:athyperadmin@localhost:6433/athyperauth_dev1 -c "SELECT 1"
+
+# Check container logs
+docker compose --project-directory mesh/compose --env-file mesh/env/.env logs db
+docker compose --project-directory mesh/compose --env-file mesh/env/.env logs dbpool-apps
+docker compose --project-directory mesh/compose --env-file mesh/env/.env logs dbpool-auth
+
+# Reset database (delete data and reinitialize)
+# WARNING: This deletes all database data
+./down.sh
+rm -rf ../data/db
+./up.sh
+```
+
+### Redis Connection Issues
+
+```bash
 # Check Redis is running
 docker exec -it athyper-mesh-memorycache redis-cli ping
 # Expected: PONG
-
-# Check IAM database
-docker exec -it athyper-mesh-iam /opt/keycloak/bin/kc.sh show-config
 ```
 
 ## See Also

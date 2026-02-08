@@ -14,13 +14,12 @@ import type {
   IRecoveryService,
   IRecoveryErrorRepository,
 } from "./types.js";
+import type { IAuditTrailService } from "../audit/types.js";
 import type {
   ApprovalInstance,
-  ApprovalStepInstance,
   AssignedApprover,
   IApprovalInstanceRepository,
 } from "../instance/types.js";
-import type { IAuditTrailService } from "../audit/types.js";
 
 /**
  * Generate unique ID

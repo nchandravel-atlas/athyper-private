@@ -4,7 +4,8 @@
  * A7: Testing for the rule evaluation engine
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
+
 import type { Condition, ConditionGroup, CompiledRule, SubjectSnapshot } from "../types.js";
 
 // Mock condition evaluation logic for unit testing

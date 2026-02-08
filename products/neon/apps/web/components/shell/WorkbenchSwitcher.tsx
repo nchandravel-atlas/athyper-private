@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import {
     User,
     Handshake,
@@ -8,17 +7,21 @@ import {
     Settings,
     ChevronsUpDown,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+import type { Workbench } from "@/lib/auth/types";
+
+import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { useAuthOptional } from "@/lib/auth/auth-context";
-import { WORKBENCH_CONFIGS } from "@/lib/auth/workbench-config";
 import { setLastWorkbench } from "@/lib/auth/context-resolver";
-import type { Workbench } from "@/lib/auth/types";
+import { WORKBENCH_CONFIGS } from "@/lib/auth/workbench-config";
+
 
 const ICON_MAP: Record<string, typeof Shield> = {
     User,

@@ -17,7 +17,7 @@ import type {
   ApprovalStepInstance,
   IApprovalInstanceRepository,
 } from "../instance/types.js";
-import type { ApprovalCondition, ConditionOperator } from "../types.js";
+import type { ApprovalCondition } from "../types.js";
 
 /**
  * Generate unique ID

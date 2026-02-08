@@ -4,10 +4,11 @@
  * REST API endpoints for Multi-Factor Authentication.
  */
 
-import type { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+
 import type { IMfaService, MfaMethod } from "./types.js";
 import type { Logger } from "../../../../../kernel/logger.js";
+import type { Router, Request, Response, NextFunction } from "express";
 
 // ============================================================================
 // Validation Schemas

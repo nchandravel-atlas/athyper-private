@@ -3,6 +3,7 @@
 // GET /health/jwks — surfaces per-realm JWKS key status for readiness checks.
 
 import { TOKENS } from "../../../../kernel/tokens.js";
+
 import type { HttpHandlerContext, RouteHandler } from "./types";
 import type { Request, Response } from "express";
 

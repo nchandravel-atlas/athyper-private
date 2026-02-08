@@ -4,7 +4,8 @@
  * HTTP API endpoints for managing approval instances at runtime.
  */
 
-import type { Request, Response } from "express";
+import { ApprovalInstanceError } from "./service.js";
+
 import type {
   IApprovalInstanceService,
   ApprovalInstance,
@@ -12,11 +13,10 @@ import type {
   ApprovalActionRecord,
   EntityLock,
   CreateApprovalInstanceInput,
-  CreateApprovalInstanceResult,
   ApprovalInstanceQueryOptions,
   ApprovalInstanceStatus,
 } from "./types.js";
-import { ApprovalInstanceError } from "./service.js";
+import type { Request, Response } from "express";
 
 // ============================================================================
 // Request/Response Types

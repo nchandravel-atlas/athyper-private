@@ -9,6 +9,7 @@ import {
   type S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
 import type { ObjectStorageAdapter, ObjectStorageConfig, PutOptions, ObjectMetadata } from "../types.js";
 
 export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
@@ -30,7 +31,7 @@ export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
         })
       );
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error(JSON.stringify({ msg: "s3_put_error", key, err: String(error) }));
       throw error;
     }
@@ -57,7 +58,7 @@ export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
 
       return Buffer.concat(chunks);
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error(JSON.stringify({ msg: "s3_get_error", key, err: String(error) }));
       throw error;
     }
@@ -72,7 +73,7 @@ export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
         })
       );
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error(JSON.stringify({ msg: "s3_delete_error", key, err: String(error) }));
       throw error;
     }
@@ -91,7 +92,7 @@ export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
       if (error.name === "NotFound" || error.$metadata?.httpStatusCode === 404) {
         return false;
       }
-      // eslint-disable-next-line no-console
+       
       console.error(JSON.stringify({ msg: "s3_exists_error", key, err: String(error) }));
       throw error;
     }
@@ -113,7 +114,7 @@ export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
         etag: obj.ETag,
       }));
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error(JSON.stringify({ msg: "s3_list_error", prefix, err: String(error) }));
       throw error;
     }
@@ -128,7 +129,7 @@ export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
 
       return await getSignedUrl(this.client, command, { expiresIn: expirySeconds });
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error(JSON.stringify({ msg: "s3_presigned_url_error", key, err: String(error) }));
       throw error;
     }
@@ -143,7 +144,7 @@ export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
 
       return await getSignedUrl(this.client, command, { expiresIn: expirySeconds });
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error(JSON.stringify({ msg: "s3_put_presigned_url_error", key, err: String(error) }));
       throw error;
     }
@@ -166,7 +167,7 @@ export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
         contentType: response.ContentType,
       };
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error(JSON.stringify({ msg: "s3_metadata_error", key, err: String(error) }));
       throw error;
     }
@@ -183,7 +184,7 @@ export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
         })
       );
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error(JSON.stringify({ msg: "s3_delete_many_error", count: keys.length, err: String(error) }));
       throw error;
     }
@@ -199,7 +200,7 @@ export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
         })
       );
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error(JSON.stringify({ msg: "s3_copy_error", sourceKey, destKey, err: String(error) }));
       throw error;
     }

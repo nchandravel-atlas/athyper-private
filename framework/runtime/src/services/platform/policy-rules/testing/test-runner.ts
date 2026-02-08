@@ -9,25 +9,19 @@
  * - Enforces performance budgets
  */
 
-import type {
-  PolicyTestCase,
-  TestSuiteResult,
-  TestCaseRunResult,
-  IPolicySimulator,
-  ITestCaseRepository,
-} from "./types.js";
 import {
-  RBAC_TEST_PACK,
-  OU_SCOPE_TEST_PACK,
-  WORKFLOW_TEST_PACK,
-  OBLIGATIONS_TEST_PACK,
-  TIME_BASED_TEST_PACK,
-  PERFORMANCE_TEST_PACK,
   REGRESSION_TEST_PACK,
   getAllGoldenTestPacks,
   getGoldenTestPack,
   type GoldenTestPack,
 } from "./golden-tests.js";
+
+import type {
+  TestSuiteResult,
+  TestCaseRunResult,
+  IPolicySimulator,
+  ITestCaseRepository,
+} from "./types.js";
 
 // ============================================================================
 // Performance Budget Configuration

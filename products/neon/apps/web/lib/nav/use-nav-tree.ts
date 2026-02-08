@@ -6,8 +6,10 @@
 // Fetches from /api/nav/modules on mount and when workbench changes.
 
 import { useEffect, useState, useCallback } from "react";
-import type { NavTree } from "./nav-types";
+
 import { fetchNavTree } from "./nav-api";
+
+import type { NavTree } from "./nav-types";
 
 interface UseNavTreeResult {
     tree: NavTree | null;

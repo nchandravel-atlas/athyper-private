@@ -7,9 +7,9 @@
  * - Hot-reload / cache invalidation on policy publish events
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 import type { CompiledPolicy, ScopeType } from "../types.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // Types

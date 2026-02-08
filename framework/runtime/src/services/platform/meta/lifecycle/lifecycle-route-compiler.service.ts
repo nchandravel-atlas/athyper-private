@@ -10,6 +10,10 @@
  */
 
 import { createHash } from "node:crypto";
+
+import { uuid } from "../data/db-helpers.js";
+
+import type { LifecycleDB_Type } from "../data/db-helpers.js";
 import type {
   LifecycleRouteCompiler,
   CompiledLifecycleRoute,
@@ -17,8 +21,6 @@ import type {
   RequestContext,
   HealthCheckResult,
 } from "@athyper/core/meta";
-import type { LifecycleDB_Type } from "../data/db-helpers.js";
-import { requireRow, now, uuid } from "../data/db-helpers.js";
 
 export class LifecycleRouteCompilerService implements LifecycleRouteCompiler {
   private cache = new Map<string, CompiledLifecycleRoute>();

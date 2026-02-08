@@ -1,10 +1,4 @@
 // framework/runtime/kernel/container.defaults.ts
-import { TOKENS } from "./tokens";
-import type { RuntimeConfig } from "./config.schema";
-import { Lifecycle } from "./lifecycle";
-import type { Container } from "./container";
-import { createConsoleAuditWriter, makeAuditEvent, type AuditWriter } from "./audit";
-import { createPinoLogger, type LogLevel } from "./logger";
 import {
     HealthCheckRegistry,
     MetricsRegistry,
@@ -12,9 +6,20 @@ import {
     GracefulShutdown,
 } from "@athyper/core";
 
-import { ServiceRegistry } from "../services/platform/foundation/registries/services.registry.js";
-import { RouteRegistry } from "../services/platform/foundation/registries/routes.registry.js";
 import { JobRegistry } from "../services/platform/foundation/registries/jobs.registry.js";
+import { RouteRegistry } from "../services/platform/foundation/registries/routes.registry.js";
+import { ServiceRegistry } from "../services/platform/foundation/registries/services.registry.js";
+
+import { createConsoleAuditWriter, makeAuditEvent, type AuditWriter } from "./audit";
+import { Lifecycle } from "./lifecycle";
+import { createPinoLogger, type LogLevel } from "./logger";
+import { TOKENS } from "./tokens";
+
+import type { RuntimeConfig } from "./config.schema";
+import type { Container } from "./container";
+
+
+
 
 export interface KernelDefaultsOptions {
     /**

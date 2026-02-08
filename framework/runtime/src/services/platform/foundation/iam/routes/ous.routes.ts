@@ -4,10 +4,11 @@
  * REST API for managing OU hierarchy (materialized path tree).
  */
 
-import type { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import type { Kysely } from "kysely";
+
 import type { Logger } from "../../../../../kernel/logger.js";
+import type { Router, Request, Response, NextFunction } from "express";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // Validation Schemas
@@ -279,7 +280,7 @@ export function createOusRoutes(
 
         // Get ancestors (from path)
         const pathParts = node.path.split("/").filter(Boolean);
-        let ancestorPaths: string[] = [];
+        const ancestorPaths: string[] = [];
         let currentPath = "/";
         for (let i = 0; i < pathParts.length - 1; i++) {
           currentPath += pathParts[i] + "/";

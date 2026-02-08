@@ -5,7 +5,8 @@
  * Target: p95 < 50ms for policy evaluation
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
+
 import type {
   CompiledPolicy,
   CompiledRule,

@@ -5,8 +5,8 @@
  * Provides insights into query performance, usage patterns, and errors.
  */
 
-import type { QueryRequest, QueryResponse, QueryValidationResult } from "./query-dsl.js";
 import type { JoinPlan } from "./join-planner.js";
+import type { QueryRequest, QueryResponse, QueryValidationResult } from "./query-dsl.js";
 import type { Logger } from "../../../../../kernel/logger.js";
 
 // ============================================================================

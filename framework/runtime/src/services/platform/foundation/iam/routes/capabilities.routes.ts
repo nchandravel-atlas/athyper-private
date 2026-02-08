@@ -4,12 +4,14 @@
  * REST API for querying capability matrix and checking permissions.
  */
 
-import type { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+
+import { PERSONA_CODES } from "../persona-model/types.js";
+
+import type { Logger } from "../../../../../kernel/logger.js";
 import type { IPersonaCapabilityService } from "../persona-model/persona-capability.service.js";
 import type { PersonaCode } from "../persona-model/types.js";
-import { PERSONA_CODES } from "../persona-model/types.js";
-import type { Logger } from "../../../../../kernel/logger.js";
+import type { Router, Request, Response, NextFunction } from "express";
 
 // ============================================================================
 // Validation Schemas

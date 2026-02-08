@@ -9,8 +9,9 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import type { PolicySubject, PolicyResource, PolicyContext, PolicyAction } from "../types.js";
+
 import type { ResolvedFacts, FactsTtlConfig } from "../facts-provider.js";
+import type { PolicySubject, PolicyResource } from "../types.js";
 
 // ============================================================================
 // Mock Types (mirroring facts-provider.ts types)

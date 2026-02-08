@@ -5,14 +5,12 @@
  */
 
 import type {
-  ApprovalActionType,
-  SlaDuration,
-} from "../types.js";
-import type {
   ApprovalInstance,
   ApprovalStepInstance,
-  AssignedApprover,
 } from "../instance/types.js";
+import type {
+  ApprovalActionType,
+} from "../types.js";
 
 // ============================================================================
 // 3.1 Task Creation

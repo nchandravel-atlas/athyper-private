@@ -27,8 +27,9 @@
  *   tsx src/cli/test-policy.ts all --junit --output test-results.xml
  */
 
-import { parseArgs } from "node:util";
 import { writeFileSync } from "node:fs";
+import { parseArgs } from "node:util";
+
 import {
   PolicyTestRunner,
   PolicySimulatorService,

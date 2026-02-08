@@ -9,8 +9,10 @@
  * - Returns authorization decision
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
+import type { OperationCatalogService } from "./operation-catalog.service.js";
+import type { PolicyCompilerService } from "./policy-compiler.service.js";
+import type { PolicyResolutionService } from "./policy-resolution.service.js";
+import type { SubjectResolverService } from "./subject-resolver.service.js";
 import type {
   AuthorizationRequest,
   AuthorizationDecision,
@@ -19,14 +21,11 @@ import type {
   CompiledRule,
   Condition,
   ConditionGroup,
-  Effect,
   ScopeType,
   SubjectKey,
 } from "./types.js";
-import type { SubjectResolverService } from "./subject-resolver.service.js";
-import type { PolicyCompilerService } from "./policy-compiler.service.js";
-import type { PolicyResolutionService } from "./policy-resolution.service.js";
-import type { OperationCatalogService } from "./operation-catalog.service.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * Scope specificity order (higher = more specific)

@@ -30,7 +30,7 @@ create table if not exists meta.entity (
   updated_at    timestamptz,
   updated_by    text,
 
-  constraint entity_kind_chk check (kind in ('ref','mdm','doc','ent')),
+  constraint entity_kind_chk check (kind in ('ref','ent','doc')),
   constraint entity_name_uniq unique (tenant_id, name)
 );
 

@@ -4,30 +4,8 @@
  * Registers all META Engine HTTP handlers and routes
  */
 
-import type { Container } from "../../../kernel/container.js";
-import type { RouteRegistry } from "../foundation/registries/routes.registry.js";
-import type { RuntimeModule } from "../../registry.js";
 import { TOKENS } from "../../../kernel/tokens.js";
 
-// Entity handlers
-import {
-  CreateEntityHandler,
-  ListEntitiesHandler,
-  GetEntityHandler,
-  UpdateEntityHandler,
-  DeleteEntityHandler,
-} from "./handlers/entities.handler.js";
-
-// Version handlers
-import {
-  CreateVersionHandler,
-  ListVersionsHandler,
-  GetVersionHandler,
-  ActivateVersionHandler,
-  DeleteVersionHandler,
-} from "./handlers/versions.handler.js";
-
-// Data API handlers
 import {
   ListRecordsHandler,
   GetRecordHandler,
@@ -41,6 +19,30 @@ import {
   BulkUpdateRecordsHandler,
   BulkDeleteRecordsHandler,
 } from "./handlers/data.handler.js";
+import {
+  CreateEntityHandler,
+  ListEntitiesHandler,
+  GetEntityHandler,
+  UpdateEntityHandler,
+  DeleteEntityHandler,
+} from "./handlers/entities.handler.js";
+import {
+  CreateVersionHandler,
+  ListVersionsHandler,
+  GetVersionHandler,
+  ActivateVersionHandler,
+  DeleteVersionHandler,
+} from "./handlers/versions.handler.js";
+
+import type { Container } from "../../../kernel/container.js";
+import type { RuntimeModule } from "../../registry.js";
+import type { RouteRegistry } from "../foundation/registries/routes.registry.js";
+
+// Entity handlers
+
+// Version handlers
+
+// Data API handlers
 
 // ============================================================================
 // Handler Tokens

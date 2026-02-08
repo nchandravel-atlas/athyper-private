@@ -5,8 +5,15 @@
  * tenant isolation, and field-level access control.
  */
 
-import type { Kysely, SelectQueryBuilder, RawBuilder } from "kysely";
 import { sql } from "kysely";
+
+import {
+  DEFAULT_GUARDRAILS,
+  isWhereGroup,
+  parseQualifiedField,
+} from "./query-dsl.js";
+
+import type { JoinPlanner, JoinPlan, IRelationshipRegistry } from "./join-planner.js";
 import type {
   QueryRequest,
   QueryResponse,
@@ -17,16 +24,10 @@ import type {
   WhereGroup,
   OrderByClause,
 } from "./query-dsl.js";
-import {
-  DEFAULT_GUARDRAILS,
-  isWhereGroup,
-  isWhereCondition,
-  parseQualifiedField,
-} from "./query-dsl.js";
-import type { JoinPlanner, JoinPlan, IRelationshipRegistry } from "./join-planner.js";
+import type { Logger } from "../../../../../kernel/logger.js";
 import type { FieldProjectionBuilder } from "../../security/field-security/field-projection.js";
 import type { SubjectSnapshot } from "../../security/field-security/types.js";
-import type { Logger } from "../../../../../kernel/logger.js";
+import type { Kysely, SelectQueryBuilder } from "kysely";
 
 // ============================================================================
 // Types

@@ -10,11 +10,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
-import type { Redis } from "ioredis";
-import type { RequestContext } from "@athyper/core/meta";
+
 import { createMetaServices } from "../factory.js";
+
+import type { DB } from "@athyper/adapter-db";
+import type { RequestContext } from "@athyper/core/meta";
+import type { Redis } from "ioredis";
+import type { Kysely } from "kysely";
+
 
 // Mock database client with proper chaining support
 const createMockDb = (): Kysely<DB> => {
@@ -40,7 +43,7 @@ const createMockDb = (): Kysely<DB> => {
 
   // Create chainable query builder
   const createSelectQuery = (table: string, columns: string[] | "all") => {
-    let whereConditions: Array<[string, string, any]> = [];
+    const whereConditions: Array<[string, string, any]> = [];
     let orderByColumn: string | undefined;
     let orderByDirection: "asc" | "desc" = "asc";
     let limitValue: number | undefined;
@@ -193,7 +196,7 @@ const createMockDb = (): Kysely<DB> => {
     })),
     updateTable: vi.fn((table: string) => ({
       set: vi.fn((updates: any) => {
-        let whereConditions: Array<[string, string, any]> = [];
+        const whereConditions: Array<[string, string, any]> = [];
 
         const updateBuilder: any = {
           where: (col: string, op: string, val: any) => {
@@ -204,7 +207,7 @@ const createMockDb = (): Kysely<DB> => {
             executeTakeFirstOrThrow: vi.fn(async () => {
               if (table === "meta.meta_versions") {
                 const versions = Array.from(mockData.versions.values());
-                let filtered = applyWhereFilters(versions, whereConditions);
+                const filtered = applyWhereFilters(versions, whereConditions);
 
                 if (filtered.length > 0) {
                   const updated = { ...filtered[0], ...updates };
@@ -214,7 +217,7 @@ const createMockDb = (): Kysely<DB> => {
                 }
               } else if (table === "meta.meta_entities") {
                 const entities = Array.from(mockData.entities.values());
-                let filtered = applyWhereFilters(entities, whereConditions);
+                const filtered = applyWhereFilters(entities, whereConditions);
 
                 if (filtered.length > 0) {
                   const updated = { ...filtered[0], ...updates };

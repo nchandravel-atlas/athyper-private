@@ -5,7 +5,6 @@
  * Records all metadata changes and policy decisions.
  */
 
-import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type {
   AuditLogger,
@@ -15,6 +14,7 @@ import type {
   PaginatedResponse,
   HealthCheckResult,
 } from "@athyper/core/meta";
+import type { Kysely } from "kysely";
 
 /**
  * Audit Logger Service

@@ -5,7 +5,6 @@
  * escalation, and workflow completion.
  */
 
-import type { ApprovalActionType, SlaConfiguration } from "../types.js";
 import type {
   ApprovalInstance,
   ApprovalStepInstance,
@@ -13,7 +12,7 @@ import type {
   ApprovalActionRecord,
   EntityApprovalState,
 } from "../instance/types.js";
-import type { ApprovalTask } from "../task/types.js";
+import type { ApprovalActionType } from "../types.js";
 
 // ============================================================================
 // 4.1-4.4 Action Execution

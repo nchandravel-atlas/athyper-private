@@ -9,7 +9,6 @@ import type {
   NotificationChannel,
   NotificationType,
   NotificationPriority,
-  NotificationStatus,
   NotificationRecord,
   NotificationRecipient,
   NotificationPreferences,

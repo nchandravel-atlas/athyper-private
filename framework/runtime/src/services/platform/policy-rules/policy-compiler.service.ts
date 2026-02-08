@@ -11,8 +11,6 @@
  * 4. Store compiled JSON with hash in meta.permission_policy_compiled
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 import type {
   CompiledPolicy,
   CompiledRule,
@@ -20,6 +18,8 @@ import type {
   SubjectType,
   Effect,
 } from "./types.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * Rule from database

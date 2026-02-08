@@ -36,16 +36,17 @@ export type Migration = {
 /**
  * Migration registry that discovers and loads SQL migrations from the filesystem.
  *
- * Migrations are organized in numbered directories:
- * - 00_bootstrap: Schema creation, extensions
- * - 10_meta: Metadata tables
- * - 20_core: Core application tables
- * - 30_ref: Reference data
- * - 40_mdm: Master data management
- * - 90_seed: Production seed data
- * - 95_dev_seed: Development seed data
+ * Supports two layouts:
  *
- * Within each directory, files are named: 001_name.sql, 002_name.sql, etc.
+ * 1. Flat files (current):  010_bootstrap.sql, 020_meta_tables.sql, ...
+ *    Files are named NNN_name.sql and sorted by the numeric prefix.
+ *
+ * 2. Subdirectory layout (legacy):
+ *    00_bootstrap/001_create_schemas.sql, 10_meta/001_meta_entity.sql, ...
+ *    Directories are named NN_group, files within as NNN_name.sql.
+ *
+ * The registry auto-detects which layout is present. If flat files exist they
+ * take precedence; otherwise it falls back to subdirectories.
  */
 export class MigrationRegistry {
     private migrations: Migration[] = [];
@@ -70,19 +71,59 @@ export class MigrationRegistry {
 
     /**
      * Load all SQL migrations from the filesystem.
+     * Auto-detects flat-file vs subdirectory layout.
      */
     private loadMigrations(): void {
-        // Path to SQL migrations directory
         const sqlDir = join(__dirname, "../sql");
 
-        // Get all directories (sorted numerically)
-        const directories = readdirSync(sqlDir, { withFileTypes: true })
-            .filter((dirent) => dirent.isDirectory())
-            .map((dirent) => dirent.name)
-            .filter((name) => /^\d{2}_/.test(name)) // Only numbered directories
+        const entries = readdirSync(sqlDir, { withFileTypes: true });
+
+        // Detect flat SQL files (NNN_name.sql)
+        const flatFiles = entries
+            .filter((e) => e.isFile() && /^\d{3}_.+\.sql$/.test(e.name))
+            .map((e) => e.name)
             .sort();
 
-        // Load migrations from each directory
+        if (flatFiles.length > 0) {
+            this.loadFlatMigrations(sqlDir, flatFiles);
+        } else {
+            this.loadSubdirectoryMigrations(sqlDir, entries);
+        }
+    }
+
+    /** Load from flat NNN_name.sql files. */
+    private loadFlatMigrations(sqlDir: string, files: string[]): void {
+        for (const fileName of files) {
+            const filePath = join(sqlDir, fileName);
+            const sql = readFileSync(filePath, "utf-8");
+
+            const match = fileName.match(/^(\d{3})_(.+)\.sql$/);
+            if (!match) continue;
+
+            const [, fileNumber, name] = match;
+            const id = fileName.replace(".sql", "");
+
+            this.migrations.push({
+                id,
+                name,
+                directory: "sql",
+                fileNumber,
+                sql,
+            });
+        }
+    }
+
+    /** Load from numbered subdirectories (legacy layout). */
+    private loadSubdirectoryMigrations(
+        sqlDir: string,
+        entries: import("node:fs").Dirent[],
+    ): void {
+        const directories = entries
+            .filter((dirent) => dirent.isDirectory())
+            .map((dirent) => dirent.name)
+            .filter((name) => /^\d{2}_/.test(name))
+            .sort();
+
         for (const dir of directories) {
             const dirPath = join(sqlDir, dir);
             const files = readdirSync(dirPath)
@@ -93,7 +134,6 @@ export class MigrationRegistry {
                 const filePath = join(dirPath, file);
                 const sql = readFileSync(filePath, "utf-8");
 
-                // Parse file name: 001_create_schemas.sql
                 const match = file.match(/^(\d{3})_(.+)\.sql$/);
                 if (!match) continue;
 

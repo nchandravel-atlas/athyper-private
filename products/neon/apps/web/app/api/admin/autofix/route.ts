@@ -1,9 +1,12 @@
-import { NextResponse } from "next/server";
-import { getSessionId, setSessionCookie, setCsrfCookie } from "@neon/auth/session";
-import { refreshTokens, fetchUserinfo, decodeJwtPayload } from "@neon/auth/keycloak";
-import { emitBffAudit, AuthAuditEvent, hashSidForAudit } from "@neon/auth/audit";
-import { CACHE_PATTERNS, scanAndDelete } from "@/lib/diagnostics/cache-patterns";
 import { randomUUID, createHash } from "node:crypto";
+
+import { emitBffAudit, AuthAuditEvent, hashSidForAudit } from "@neon/auth/audit";
+import { refreshTokens, fetchUserinfo, decodeJwtPayload } from "@neon/auth/keycloak";
+import { getSessionId, setSessionCookie, setCsrfCookie } from "@neon/auth/session";
+import { NextResponse } from "next/server";
+
+import { CACHE_PATTERNS, scanAndDelete } from "@/lib/diagnostics/cache-patterns";
+
 
 async function getRedisClient() {
     const { createClient } = await import("redis");

@@ -7,17 +7,18 @@
 // Right: Notification/Help/AI icons + WorkbenchSwitcher + TenantSwitcher
 
 import { Bell, CircleHelp, Sparkles } from "lucide-react";
+
+import { LocaleSwitcher } from "@/components/shell/LocaleSwitcher";
+import { TenantSwitcher } from "@/components/shell/TenantSwitcher";
+import { ViewportSwitcher } from "@/components/shell/ViewportSwitcher";
+import { WorkbenchSwitcher } from "@/components/shell/WorkbenchSwitcher";
+import { SearchDialog } from "@/components/sidebar/search-dialog";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 import { useMessages } from "@/lib/i18n/messages-context";
-import { SearchDialog } from "@/components/sidebar/search-dialog";
-import { ViewportSwitcher } from "@/components/shell/ViewportSwitcher";
-import { LocaleSwitcher } from "@/components/shell/LocaleSwitcher";
-import { WorkbenchSwitcher } from "@/components/shell/WorkbenchSwitcher";
-import { TenantSwitcher } from "@/components/shell/TenantSwitcher";
+import { cn } from "@/lib/utils";
 
 interface ShellHeaderProps {
     workbench: string;

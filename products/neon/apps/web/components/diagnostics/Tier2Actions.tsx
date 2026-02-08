@@ -5,12 +5,15 @@
 // Tier 2 — Enterprise diagnostic actions for ops and power users.
 
 import { RotateCcw, UserCheck, Download, Activity } from "lucide-react";
-import { ActionCard } from "./ActionCard";
-import { useDiagnosticAction } from "./useDiagnosticAction";
-import { HealthPanel } from "./HealthPanel";
 import { useState, useCallback } from "react";
+
+import { ActionCard } from "./ActionCard";
+import { HealthPanel } from "./HealthPanel";
+import { useDiagnosticAction } from "./useDiagnosticAction";
+
 import type { ActionResult } from "./useDiagnosticAction";
 import type { SessionBootstrap } from "@/lib/session-bootstrap";
+
 import { useMessages } from "@/lib/i18n/messages-context";
 
 interface Tier2ActionsProps {

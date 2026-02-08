@@ -10,10 +10,11 @@
  * - Per-tenant retention policies from meta.entity_policy.retention_policy
  */
 
+import { sql } from "kysely";
+
+import type { DB } from "@athyper/adapter-db";
 import type { Job } from "bullmq";
 import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
-import { sql } from "kysely";
 
 /**
  * Audit log retention job data

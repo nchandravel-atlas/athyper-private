@@ -8,14 +8,14 @@
  * - Run result tracking
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 import type {
   ITestCaseRepository,
   StoredTestCase,
   PolicyTestCase,
   TestCaseRunResult,
 } from "./types.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // In-Memory Test Case Repository (for testing/development)

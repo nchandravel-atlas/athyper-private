@@ -4,11 +4,9 @@
 //
 // Reusable key-value row helper for the Session Debug Console.
 
-import type { ReactNode } from "react";
-
 interface DebugRowProps {
     label: string;
-    value: ReactNode;
+    value: React.ReactNode;
     mono?: boolean;
 }
 
@@ -25,7 +23,7 @@ export function DebugRow({ label, value, mono }: DebugRowProps) {
 
 interface DebugSectionProps {
     title: string;
-    children: ReactNode;
+    children: React.ReactNode;
 }
 
 export function DebugSection({ title, children }: DebugSectionProps) {

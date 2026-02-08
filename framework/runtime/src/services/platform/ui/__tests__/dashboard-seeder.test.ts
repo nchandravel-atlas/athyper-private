@@ -2,10 +2,12 @@
  * Dashboard Contribution Seeder Tests
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import { DashboardContributionSeeder } from "../dashboard-seeder.js";
 
 // ─────────────────────────────────────────────

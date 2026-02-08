@@ -4,13 +4,13 @@
  * Types for audit trails, compliance reporting, and governance controls.
  */
 
-import type { ApprovalActionType } from "../types.js";
 import type {
   ApprovalInstance,
   ApprovalStepInstance,
   ApprovalInstanceStatus,
   EntityApprovalState,
 } from "../instance/types.js";
+import type { ApprovalActionType } from "../types.js";
 
 // ============================================================================
 // 8.1 Approval Audit Trail

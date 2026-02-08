@@ -1,6 +1,7 @@
-import type { Container } from "../../kernel/container";
-import type { RuntimeConfig } from "../../kernel/config";
 import { TOKENS } from "../../kernel/tokens";
+
+import type { RuntimeConfig } from "../../kernel/config";
+import type { Container } from "../../kernel/container";
 
 /**
  * Start Scheduler Runtime

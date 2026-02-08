@@ -4,10 +4,11 @@
  * REST API for managing principals and their entitlements.
  */
 
-import type { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import type { Kysely } from "kysely";
+
 import type { Logger } from "../../../../../kernel/logger.js";
+import type { Router, Request, Response, NextFunction } from "express";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // Validation Schemas

@@ -4,8 +4,6 @@
  * Storage implementation for field-level security policies and audit logs.
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 import type {
   FieldSecurityPolicy,
   FieldAccessAuditEntry,
@@ -14,6 +12,8 @@ import type {
   ListFieldSecurityPoliciesOptions,
   GetAccessLogOptions,
 } from "./types.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // Repository Interface

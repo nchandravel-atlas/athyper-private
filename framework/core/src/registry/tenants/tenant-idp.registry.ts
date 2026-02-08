@@ -3,8 +3,8 @@
  * Resolves tenant -> realm -> IdP configuration
  */
 
-import type { TenantRegistry } from "../tenantRegistry.js";
 import type { IdentityProviderRegistry } from "../identityProviderRegistry.js";
+import type { TenantRegistry } from "../tenantRegistry.js";
 
 export class TenantIdpRegistry {
   constructor(

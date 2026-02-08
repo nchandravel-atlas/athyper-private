@@ -4,16 +4,16 @@
  * REST API endpoints for Identity and Access Management.
  */
 
-import type { Router, Request } from "express";
-import type { Kysely } from "kysely";
-import type { Logger } from "../../../../../kernel/logger.js";
+import { createMfaRoutes } from "../mfa/mfa.routes.js";
+import { MfaService } from "../mfa/mfa.service.js";
+import { DatabasePersonaCapabilityRepository } from "../persona-model/persona-capability.repository.js";
 import {
   PersonaCapabilityService,
-  type IPersonaCapabilityService,
 } from "../persona-model/persona-capability.service.js";
-import { DatabasePersonaCapabilityRepository } from "../persona-model/persona-capability.repository.js";
-import { MfaService } from "../mfa/mfa.service.js";
-import { createMfaRoutes } from "../mfa/mfa.routes.js";
+
+import type { Logger } from "../../../../../kernel/logger.js";
+import type { Router, Request } from "express";
+import type { Kysely } from "kysely";
 
 // Route creators
 export { createPrincipalsRoutes } from "./principals.routes.js";

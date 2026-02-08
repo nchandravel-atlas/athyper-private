@@ -4,7 +4,8 @@
  * HTTP API endpoints for managing approval workflow templates.
  */
 
-import type { Request, Response } from "express";
+import { ApprovalWorkflowError } from "./workflow-definition.service.js";
+
 import type {
   IApprovalWorkflowService,
   CreateApprovalWorkflowInput,
@@ -13,11 +14,10 @@ import type {
   StoredApprovalWorkflowTemplate,
   ApprovalEntityType,
   ApprovalTriggerEvent,
-  ApprovalStep,
   ApproverResolutionContext,
   TemplateValidationResult,
 } from "./types.js";
-import { ApprovalWorkflowError } from "./workflow-definition.service.js";
+import type { Request, Response } from "express";
 
 // ============================================================================
 // Request/Response Types

@@ -5,6 +5,9 @@
  * MVP: Simple allow/deny based on compiled policies.
  */
 
+import { uuid } from "../data/db-helpers.js";
+
+import type { LifecycleDB_Type } from "../data/db-helpers.js";
 import type {
   PolicyGate,
   MetaCompiler,
@@ -12,8 +15,6 @@ import type {
   PolicyDecision,
   HealthCheckResult,
 } from "@athyper/core/meta";
-import type { LifecycleDB_Type } from "../data/db-helpers.js";
-import { uuid } from "../data/db-helpers.js";
 
 /**
  * Policy Gate Service

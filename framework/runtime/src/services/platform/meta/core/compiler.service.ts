@@ -5,6 +5,8 @@
  * Handles caching, validation, and cache invalidation.
  */
 
+import { createHash } from "node:crypto";
+
 import type {
   MetaCompiler,
   MetaRegistry,
@@ -20,15 +22,11 @@ import type {
   PolicyCondition,
   CompileDiagnostic,
   DiagnosticSeverity,
-  CompilationResult,
   OverlayChange,
-  OverlayChangeKind,
-  OverlayConflictMode,
   OverlaySet,
   CompiledModelWithOverlays,
 } from "@athyper/core/meta";
 import type { Redis } from "ioredis";
-import { createHash } from "node:crypto";
 
 /**
  * Compiler configuration

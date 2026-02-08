@@ -5,7 +5,6 @@
  * heading, spacer, shortcut, kpi, list, chart.
  */
 
-import type { WidgetDefinition } from "../types/widget.types.js";
 import {
     headingParamsSchema,
     spacerParamsSchema,
@@ -14,7 +13,10 @@ import {
     listParamsSchema,
     chartParamsSchema,
 } from "../schemas/widget-params.schema.js";
+
 import { WidgetRegistry } from "./widget-registry.js";
+
+import type { WidgetDefinition } from "../types/widget.types.js";
 
 // ─────────────────────────────────────────────
 // Widget Definitions

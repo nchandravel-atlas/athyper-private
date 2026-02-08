@@ -5,8 +5,8 @@
  * Provides both in-memory (for testing) and database (for production) implementations.
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
+import { OverlayNotFoundError } from "./types.js";
+
 import type {
   OverlayRecord,
   OverlayChangeRecord,
@@ -16,7 +16,9 @@ import type {
   UpdateOverlayInput,
   ListOverlaysOptions,
 } from "./types.js";
-import { OverlayNotFoundError } from "./types.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
+
 
 // ============================================================================
 // Repository Interface

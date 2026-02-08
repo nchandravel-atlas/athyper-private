@@ -4,9 +4,10 @@
  * Manages approval tasks, inbox operations, and work queue.
  */
 
+import { DEFAULT_WORK_QUEUE_CONFIG } from "./types.js";
+
 import type {
   ApprovalTask,
-  ApprovalTaskStatus,
   TaskType,
   TaskPriority,
   InboxFilterOptions,
@@ -18,13 +19,12 @@ import type {
   IApprovalTaskService,
   INotificationService,
 } from "./types.js";
-import { DEFAULT_WORK_QUEUE_CONFIG } from "./types.js";
 import type {
   ApprovalInstance,
   ApprovalStepInstance,
   AssignedApprover,
 } from "../instance/types.js";
-import type { ApprovalActionType, SlaDuration, DurationUnit } from "../types.js";
+import type { ApprovalActionType, SlaDuration } from "../types.js";
 
 /**
  * Generate unique ID

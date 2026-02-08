@@ -7,6 +7,7 @@
 //   2. Session Gate (cookie presence check)
 
 import { NextResponse } from "next/server";
+
 import type { NextRequest } from "next/server";
 
 const SID_COOKIE = "neon_sid";

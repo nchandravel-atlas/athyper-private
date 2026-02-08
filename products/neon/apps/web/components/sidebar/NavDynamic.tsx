@@ -5,8 +5,6 @@
 // Renders the dynamic navigation tree in the sidebar.
 // Displays workspace > module > entity hierarchy with collapsible groups.
 
-import { usePathname } from "next/navigation";
-import Link from "next/link";
 import {
     Building2, FileText, ClipboardList, Send, ScrollText,
     Package, Box, Warehouse, ArrowRightLeft,
@@ -14,12 +12,18 @@ import {
     Users, UserCircle, Building, CalendarOff,
     ShoppingCart, Layers, CircleDot,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+
+import type { NavWorkspace, NavModule, NavEntity } from "@/lib/nav/nav-types";
 import type { LucideIcon } from "lucide-react";
-import { useNavTree } from "@/lib/nav/use-nav-tree";
-import { filterNavTree } from "@/lib/nav/filter-nav";
-import { useAuthOptional } from "@/lib/auth/auth-context";
-import { useMessages } from "@/lib/i18n/messages-context";
-import type { NavTree, NavWorkspace, NavModule, NavEntity } from "@/lib/nav/nav-types";
+
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
     SidebarGroup,
     SidebarGroupLabel,
@@ -31,12 +35,11 @@ import {
     SidebarMenuSubItem,
     SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuthOptional } from "@/lib/auth/auth-context";
+import { useMessages } from "@/lib/i18n/messages-context";
+import { filterNavTree } from "@/lib/nav/filter-nav";
+import { useNavTree } from "@/lib/nav/use-nav-tree";
 
 // Icon map for resolving icon names to Lucide components
 const ICON_MAP: Record<string, LucideIcon> = {

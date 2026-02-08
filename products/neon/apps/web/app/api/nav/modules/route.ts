@@ -7,8 +7,9 @@
 // For now, returns a static fallback tree for development.
 
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+
 import type { NavTree, NavTreeResponse } from "@/lib/nav/nav-types";
+import type { NextRequest } from "next/server";
 
 // Static fallback tree used when DB is not available.
 // This will be replaced with a DB query in production.

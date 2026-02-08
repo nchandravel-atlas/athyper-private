@@ -7,8 +7,6 @@
  * - Various input types (manual JSON, tenant data, audit replay)
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 import type {
   IPolicySimulator,
   SimulatorInput,
@@ -19,30 +17,27 @@ import type {
   ValidationOptions,
   ValidationError,
   PolicyEvalResult,
-  RuleEvalResult,
   ConditionEvalResult,
   PolicyTestCase,
   TestCaseRunResult,
   TestSuiteResult,
   TestCaseAssertion,
-  ExpectedDecision,
   ManualSimulatorInput,
   TenantDataInput,
   AuditReplayInput,
 } from "./types.js";
+import type { IFactsProvider } from "../evaluation/facts-provider.js";
 import type {
   PolicyInput,
   PolicyDecision,
   PolicySubject,
   PolicyResource,
-  PolicyContext,
-  PolicyAction,
   IPolicyEvaluator,
   PolicyEvaluationOptions,
-  MatchedRule,
 } from "../evaluation/types.js";
-import type { IFactsProvider } from "../evaluation/facts-provider.js";
-import type { Effect, CompiledPolicy, CompiledRule, Condition, ConditionGroup } from "../types.js";
+import type { Condition, ConditionGroup } from "../types.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // Simulator Service Implementation

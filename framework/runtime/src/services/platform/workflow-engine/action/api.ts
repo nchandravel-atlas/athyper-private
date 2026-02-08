@@ -5,7 +5,6 @@
  */
 
 import type {
-  ActionInput,
   ActionResult,
   ApproveActionInput,
   RejectActionInput,

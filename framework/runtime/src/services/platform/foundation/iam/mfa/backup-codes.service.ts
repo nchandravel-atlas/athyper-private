@@ -6,6 +6,7 @@
  */
 
 import { randomBytes, timingSafeEqual } from "crypto";
+
 import type { IBackupCodesService, BackupCodesResult } from "./types.js";
 
 // ============================================================================

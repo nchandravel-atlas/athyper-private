@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
     BadgeCheck,
     ChevronsUpDown,
     LogOut,
     Stethoscope,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import type { SessionBootstrap } from "@/lib/session-bootstrap";
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
     DropdownMenu,
@@ -24,7 +27,6 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar";
-import type { SessionBootstrap } from "@/lib/session-bootstrap";
 import { useMessages } from "@/lib/i18n/messages-context";
 
 function getInitials(name: string): string {

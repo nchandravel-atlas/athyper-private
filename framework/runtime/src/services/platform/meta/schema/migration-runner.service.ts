@@ -11,14 +11,15 @@
  * - Tracks migration history
  */
 
-import { Kysely, sql } from "kysely";
+import { sql } from "kysely";
+
 import type { DB } from "@athyper/adapter-db";
 import type {
   MetaCompiler,
   MetaRegistry,
   DdlGenerator,
-  CompiledModel,
 } from "@athyper/core/meta";
+import type { Kysely} from "kysely";
 
 /**
  * Migration runner options

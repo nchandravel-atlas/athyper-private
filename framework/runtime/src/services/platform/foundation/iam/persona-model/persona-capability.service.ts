@@ -4,7 +4,8 @@
  * Evaluates persona capabilities with OU scope, ownership, and module checks.
  */
 
-import type { Logger } from "../../../../../kernel/logger.js";
+import { PERSONA_CODES } from "./types.js";
+
 import type { IPersonaCapabilityRepository } from "./persona-capability.repository.js";
 import type {
   PersonaCode,
@@ -13,13 +14,13 @@ import type {
   PersonaCapability,
   ConstraintType,
   Persona,
-  Operation,
   CapabilityMatrix,
   CapabilityMatrixRow,
   AuthorizationDecision,
   SubjectWithPersona,
 } from "./types.js";
-import { PERSONA_CODES } from "./types.js";
+import type { Logger } from "../../../../../kernel/logger.js";
+
 
 // ============================================================================
 // Service Interface

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { Command } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { WORKBENCH_CONFIGS } from "@/lib/auth/workbench-config";
 import { WORKBENCHES, type Workbench } from "@/lib/auth/types";
+import { WORKBENCH_CONFIGS } from "@/lib/auth/workbench-config";
 
 const WORKBENCH_LIST = WORKBENCHES.map((wb) => WORKBENCH_CONFIGS[wb]);
 

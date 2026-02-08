@@ -9,6 +9,7 @@
  */
 
 import { createIntl, createIntlCache } from "@formatjs/intl";
+
 import type { Locale } from "./config.js";
 
 // formatjs intl cache (reused across calls for same locale)

@@ -5,8 +5,6 @@
  * Provides both in-memory (for testing) and database (for production) implementations.
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 import type {
   IApprovalInstanceRepository,
   ApprovalInstance,
@@ -17,6 +15,8 @@ import type {
   EntityLock,
   EntityStateTransition,
 } from "./types.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // In-Memory Repository (for testing/development)

@@ -10,7 +10,9 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+
 import { dashboardContributionSchema } from "@athyper/dashboard";
+
 import type { DashboardRepository } from "./dashboard.repository.js";
 import type { Logger } from "../../../kernel/logger.js";
 

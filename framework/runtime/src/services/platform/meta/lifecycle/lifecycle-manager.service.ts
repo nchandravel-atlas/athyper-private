@@ -14,6 +14,9 @@
  * - Check for approval_template_id
  */
 
+import { now, uuid } from "../data/db-helpers.js";
+
+import type { LifecycleDB_Type } from "../data/db-helpers.js";
 import type {
   LifecycleManager,
   LifecycleRouteCompiler,
@@ -31,9 +34,7 @@ import type {
   PaginatedResponse,
   HealthCheckResult,
 } from "@athyper/core/meta";
-import type { LifecycleDB_Type } from "../data/db-helpers.js";
-import { requireRow, now, uuid } from "../data/db-helpers.js";
-import { sql } from "kysely";
+
 
 export class LifecycleManagerService implements LifecycleManager {
   constructor(

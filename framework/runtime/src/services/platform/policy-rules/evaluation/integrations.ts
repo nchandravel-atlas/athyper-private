@@ -8,16 +8,14 @@
  * - Batch jobs (compliance checks)
  */
 
+import type { PolicyObservability } from "./observability.js";
 import type {
   PolicyInput,
   PolicyDecision,
   PolicyEvaluationOptions,
   PolicySubject,
-  PolicyResource,
-  PolicyContext,
   IPolicyEvaluator,
 } from "./types.js";
-import type { PolicyObservability } from "./observability.js";
 
 // ============================================================================
 // API Middleware Integration

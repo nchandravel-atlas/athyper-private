@@ -1,10 +1,12 @@
 // framework/runtime/src/kernel/container.adapters.test.ts
 import { describe, it, expect } from "vitest";
+
 import { createKernelContainer } from "./container";
 import { registerAdapters } from "./container.adapters";
 import { registerKernelDefaults } from "./container.defaults";
-import type { RuntimeConfig } from "./config.schema";
 import { TOKENS } from "./tokens";
+
+import type { RuntimeConfig } from "./config.schema";
 
 describe("Adapter Registration Smoke Tests", () => {
     it("should register all adapters", async () => {

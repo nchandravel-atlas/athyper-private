@@ -5,6 +5,8 @@
  * Handles validation, versioning, publishing, and approver resolution.
  */
 
+import { validateApprovalWorkflowTemplate } from "./validation.js";
+
 import type {
   IApprovalWorkflowService,
   IApprovalWorkflowRepository,
@@ -21,7 +23,6 @@ import type {
   TemplateValidationResult,
   ApprovalCondition,
 } from "./types.js";
-import { validateApprovalWorkflowTemplate } from "./validation.js";
 
 // ============================================================================
 // User/Role Resolver Interface

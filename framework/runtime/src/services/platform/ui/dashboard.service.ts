@@ -2,9 +2,10 @@
  * Dashboard Service — business logic for dashboard resolution, CRUD, versioning, and access control.
  */
 
+import { HttpError } from "./http-error.js";
+
 import type { DashboardRepository, DashboardAclRow } from "./dashboard.repository.js";
 import type { Logger } from "../../../kernel/logger.js";
-import { HttpError } from "./http-error.js";
 
 // ─────────────────────────────────────────────
 // Types

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import { CircuitBreaker, CircuitBreakerOpenError } from "./circuit-breaker.js";
 
 describe("Circuit Breaker", () => {

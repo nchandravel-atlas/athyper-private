@@ -4,7 +4,6 @@
  * Database access for personas, operations, and capability grants.
  */
 
-import type { Kysely } from "kysely";
 import type {
   Persona,
   PersonaCode,
@@ -18,6 +17,7 @@ import type {
   EntityModuleMapping,
   CapabilityMatrix,
 } from "./types.js";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // Repository Interface

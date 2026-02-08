@@ -1,6 +1,5 @@
 // framework/adapters/db/src/kysely/query-helpers.ts
-import type { Kysely, SelectQueryBuilder, ReferenceExpression, Expression, SqlBool } from "kysely";
-import type { DB } from "../generated/kysely/types.js";
+import type { SelectQueryBuilder, ReferenceExpression } from "kysely";
 
 /**
  * Supported filter operators for query building

@@ -5,10 +5,14 @@
 // Tenant dropdown in the header bar.
 // Shows tenant initials/logo with dropdown for profile, subscription, and future multi-tenant switching.
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ChevronsUpDown, UserCircle, CreditCard, ArrowLeftRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import type { SessionBootstrap } from "@/lib/session-bootstrap";
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,8 +20,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import type { SessionBootstrap } from "@/lib/session-bootstrap";
 import { useMessages } from "@/lib/i18n/messages-context";
 
 function getTenantInitials(tenantId: string): string {

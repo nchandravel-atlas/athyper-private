@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getSessionId } from "@neon/auth/session";
 import { emitBffAudit, AuthAuditEvent, hashSidForAudit } from "@neon/auth/audit";
+import { getSessionId } from "@neon/auth/session";
+import { NextResponse } from "next/server";
+
+import type { NextRequest } from "next/server";
+
 import { CACHE_PATTERNS, isValidScope, scanAndDelete } from "@/lib/diagnostics/cache-patterns";
 
 async function getRedisClient() {

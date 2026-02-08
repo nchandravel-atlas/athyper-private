@@ -8,8 +8,6 @@
 import type { IOverlayRepository } from "./overlay.repository.js";
 import type {
   OverlayConflictMode,
-  OverlayChangeKind,
-  OverlayRecord,
   OverlayChangeRecord,
   OverlayWithChanges,
   OverlayApplyResult,
@@ -19,7 +17,6 @@ import type {
   OverlayValidationWarning,
   CompositionPreviewResult,
 } from "./types.js";
-import { OverlayConflictError } from "./types.js";
 import type { Logger } from "../../../../kernel/logger.js";
 
 // ============================================================================

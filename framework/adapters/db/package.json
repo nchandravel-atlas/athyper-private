@@ -37,7 +37,13 @@
     "prisma:migrate": "prisma migrate dev --schema src/prisma/schema.prisma",
     "prisma:deploy": "prisma migrate deploy --schema src/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema src/prisma/schema.prisma",
-    "kysely:codegen": "prisma generate --schema src/prisma/schema.prisma"
+    "kysely:codegen": "prisma generate --schema src/prisma/schema.prisma",
+    "db:provision": "tsx src/seed/seed.ts",
+    "db:provision:ddl": "tsx src/seed/seed.ts --ddl-only",
+    "db:provision:seed": "tsx src/seed/seed.ts --seed-only",
+    "db:provision:reset": "tsx src/seed/seed.ts --reset",
+    "db:provision:status": "tsx src/seed/seed.ts --status",
+    "db:provision:force": "tsx src/seed/seed.ts --force"
   },
   "dependencies": {
     "@athyper/core": "workspace:*",
@@ -53,6 +59,7 @@
     "rimraf": "^6.0.1",
     "tsup": "^8.3.0",
     "typescript": "^5.9.3",
-    "@types/pg": "^8.11.10"
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2"
   }
 }

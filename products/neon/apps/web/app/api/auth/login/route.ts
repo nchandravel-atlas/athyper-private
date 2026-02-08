@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { generatePkceChallenge, buildAuthorizationUrl } from "@neon/auth/keycloak";
 import { emitBffAudit, AuthAuditEvent } from "@neon/auth/audit";
+import { generatePkceChallenge, buildAuthorizationUrl } from "@neon/auth/keycloak";
+import { NextResponse } from "next/server";
 
 async function getRedisClient() {
     const { createClient } = await import("redis");

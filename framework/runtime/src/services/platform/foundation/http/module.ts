@@ -5,8 +5,8 @@ import { HealthHandler } from "./health.handler";
 import { JwksHealthHandler } from "./jwks-health.handler";
 
 import type { Container } from "../../../../kernel/container";
-import type { RouteRegistry } from "../registries/routes.registry.js";
 import type { RuntimeModule } from "../../../registry";
+import type { RouteRegistry } from "../registries/routes.registry.js";
 
 export const module: RuntimeModule = {
     name: "platform.foundation.http",

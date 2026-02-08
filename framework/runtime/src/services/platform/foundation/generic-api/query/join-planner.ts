@@ -5,6 +5,8 @@
  * Prevents arbitrary joins and enforces query guardrails.
  */
 
+import { DEFAULT_GUARDRAILS, parseQualifiedField, extractAliases } from "./query-dsl.js";
+
 import type {
   QueryRequest,
   JoinDefinition,
@@ -14,7 +16,6 @@ import type {
   QueryValidationWarning,
   JoinGraphNode,
 } from "./query-dsl.js";
-import { DEFAULT_GUARDRAILS, parseQualifiedField, extractAliases } from "./query-dsl.js";
 import type { Logger } from "../../../../../kernel/logger.js";
 
 // ============================================================================

@@ -8,7 +8,9 @@
 //   It only contains display metadata and timing values needed for client-side UX logic.
 
 import { cookies } from "next/headers";
+
 import { normalizeClaims, serializeModules, serializePersonas } from "./auth/claims-normalizer";
+
 import type { Workbench } from "./auth/types";
 
 const IDLE_TIMEOUT_SEC = 900;

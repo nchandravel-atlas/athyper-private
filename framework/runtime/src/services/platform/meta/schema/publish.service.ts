@@ -12,7 +12,8 @@
  * - Publish artifacts persisted for audit trail
  */
 
-import type { Kysely } from "kysely";
+import { createHash } from "crypto";
+
 import type { DB } from "@athyper/adapter-db";
 import type {
   MetaCompiler,
@@ -21,7 +22,8 @@ import type {
   CompiledModel,
   DdlGenerator,
 } from "@athyper/core/meta";
-import { createHash } from "crypto";
+import type { Kysely } from "kysely";
+
 
 // RequestContext type (inline for now - should be imported from contracts)
 type RequestContext = {

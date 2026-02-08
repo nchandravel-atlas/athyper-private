@@ -5,8 +5,15 @@
 // Main sidebar component. Renders the dynamic navigation tree,
 // dashboards section, and user profile footer.
 
-import Link from "next/link";
 import { Command } from "lucide-react";
+import Link from "next/link";
+
+
+import { NavDynamic } from "./NavDynamic";
+import { NavUser } from "./NavUser";
+
+import type { Workbench } from "@/lib/auth/types";
+
 import {
     Sidebar,
     SidebarContent,
@@ -16,9 +23,6 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { NavDynamic } from "./NavDynamic";
-import { NavUser } from "./NavUser";
-import type { Workbench } from "@/lib/auth/types";
 
 interface AppSidebarProps {
     workbench: Workbench;

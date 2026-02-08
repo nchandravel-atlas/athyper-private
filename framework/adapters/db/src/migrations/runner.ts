@@ -1,5 +1,6 @@
 // framework/adapters/db/src/migrations/runner.ts
 import pg from "pg";
+
 import { getMigrationRegistry, type Migration } from "./registry.js";
 
 const { Client } = pg;
@@ -174,7 +175,7 @@ export class MigrationRunner {
             console.log(JSON.stringify({ msg: "migration_reset_start" }));
 
             // Drop schemas (in reverse order of dependencies)
-            const schemas = ["ui", "mdm", "ref", "core", "meta"];
+            const schemas = ["ui", "ent", "ref", "core", "meta"];
             for (const schema of schemas) {
                 await client.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
             }

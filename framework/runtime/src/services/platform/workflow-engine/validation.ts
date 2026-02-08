@@ -16,7 +16,6 @@ import type {
   TemplateValidationResult,
   TemplateValidationError,
   TemplateValidationWarning,
-  ApprovalActionConfig,
   ApprovalActionType,
 } from "./types.js";
 

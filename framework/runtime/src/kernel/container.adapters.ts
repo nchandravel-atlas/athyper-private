@@ -1,7 +1,4 @@
 // framework/runtime/src/kernel/container.adapters.ts
-import { TOKENS } from "./tokens";
-import type { RuntimeConfig } from "./config.schema";
-import type { Container } from "./container";
 import {
     AdapterCircuitBreakers,
     protectDbAdapter,
@@ -9,6 +6,11 @@ import {
     protectObjectStorageAdapter,
     protectAuthAdapter,
 } from "../services/platform/foundation/resilience/adapter-protection.js";
+
+import { TOKENS } from "./tokens";
+
+import type { RuntimeConfig } from "./config.schema";
+import type { Container } from "./container";
 
 /**
  * Registers adapter implementations into the container.

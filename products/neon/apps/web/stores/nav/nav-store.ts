@@ -6,6 +6,7 @@
 // Prevents re-fetching on every sidebar render.
 
 import { create } from "zustand";
+
 import type { NavTree } from "@/lib/nav/nav-types";
 
 interface NavState {

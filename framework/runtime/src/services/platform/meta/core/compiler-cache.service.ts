@@ -9,13 +9,13 @@
  * Phase 15.3: Caching strategy for compiled + policy + route
  */
 
-import type { Redis } from "ioredis";
 import type {
   CompiledModel,
   MetaCompiler,
   EntitySchema,
   ValidationResult,
 } from "@athyper/core/meta";
+import type { Redis } from "ioredis";
 
 /**
  * LRU Cache entry

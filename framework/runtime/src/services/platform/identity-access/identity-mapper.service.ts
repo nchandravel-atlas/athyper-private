@@ -17,8 +17,8 @@
  * - core.principal_profile (optional)
  */
 
-import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * Principal type (matches DB constraint)

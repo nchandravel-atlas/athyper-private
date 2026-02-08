@@ -4,8 +4,8 @@
 //
 // Renders platform services health check results.
 
-import { Badge } from "@/components/ui/badge";
 import { DebugRow } from "@/components/debug/DebugSection";
+import { Badge } from "@/components/ui/badge";
 import { useMessages } from "@/lib/i18n/messages-context";
 
 interface HealthCheck {

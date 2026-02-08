@@ -11,9 +11,9 @@
  * 4. global (scope_type='global', scope_key=null)
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 import type { ResourceDescriptor, ScopeType } from "./types.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * Policy info

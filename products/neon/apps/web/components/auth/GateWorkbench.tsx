@@ -1,15 +1,15 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { useAuthOptional } from "@/lib/auth/auth-context";
 import type { Workbench } from "@/lib/auth/types";
+
+import { useAuthOptional } from "@/lib/auth/auth-context";
 
 interface GateWorkbenchProps {
     /** The workbench(es) required to render children. */
     workbench: Workbench | Workbench[];
     /** Content to render when the user lacks the required workbench access. */
-    fallback?: ReactNode;
-    children: ReactNode;
+    fallback?: React.ReactNode;
+    children: React.ReactNode;
 }
 
 /**

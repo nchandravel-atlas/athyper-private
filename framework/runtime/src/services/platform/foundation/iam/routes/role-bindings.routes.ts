@@ -5,10 +5,11 @@
  * Supports both system personas and custom roles.
  */
 
-import type { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import type { Kysely } from "kysely";
+
 import type { Logger } from "../../../../../kernel/logger.js";
+import type { Router, Request, Response, NextFunction } from "express";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // Validation Schemas

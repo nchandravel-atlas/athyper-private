@@ -17,9 +17,9 @@
 import {
     WORKBENCHES,
     type Workbench,
-    isWorkbench,
     parseNeonRole,
 } from "./types";
+
 import type { ParsedTokenClaims } from "./parse-keycloak-token";
 
 export interface NormalizedAuth {

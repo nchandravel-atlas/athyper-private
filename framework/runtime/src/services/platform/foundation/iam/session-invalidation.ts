@@ -3,9 +3,10 @@
 // Invalidates all user sessions when IAM changes occur (role binding, group sync, OU assignment).
 // Ensures stale entitlements don't persist in Redis sessions.
 
+import { AuthAuditEvent, emitAuthAudit } from "../security/auth-audit.js";
+
 import type { AuditWriter } from "../../../../kernel/audit.js";
 import type { RedisSessionStore } from "../security/session-store.js";
-import { AuthAuditEvent, emitAuthAudit } from "../security/auth-audit.js";
 
 export class SessionInvalidationService {
     constructor(

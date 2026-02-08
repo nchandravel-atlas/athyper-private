@@ -1,14 +1,16 @@
 // framework/runtime/kernel/bootstrap.ts
+import { loadServices } from "../services/registry";
+
+import { makeAuditEvent, type AuditWriter } from "./audit";
 import { loadConfig, KernelConfigError } from "./config";
 import { createKernelContainer } from "./container";
-import { registerKernelDefaults, installSignalHandlers } from "./container.defaults";
 import { registerAdapters } from "./container.adapters";
+import { registerKernelDefaults, installSignalHandlers } from "./container.defaults";
 import { registerMetaServices } from "./container.meta";
-import type { RuntimeMode } from "./config.schema";
-import { loadServices } from "../services/registry";
 import { TenantContextError } from "./tenantContext";
-import { makeAuditEvent, type AuditWriter } from "./audit";
 import { TOKENS } from "./tokens";
+
+import type { RuntimeMode } from "./config.schema";
 
 export interface BootstrapResult {
     mode: RuntimeMode;

@@ -1,17 +1,17 @@
-import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
+
+import { getPreference } from "@/app/actions/preferences";
+import { ShellHeader } from "@/components/shell/ShellHeader";
 import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { SIDEBAR_COLLAPSIBLE_VALUES, SIDEBAR_VARIANT_VALUES } from "@/lib/preferences/layout";
-import { cn } from "@/lib/utils";
-import { getPreference } from "@/app/actions/preferences";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { isWorkbench, type Workbench } from "@/lib/auth/types";
-import { ShellHeader } from "@/components/shell/ShellHeader";
+import { SIDEBAR_COLLAPSIBLE_VALUES, SIDEBAR_VARIANT_VALUES } from "@/lib/preferences/layout";
+import { cn } from "@/lib/utils";
 
 interface WorkbenchLayoutProps {
-    children: ReactNode;
+    children: React.ReactNode;
     params: Promise<{ wb: string }>;
 }
 

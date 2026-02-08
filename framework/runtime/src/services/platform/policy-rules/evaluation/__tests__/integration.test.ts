@@ -8,19 +8,20 @@
  * - Observability integration
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
+
+import { compareRules } from "../types.js";
+
+import type { CompiledPolicy, ScopeType, SubjectType, Effect } from "../../types.js";
 import type {
   PolicyInput,
   PolicyDecision,
   PolicySubject,
   PolicyResource,
-  PolicyContext,
   PolicyEvaluationOptions,
   MatchedRule,
   ConflictResolution,
 } from "../types.js";
-import type { CompiledPolicy, CompiledRule, ScopeType, SubjectType, Effect } from "../../types.js";
-import { compareRules } from "../types.js";
 
 // ============================================================================
 // Mock Implementations for Integration Testing

@@ -4,9 +4,10 @@
  * Provides Kysely helpers and type augmentations for lifecycle/approval tables
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 import { sql } from "kysely";
+
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * Require a row to exist, throw error if undefined

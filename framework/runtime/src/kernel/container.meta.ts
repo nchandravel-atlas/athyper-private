@@ -1,11 +1,13 @@
 // framework/runtime/src/kernel/container.meta.ts
-import { TOKENS } from "./tokens.js";
 import { META_TOKENS } from "@athyper/core/meta";
+
+import { TOKENS } from "./tokens.js";
+
 import type { RuntimeConfig } from "./config.schema.js";
 import type { Container } from "./container.js";
-import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type { Redis } from "ioredis";
+import type { Kysely } from "kysely";
 
 /**
  * Registers META Engine services into the container.

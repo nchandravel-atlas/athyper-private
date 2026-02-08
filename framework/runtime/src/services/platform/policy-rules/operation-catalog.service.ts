@@ -7,13 +7,13 @@
  * Source of truth: meta.operation table
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 import type {
   OperationNamespace,
   OperationCode,
   OperationInfo,
 } from "./types.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * Standard operations to seed

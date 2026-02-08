@@ -2,8 +2,9 @@ import { createStore } from "zustand/vanilla";
 
 import type { FontKey } from "@/lib/fonts/registry";
 import type { ContentLayout, NavbarStyle, SidebarCollapsible, SidebarVariant } from "@/lib/preferences/layout";
-import { PREFERENCE_DEFAULTS } from "@/lib/preferences/preferences-config";
 import type { ResolvedThemeMode, ThemeMode, ThemePreset } from "@/lib/preferences/theme";
+
+import { PREFERENCE_DEFAULTS } from "@/lib/preferences/preferences-config";
 
 export type PreferencesState = {
   themeMode: ThemeMode;

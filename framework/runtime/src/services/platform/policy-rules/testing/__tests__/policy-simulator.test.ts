@@ -6,9 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
-import { PolicySimulatorService } from "../simulator.service.js";
-import { InMemoryTestCaseRepository } from "../testcase-repository.js";
-import { PolicyTestRunner, DEFAULT_PERFORMANCE_BUDGET, formatReportAsText } from "../test-runner.js";
+
 import {
   RBAC_TEST_PACK,
   OU_SCOPE_TEST_PACK,
@@ -17,7 +15,6 @@ import {
   TIME_BASED_TEST_PACK,
   PERFORMANCE_TEST_PACK,
   REGRESSION_TEST_PACK,
-  getAllGoldenTestPacks,
   ADMIN_SUBJECT,
   REGULAR_USER_SUBJECT,
   MANAGER_SUBJECT,
@@ -25,13 +22,14 @@ import {
   PUBLIC_DOCUMENT,
   CONFIDENTIAL_DOCUMENT,
   READ_ACTION,
-  CREATE_ACTION,
   UPDATE_ACTION,
   DELETE_ACTION,
-  BUSINESS_HOURS_CONTEXT,
-  AFTER_HOURS_CONTEXT,
 } from "../golden-tests.js";
-import type { PolicyTestCase, SimulatorExplainTree } from "../types.js";
+import { PolicySimulatorService } from "../simulator.service.js";
+import { PolicyTestRunner, DEFAULT_PERFORMANCE_BUDGET, formatReportAsText } from "../test-runner.js";
+import { InMemoryTestCaseRepository } from "../testcase-repository.js";
+
+import type { PolicyTestCase } from "../types.js";
 
 // ============================================================================
 // Mock Dependencies

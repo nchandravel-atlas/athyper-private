@@ -11,8 +11,22 @@
  * - Entity API: gate.authorizeEntity(...)
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
+import {
+  DatabasePersonaCapabilityRepository,
+} from "../foundation/iam/persona-model/persona-capability.repository.js";
+import {
+  PersonaCapabilityService,
+  type IPersonaCapabilityService,
+} from "../foundation/iam/persona-model/persona-capability.service.js";
+import { RoleBindingService } from "../identity-access/role-binding.service.js";
+
+import { DecisionLoggerService, type DecisionLoggerConfig } from "./decision-logger.service.js";
+import { OperationCatalogService } from "./operation-catalog.service.js";
+import { PolicyCompilerService } from "./policy-compiler.service.js";
+import { PolicyResolutionService } from "./policy-resolution.service.js";
+import { RuleEvaluatorService } from "./rule-evaluator.service.js";
+import { SubjectResolverService } from "./subject-resolver.service.js";
+
 import type {
   AuthorizationRequest,
   AuthorizationDecision,
@@ -21,26 +35,14 @@ import type {
   SubjectSnapshot,
   IPolicyGate,
 } from "./types.js";
-import { RuleEvaluatorService } from "./rule-evaluator.service.js";
-import { SubjectResolverService } from "./subject-resolver.service.js";
-import { PolicyCompilerService } from "./policy-compiler.service.js";
-import { PolicyResolutionService } from "./policy-resolution.service.js";
-import { OperationCatalogService } from "./operation-catalog.service.js";
-import { DecisionLoggerService, type DecisionLoggerConfig } from "./decision-logger.service.js";
-import {
-  PersonaCapabilityService,
-  type IPersonaCapabilityService,
-} from "../foundation/iam/persona-model/persona-capability.service.js";
-import {
-  DatabasePersonaCapabilityRepository,
-} from "../foundation/iam/persona-model/persona-capability.repository.js";
 import type {
   PersonaCode,
   CapabilityContext,
   CapabilityCheckResult,
   AuthorizationDecision as PersonaAuthDecision,
 } from "../foundation/iam/persona-model/types.js";
-import { RoleBindingService, normalizeToPersonaCode } from "../identity-access/role-binding.service.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * Policy Gate configuration

@@ -6,14 +6,13 @@
  * - Response (read): Filter/mask fields the subject cannot read
  */
 
-import type { Request, Response, NextFunction } from "express";
+import type { Logger } from "../../../../kernel/logger.js";
 import type {
   FieldAccessService,
   SubjectSnapshot,
   FieldAccessContext,
-  MaskStrategy,
 } from "../security/field-security/index.js";
-import type { Logger } from "../../../../kernel/logger.js";
+import type { Request, Response, NextFunction } from "express";
 
 // ============================================================================
 // Types

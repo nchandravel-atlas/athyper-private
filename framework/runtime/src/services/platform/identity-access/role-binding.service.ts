@@ -14,13 +14,13 @@
  * - core.role_binding
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 import {
   PERSONA_CODES,
   type PersonaCode,
-  type ScopeMode as PersonaScopeMode,
 } from "../foundation/iam/persona-model/types.js";
+
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * Scope kind for role binding (matches DB constraint)

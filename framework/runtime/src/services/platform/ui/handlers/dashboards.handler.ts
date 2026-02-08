@@ -19,12 +19,14 @@
  *   - RemoveAcl: requires "edit"
  */
 
-import type { Request, Response } from "express";
+import { dashboardLayoutSchema } from "@athyper/dashboard";
+
+import { TOKENS } from "../../../../kernel/tokens.js";
+import { HttpError } from "../http-error.js";
+
 import type { RouteHandler, HttpHandlerContext } from "../../foundation/http/types.js";
 import type { DashboardService, UserContext } from "../dashboard.service.js";
-import { TOKENS } from "../../../../kernel/tokens.js";
-import { dashboardLayoutSchema } from "@athyper/dashboard";
-import { HttpError } from "../http-error.js";
+import type { Request, Response } from "express";
 
 // ─────────────────────────────────────────────
 // Helpers

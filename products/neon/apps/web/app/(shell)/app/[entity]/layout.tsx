@@ -1,17 +1,17 @@
-import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
+
+import { getPreference } from "@/app/actions/preferences";
 import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { SIDEBAR_COLLAPSIBLE_VALUES, SIDEBAR_VARIANT_VALUES } from "@/lib/preferences/layout";
-import { cn } from "@/lib/utils";
-import { getPreference } from "@/app/actions/preferences";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { isReservedSlug } from "@/lib/nav/reserved-keywords";
+import { SIDEBAR_COLLAPSIBLE_VALUES, SIDEBAR_VARIANT_VALUES } from "@/lib/preferences/layout";
+import { cn } from "@/lib/utils";
 
 interface EntityLayoutProps {
-    children: ReactNode;
+    children: React.ReactNode;
     params: Promise<{ entity: string }>;
 }
 

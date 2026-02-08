@@ -11,7 +11,8 @@
  * Initially CI non-blocking, will gate later once baselines are established.
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
+
 import type { CompiledModel, EntitySchema } from "@athyper/core/meta";
 
 /**

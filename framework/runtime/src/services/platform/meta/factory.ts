@@ -4,9 +4,20 @@
  * Creates and wires all META Engine services for DI container registration.
  */
 
-import type { Kysely } from "kysely";
+
+import { AuditLoggerService } from "./core/audit-logger.service.js";
+import { MetaCompilerService } from "./core/compiler.service.js";
+import { MetaStoreService } from "./core/meta-store.service.js";
+import { PolicyGateService } from "./core/policy-gate.service.js";
+import { MetaRegistryService } from "./core/registry.service.js";
+import { GenericDataAPIService } from "./data/generic-data-api.service.js";
+import { LifecycleManagerService } from "./lifecycle/lifecycle-manager.service.js";
+import { LifecycleRouteCompilerService } from "./lifecycle/lifecycle-route-compiler.service.js";
+import { DdlGeneratorService } from "./schema/ddl-generator.service.js";
+
+import type { MetaStore } from "./core/meta-store.service.js";
+import type { LifecycleDB_Type } from "./data/db-helpers.js";
 import type { DB } from "@athyper/adapter-db";
-import type { Redis } from "ioredis";
 import type {
   MetaRegistry,
   MetaCompiler,
@@ -17,25 +28,8 @@ import type {
   LifecycleManager,
   DdlGenerator,
 } from "@athyper/core/meta";
-
-// Core services
-import { MetaRegistryService } from "./core/registry.service.js";
-import { MetaCompilerService } from "./core/compiler.service.js";
-import { PolicyGateService } from "./core/policy-gate.service.js";
-import { AuditLoggerService } from "./core/audit-logger.service.js";
-import type { MetaStore } from "./core/meta-store.service.js";
-import { MetaStoreService } from "./core/meta-store.service.js";
-
-// Lifecycle services
-import { LifecycleRouteCompilerService } from "./lifecycle/lifecycle-route-compiler.service.js";
-import { LifecycleManagerService } from "./lifecycle/lifecycle-manager.service.js";
-
-// Data services
-import { GenericDataAPIService } from "./data/generic-data-api.service.js";
-import type { LifecycleDB_Type } from "./data/db-helpers.js";
-
-// Schema services
-import { DdlGeneratorService } from "./schema/ddl-generator.service.js";
+import type { Redis } from "ioredis";
+import type { Kysely } from "kysely";
 
 /**
  * META Services configuration

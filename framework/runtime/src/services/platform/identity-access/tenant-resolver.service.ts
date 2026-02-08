@@ -9,8 +9,8 @@
  * - core.tenant_profile
  */
 
-import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * Tenant status (matches DB constraint)

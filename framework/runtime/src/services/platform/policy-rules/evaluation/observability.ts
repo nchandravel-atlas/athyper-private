@@ -7,7 +7,7 @@
  * - Structured logs: tenantId, policyId, action, decision, latency
  */
 
-import type { PolicyInput, PolicyDecision, TraceStep } from "./types.js";
+import type { PolicyInput, PolicyDecision } from "./types.js";
 
 // ============================================================================
 // Metrics Interface

@@ -7,10 +7,7 @@
 
 import type {
   ApprovalWorkflowTemplate,
-  ApprovalStep,
   ApprovalActionType,
-  ResolvedApprover,
-  SlaConfiguration,
   ApprovalCondition,
 } from "../types.js";
 

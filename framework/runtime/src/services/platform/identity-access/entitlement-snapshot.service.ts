@@ -13,11 +13,11 @@
  * - core.entitlement_snapshot
  */
 
-import type { Kysely } from "kysely";
+import type { GroupSyncService } from "./group-sync.service.js";
+import type { OUMembershipService } from "./ou-membership.service.js";
+import type { RoleBindingService } from "./role-binding.service.js";
 import type { DB } from "@athyper/adapter-db";
-import type { RoleBindingService, RoleInfo } from "./role-binding.service.js";
-import type { GroupSyncService, GroupInfo } from "./group-sync.service.js";
-import type { OUMembershipService, OUNodeInfo, PrincipalAttributeInfo } from "./ou-membership.service.js";
+import type { Kysely } from "kysely";
 
 /**
  * Entitlement snapshot

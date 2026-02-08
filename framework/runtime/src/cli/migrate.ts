@@ -12,11 +12,14 @@
  *   pnpm meta:migrate:sql    - Generate SQL script
  */
 
+import Redis from "ioredis";
 import { Kysely, PostgresDialect } from "kysely";
 import { Pool } from "pg";
-import Redis from "ioredis";
-import type { DB } from "@athyper/adapter-db";
+
 import { createMetaServices, MigrationRunnerService, DdlGeneratorService } from "../services/platform/meta/index.js";
+
+import type { DB } from "@athyper/adapter-db";
+
 
 // Get command from args
 const command = process.argv[2] || "plan";

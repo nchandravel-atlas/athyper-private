@@ -2,7 +2,6 @@
  * Express middleware for request validation and sanitization
  */
 
-import type { Request, Response, NextFunction } from "express";
 import {
   validate,
   sanitizeObject,
@@ -10,6 +9,8 @@ import {
   type ValidationRule,
   type ValidationResult,
 } from "@athyper/core";
+
+import type { Request, Response, NextFunction } from "express";
 
 export interface ValidationMiddlewareOptions {
   /**

@@ -6,18 +6,19 @@
 // Renders 4 tabs: Session, Identity, Security, Platform.
 // Receives data as props from DiagnosticsConsole (parent).
 
-import { useState } from "react";
 import {
     AlertTriangle,
     Loader2,
 } from "lucide-react";
+import { useState } from "react";
+
+import { DebugRow, DebugSection } from "@/components/debug/DebugSection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { DebugRow, DebugSection } from "@/components/debug/DebugSection";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMessages } from "@/lib/i18n/messages-context";
 
 // Type alias for the debug API response

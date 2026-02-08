@@ -7,7 +7,6 @@
 
 import type {
   AdminActionType,
-  AdminActionRequest,
   AdminActionResult,
   AdminActionLog,
   RestartOptions,
@@ -16,13 +15,11 @@ import type {
   IAdminActionsService,
   IAdminActionRepository,
 } from "./types.js";
+import type { IAuditTrailService } from "../audit/types.js";
 import type {
-  ApprovalInstance,
-  ApprovalStepInstance,
   AssignedApprover,
   IApprovalInstanceRepository,
 } from "../instance/types.js";
-import type { IAuditTrailService } from "../audit/types.js";
 
 /**
  * Generate unique ID

@@ -5,9 +5,11 @@
  * lifecycle transitions, and impact analysis.
  */
 
+import type { IAuditTrailService } from "../audit/types.js";
+import type { IApprovalInstanceRepository } from "../instance/types.js";
+import type { ApprovalWorkflowTemplate, ApprovalStep, ApprovalTrigger, SlaConfiguration, ApprovalActionType } from "../types.js";
 import type {
   WorkflowVersion,
-  VersionStatus,
   VersionChange,
   VersionComparison,
   ImpactAnalysis,
@@ -16,9 +18,7 @@ import type {
   VersionLifecycleEvent,
   IVersionControlService,
   IVersionRepository,
-  ChangeType,
 } from "./types.js";
-import type { ApprovalWorkflowTemplate, ApprovalStep, ApprovalTrigger, SlaConfiguration, ApprovalActionType } from "../types.js";
 
 // Definition type extracted from template (the runtime configuration part)
 type TemplateDefinition = {
@@ -31,8 +31,6 @@ type TemplateDefinition = {
 
 // Alias for backward compatibility - template with definition access
 type ApprovalTemplate = ApprovalWorkflowTemplate & { definition: TemplateDefinition };
-import type { IApprovalInstanceRepository } from "../instance/types.js";
-import type { IAuditTrailService } from "../audit/types.js";
 
 /**
  * Generate unique ID

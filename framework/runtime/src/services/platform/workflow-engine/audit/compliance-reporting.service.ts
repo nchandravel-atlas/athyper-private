@@ -14,7 +14,6 @@ import type {
   ComplianceSummaryReport,
   IAuditRepository,
   IComplianceReportingService,
-  AuditEvent,
 } from "./types.js";
 import type { IApprovalInstanceRepository } from "../instance/types.js";
 

@@ -5,7 +5,6 @@
  * Manages entity definitions and versions using Kysely for type-safe queries.
  */
 
-import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type {
   MetaRegistry,
@@ -16,6 +15,7 @@ import type {
   ListOptions,
   PaginatedResponse,
 } from "@athyper/core/meta";
+import type { Kysely } from "kysely";
 
 /**
  * META Registry Service

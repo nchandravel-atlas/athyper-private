@@ -1,6 +1,6 @@
 "use client";
 
-import type { Workbench, WORKBENCH_PRIORITY } from "./types";
+import type { Workbench } from "./types";
 
 const LAST_WB_KEY = "neon:lastWorkbench";
 

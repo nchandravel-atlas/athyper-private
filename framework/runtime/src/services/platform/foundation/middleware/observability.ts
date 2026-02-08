@@ -3,9 +3,7 @@
  * Adds request correlation, metrics, and health checks
  */
 
-import type { Request, Response, NextFunction } from "express";
 import {
-  RequestContextStorage,
   extractCorrelationIds,
   generateRequestId,
   generateTraceId,
@@ -14,8 +12,11 @@ import {
   createTraceparent,
   type MetricsRegistry,
   type DependencyHealth,
-} from "@athyper/core";
+
+  RequestContextStorage} from "@athyper/core";
+
 import type { Logger } from "../../../../kernel/logger.js";
+import type { Request, Response, NextFunction } from "express";
 
 /**
  * Request correlation middleware

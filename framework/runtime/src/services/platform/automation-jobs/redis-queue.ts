@@ -4,7 +4,7 @@
  */
 
 import { Queue, Worker, QueueEvents, type Job as BullJob } from "bullmq";
-import type { Redis } from "ioredis";
+
 import type {
   JobQueue,
   Job,
@@ -15,6 +15,7 @@ import type {
   QueueMetrics,
   JobEventHandlers,
 } from "@athyper/core";
+import type { Redis } from "ioredis";
 
 export interface RedisQueueConfig {
   redis: Redis;

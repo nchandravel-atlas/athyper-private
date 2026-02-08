@@ -1,16 +1,21 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import { getIntl, isValidLocale } from "@athyper/i18n";
 import { cookies } from "next/headers";
-import { getSessionBootstrap } from "@/lib/session-bootstrap";
+
+import type { Locale } from "@athyper/i18n";
+import type { Metadata } from "next";
+
 import { Toaster } from "@/components/ui/sonner";
 import { APP_CONFIG } from "@/config/app-config";
 import { fontVars } from "@/lib/fonts/registry";
+import { MessagesProvider } from "@/lib/i18n/messages-context";
 import { PREFERENCE_DEFAULTS } from "@/lib/preferences/preferences-config";
+import { getSessionBootstrap } from "@/lib/session-bootstrap";
 import { ThemeBootScript } from "@/scripts/theme-boot";
 import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provider";
-import { getIntl, isValidLocale } from "@athyper/i18n";
-import type { Locale } from "@athyper/i18n";
-import { MessagesProvider } from "@/lib/i18n/messages-context";
+
+
+
 
 export const metadata: Metadata = {
     title: APP_CONFIG.meta.title,

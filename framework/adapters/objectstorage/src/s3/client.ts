@@ -1,4 +1,5 @@
 import { S3Client } from "@aws-sdk/client-s3";
+
 import type { ObjectStorageConfig } from "../types.js";
 
 export function createS3Client(config: ObjectStorageConfig): S3Client {

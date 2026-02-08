@@ -28,12 +28,10 @@ import type {
   ApprovalInstance,
   ApprovalStepInstance,
   AssignedApprover,
-  ApprovalActionRecord,
   IApprovalInstanceRepository,
 } from "../instance/types.js";
-import { ConcurrencyError } from "../instance/types.js";
-import type { ApprovalActionType } from "../types.js";
 import type { IApprovalTaskService } from "../task/types.js";
+import type { ApprovalActionType } from "../types.js";
 
 /**
  * Generate unique ID
@@ -1601,8 +1599,8 @@ export class ActionExecutionService implements IActionExecutionService {
       };
     }
 
-    let updatedApprovers = [...stepInstance.approvers];
-    let approvalCounts = { ...stepInstance.approvalCounts };
+    const updatedApprovers = [...stepInstance.approvers];
+    const approvalCounts = { ...stepInstance.approvalCounts };
 
     if (fromApproverId) {
       // Find and update the original approver

@@ -3,8 +3,8 @@
  * Manages multiple workers for different job types
  */
 
-import type { JobQueue, JobHandler, JobEventHandlers } from "@athyper/core";
 import type { Logger } from "../../../kernel/logger.js";
+import type { JobQueue, JobHandler, JobEventHandlers } from "@athyper/core";
 
 export interface WorkerConfig {
   jobType: string;

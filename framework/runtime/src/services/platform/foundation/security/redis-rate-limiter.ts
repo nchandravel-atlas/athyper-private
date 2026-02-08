@@ -3,12 +3,12 @@
  * Uses Lua scripts for atomic operations
  */
 
-import type { Redis } from "ioredis";
 import type {
   RateLimiter,
   RateLimitConfig,
   RateLimitResult,
 } from "@athyper/core";
+import type { Redis } from "ioredis";
 
 /**
  * Token bucket rate limiter using Redis

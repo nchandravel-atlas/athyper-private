@@ -1,14 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { useAuthOptional } from "@/lib/auth/auth-context";
 
 interface GateModuleProps {
     /** The module code(s) required to render children. */
     module: string | string[];
     /** Content to render when the user lacks the required module access. */
-    fallback?: ReactNode;
-    children: ReactNode;
+    fallback?: React.ReactNode;
+    children: React.ReactNode;
 }
 
 /**

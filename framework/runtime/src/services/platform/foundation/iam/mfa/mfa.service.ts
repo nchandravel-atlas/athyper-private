@@ -5,15 +5,17 @@
  * Handles enrollment, verification, challenges, and trusted devices.
  */
 
-import type { Kysely } from "kysely";
 import { randomBytes } from "crypto";
+
+import { BackupCodesService } from "./backup-codes.service.js";
+import { TotpService } from "./totp.service.js";
+
 import type {
   IMfaService,
   ITotpService,
   IBackupCodesService,
   MfaMethod,
   MfaStatus,
-  MfaConfig,
   MfaChallenge,
   MfaPolicy,
   MfaPolicyCheckResult,
@@ -29,9 +31,8 @@ import type {
   MfaAuditInput,
   TrustDeviceResult,
 } from "./types.js";
-import { TotpService } from "./totp.service.js";
-import { BackupCodesService } from "./backup-codes.service.js";
 import type { Logger } from "../../../../../kernel/logger.js";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // Configuration

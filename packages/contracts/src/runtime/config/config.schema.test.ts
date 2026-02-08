@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+
 import { RuntimeConfigSchema } from "./runtime-config.js";
 
 describe("RuntimeConfigSchema", () => {

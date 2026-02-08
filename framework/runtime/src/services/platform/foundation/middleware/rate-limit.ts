@@ -3,14 +3,14 @@
  * Supports per-tenant, per-user, and per-IP rate limiting
  */
 
-import type { Request, Response, NextFunction } from "express";
+import { createRateLimitKey } from "@athyper/core";
+
 import type {
   RateLimiter,
-  RateLimitConfig,
   RateLimitContext,
   RateLimitResult,
 } from "@athyper/core";
-import { createRateLimitKey } from "@athyper/core";
+import type { Request, Response, NextFunction } from "express";
 
 export interface RateLimitMiddlewareOptions {
   /**

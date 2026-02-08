@@ -11,13 +11,13 @@
  * - Includes correlation IDs for request tracing
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 import type {
   AuthorizationDecision,
   AuthorizationRequest,
   SubjectSnapshot,
 } from "./types.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * Decision log entry

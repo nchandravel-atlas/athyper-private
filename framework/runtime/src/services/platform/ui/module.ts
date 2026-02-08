@@ -7,19 +7,14 @@
  * During contribute(), seeds system dashboards from contribution JSON files.
  */
 
-import { resolve } from "node:path";
+import { resolve , dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
-import type { Kysely } from "kysely";
-import type { Container } from "../../../kernel/container.js";
-import type { Logger } from "../../../kernel/logger.js";
-import type { RouteRegistry } from "../foundation/registries/routes.registry.js";
-import type { RuntimeModule } from "../../registry.js";
+
 import { TOKENS } from "../../../kernel/tokens.js";
+
+import { DashboardContributionSeeder } from "./dashboard-seeder.js";
 import { DashboardRepository } from "./dashboard.repository.js";
 import { DashboardService } from "./dashboard.service.js";
-import { DashboardContributionSeeder } from "./dashboard-seeder.js";
-
 import {
     ListDashboardsHandler,
     GetDashboardHandler,
@@ -35,6 +30,12 @@ import {
     RemoveAclHandler,
     DeleteDashboardHandler,
 } from "./handlers/dashboards.handler.js";
+
+import type { Container } from "../../../kernel/container.js";
+import type { Logger } from "../../../kernel/logger.js";
+import type { RuntimeModule } from "../../registry.js";
+import type { RouteRegistry } from "../foundation/registries/routes.registry.js";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // Handler Tokens

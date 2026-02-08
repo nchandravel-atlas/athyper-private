@@ -10,8 +10,13 @@
  * 5. Processes obligations
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
+import {
+  DEFAULT_EVALUATION_OPTIONS,
+  PolicyErrorCodes,
+  PolicyEvaluationError,
+  compareRules,
+} from "./types.js";
+
 import type {
   CompiledPolicy,
   CompiledRule,
@@ -22,6 +27,7 @@ import type {
   Effect,
   OperationCode,
 } from "../types.js";
+import type { IFactsProvider } from "./facts-provider.js";
 import type {
   PolicyInput,
   PolicyDecision,
@@ -35,17 +41,11 @@ import type {
   PolicyContext,
   ConflictResolution,
 } from "./types.js";
-import {
-  DEFAULT_EVALUATION_OPTIONS,
-  PolicyErrorCodes,
-  PolicyEvaluationError,
-  compareRules,
-  SCOPE_SPECIFICITY_ORDER,
-} from "./types.js";
-import type { IFactsProvider, ResolvedFacts } from "./facts-provider.js";
+import type { OperationCatalogService } from "../operation-catalog.service.js";
 import type { PolicyCompilerService } from "../policy-compiler.service.js";
 import type { PolicyResolutionService } from "../policy-resolution.service.js";
-import type { OperationCatalogService } from "../operation-catalog.service.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // Evaluator Configuration

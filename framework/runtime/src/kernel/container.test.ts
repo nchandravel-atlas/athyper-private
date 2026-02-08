@@ -1,9 +1,11 @@
 // framework/runtime/src/kernel/container.test.ts
 import { describe, it, expect } from "vitest";
+
 import { createKernelContainer } from "./container";
 import { registerKernelDefaults } from "./container.defaults";
-import type { RuntimeConfig } from "./config.schema";
 import { TOKENS } from "./tokens";
+
+import type { RuntimeConfig } from "./config.schema";
 
 describe("Container Smoke Tests", () => {
     it("should create a container", () => {

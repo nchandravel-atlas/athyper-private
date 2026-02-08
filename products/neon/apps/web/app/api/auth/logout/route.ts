@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { getSessionId, clearSessionCookie, clearCsrfCookie } from "@neon/auth/session";
-import { keycloakLogout, buildFrontChannelLogoutUrl } from "@neon/auth/keycloak";
 import { emitBffAudit, AuthAuditEvent, hashSidForAudit } from "@neon/auth/audit";
+import { keycloakLogout, buildFrontChannelLogoutUrl } from "@neon/auth/keycloak";
+import { getSessionId, clearSessionCookie, clearCsrfCookie } from "@neon/auth/session";
+import { NextResponse } from "next/server";
 
 async function getRedisClient() {
     const { createClient } = await import("redis");

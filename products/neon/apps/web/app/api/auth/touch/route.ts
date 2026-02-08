@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { getSessionId } from "@neon/auth/session";
 import { emitBffAudit, AuthAuditEvent, hashSidForAudit } from "@neon/auth/audit";
+import { getSessionId } from "@neon/auth/session";
+import { NextResponse } from "next/server";
 
 async function getRedisClient() {
     const { createClient } = await import("redis");

@@ -12,15 +12,13 @@
  * - OU membership and ABAC attributes
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
-import type { SubjectSnapshot, SubjectKey, SubjectType } from "./types.js";
-
-// Import IAM services for integration
+import type { SubjectSnapshot, SubjectKey } from "./types.js";
 import type { EntitlementSnapshotService } from "../identity-access/entitlement-snapshot.service.js";
-import type { RoleBindingService } from "../identity-access/role-binding.service.js";
 import type { GroupSyncService } from "../identity-access/group-sync.service.js";
 import type { OUMembershipService } from "../identity-access/ou-membership.service.js";
+import type { RoleBindingService } from "../identity-access/role-binding.service.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * Subject Resolution Service
@@ -144,7 +142,7 @@ export class SubjectResolverService {
 
     // Get OU membership and attributes
     let ouMembership: SubjectSnapshot["ouMembership"];
-    let attributes: Record<string, string> = {};
+    const attributes: Record<string, string> = {};
 
     if (this.ouMembershipService) {
       const ou = await this.ouMembershipService.getPrincipalOU(principalId);

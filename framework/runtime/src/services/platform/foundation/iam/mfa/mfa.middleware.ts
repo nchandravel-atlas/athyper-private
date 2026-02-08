@@ -4,9 +4,9 @@
  * Express middleware for enforcing MFA verification on protected routes.
  */
 
-import type { Request, Response, NextFunction } from "express";
 import type { IMfaService } from "./types.js";
 import type { Logger } from "../../../../../kernel/logger.js";
+import type { Request, Response, NextFunction } from "express";
 
 // ============================================================================
 // Types

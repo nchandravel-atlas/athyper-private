@@ -5,7 +5,7 @@
  * including force actions, reassignments, and workflow control.
  */
 
-import type { ApprovalInstance, ApprovalStepInstance, AssignedApprover } from "../instance/types.js";
+import type { ApprovalInstance } from "../instance/types.js";
 
 /**
  * Types of admin actions

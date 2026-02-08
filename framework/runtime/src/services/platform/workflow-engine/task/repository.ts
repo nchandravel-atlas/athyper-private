@@ -4,8 +4,6 @@
  * Storage implementations for approval tasks.
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 import type {
   IApprovalTaskRepository,
   ApprovalTask,
@@ -14,6 +12,8 @@ import type {
   InboxSummary,
   TaskPriority,
 } from "./types.js";
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 // ============================================================================
 // In-Memory Repository (for testing/development)

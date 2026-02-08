@@ -15,7 +15,6 @@ import type {
   FieldAccessContext,
   SubjectSnapshot,
   AbacCondition,
-  PolicyType,
 } from "./types.js";
 import type { Logger } from "../../../../../kernel/logger.js";
 

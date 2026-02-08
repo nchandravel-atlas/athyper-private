@@ -1,5 +1,6 @@
 // framework/runtime/src/kernel/logger.test.ts
 import { describe, it, expect } from "vitest";
+
 import { createPinoLogger } from "./logger";
 
 describe("Pino Logger Smoke Tests", () => {

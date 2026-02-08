@@ -5,11 +5,14 @@
  * System roles are read-only; custom roles can be created per tenant.
  */
 
-import type { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import type { Kysely } from "kysely";
+
+import { PERSONA_CODES } from "../persona-model/types.js";
+
 import type { Logger } from "../../../../../kernel/logger.js";
-import { PERSONA_CODES, type PersonaCode, type ScopeMode } from "../persona-model/types.js";
+import type { Router, Request, Response, NextFunction } from "express";
+import type { Kysely } from "kysely";
+
 
 // ============================================================================
 // Validation Schemas

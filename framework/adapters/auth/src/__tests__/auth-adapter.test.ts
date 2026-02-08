@@ -3,6 +3,7 @@
 // we mock jose.jwtVerify and jose.createRemoteJWKSet to isolate adapter logic.
 
 import * as jose from "jose";
+
 import { createAuthAdapter, type AuthAdapterConfig } from "../keycloak/auth-adapter.js";
 
 // ─── Mocks ──────────────────────────────────────────────────────

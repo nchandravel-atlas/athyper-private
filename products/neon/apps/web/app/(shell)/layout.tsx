@@ -1,10 +1,6 @@
-import type { ReactNode } from "react";
-import { cookies } from "next/headers";
-import { getPreference } from "@/app/actions/preferences";
-import { SIDEBAR_COLLAPSIBLE_VALUES, SIDEBAR_VARIANT_VALUES } from "@/lib/preferences/layout";
 
 interface ShellLayoutProps {
-    children: ReactNode;
+    children: React.ReactNode;
 }
 
 /**

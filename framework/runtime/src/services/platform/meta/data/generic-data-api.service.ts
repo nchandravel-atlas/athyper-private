@@ -7,6 +7,9 @@
  */
 
 import { sql, type Kysely } from "kysely";
+
+import { QueryValidatorService, DEFAULT_QUERY_LIMITS } from "./query-validator.service.js";
+
 import type { DB } from "@athyper/adapter-db";
 import type {
   GenericDataAPI,
@@ -23,7 +26,6 @@ import type {
   BulkOperationResult,
   LifecycleTransitionResult,
 } from "@athyper/core/meta";
-import { QueryValidatorService, DEFAULT_QUERY_LIMITS } from "./query-validator.service.js";
 
 /**
  * Generic Data API Service

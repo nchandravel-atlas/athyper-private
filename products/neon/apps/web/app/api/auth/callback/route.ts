@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { createHash, randomUUID } from "node:crypto";
+
+import { emitBffAudit, AuthAuditEvent, hashSidForAudit } from "@neon/auth/audit";
 import { exchangeCodeForTokens, decodeJwtPayload } from "@neon/auth/keycloak";
 import { setSessionCookie, setCsrfCookie } from "@neon/auth/session";
-import { emitBffAudit, AuthAuditEvent, hashSidForAudit } from "@neon/auth/audit";
-import { createHash, randomUUID } from "node:crypto";
+import { NextResponse } from "next/server";
+
 
 async function getRedisClient() {
     const { createClient } = await import("redis");

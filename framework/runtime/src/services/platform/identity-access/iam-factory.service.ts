@@ -5,14 +5,16 @@
  * Provides unified IAM subsystem interface
  */
 
-import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
-import { IdentityMapperService } from "./identity-mapper.service.js";
-import { TenantResolverService } from "./tenant-resolver.service.js";
-import { GroupSyncService } from "./group-sync.service.js";
-import { RoleBindingService } from "./role-binding.service.js";
-import { OUMembershipService } from "./ou-membership.service.js";
 import { EntitlementSnapshotService } from "./entitlement-snapshot.service.js";
+import { GroupSyncService } from "./group-sync.service.js";
+import { IdentityMapperService } from "./identity-mapper.service.js";
+import { OUMembershipService } from "./ou-membership.service.js";
+import { RoleBindingService } from "./role-binding.service.js";
+import { TenantResolverService } from "./tenant-resolver.service.js";
+
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
+
 
 /**
  * IAM Services container

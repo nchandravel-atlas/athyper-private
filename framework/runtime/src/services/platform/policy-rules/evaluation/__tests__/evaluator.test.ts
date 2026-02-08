@@ -8,17 +8,8 @@
  * - Obligations behavior
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import type {
-  PolicyInput,
-  PolicySubject,
-  PolicyResource,
-  PolicyAction,
-  PolicyContext,
-  PolicyDecision,
-  MatchedRule,
-  ConflictResolution,
-} from "../types.js";
+import { describe, it, expect, beforeEach } from "vitest";
+
 import {
   compareRules,
   SCOPE_SPECIFICITY_ORDER,
@@ -26,7 +17,17 @@ import {
   PolicyErrorCodes,
   PolicyEvaluationError,
 } from "../types.js";
+
 import type { ScopeType, SubjectType, Effect, ConditionGroup, Condition } from "../../types.js";
+import type {
+  PolicyInput,
+  PolicySubject,
+  PolicyResource,
+  PolicyAction,
+  PolicyContext,
+  MatchedRule,
+  ConflictResolution,
+} from "../types.js";
 
 // ============================================================================
 // Test Fixtures

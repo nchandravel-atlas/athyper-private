@@ -14,8 +14,8 @@
  * - core.principal_attribute
  */
 
-import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * OU Node information

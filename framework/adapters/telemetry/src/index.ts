@@ -1,6 +1,8 @@
-import type { TelemetryAdapter, TelemetryLogger } from "@athyper/core";
 import { createLogEnvelope } from "@athyper/core";
+
 import { getOtelTraceContext } from "./traceContext.js";
+
+import type { TelemetryAdapter, TelemetryLogger } from "@athyper/core";
 
 export type OTelTelemetryAdapterOptions = {
     emit: (json: unknown) => void;

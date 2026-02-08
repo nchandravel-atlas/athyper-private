@@ -13,9 +13,6 @@
 
 import type {
   PolicyTestCase,
-  ManualSimulatorInput,
-  ExpectedDecision,
-  TestCaseAssertion,
 } from "./types.js";
 import type { PolicySubject, PolicyResource, PolicyAction, PolicyContext } from "../evaluation/types.js";
 

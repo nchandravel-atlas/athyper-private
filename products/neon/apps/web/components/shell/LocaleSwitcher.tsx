@@ -5,16 +5,19 @@
 // Language dropdown in the header bar.
 // Sets the neon_locale cookie and reloads the page on selection.
 
-import { useEffect, useState } from "react";
 import { Globe, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import type { SessionBootstrap } from "@/lib/session-bootstrap";
+
+import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import type { SessionBootstrap } from "@/lib/session-bootstrap";
+
 
 const LOCALES = [
     { code: "en", label: "English", native: "English" },

@@ -14,9 +14,6 @@ import type {
   PolicyResource,
   PolicyAction,
   PolicyContext,
-  PolicyEvaluationOptions,
-  MatchedRule,
-  TraceStep,
   PolicyObligation,
 } from "../evaluation/types.js";
 import type { Effect } from "../types.js";

@@ -15,8 +15,8 @@
  * - core.group_member
  */
 
-import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 /**
  * Group source type (matches DB constraint)

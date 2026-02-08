@@ -63,11 +63,11 @@ Browser                    Next.js BFF (Edge + API Routes)         Redis        
 
 ### Layers
 
-1. **Neon BFF** (`products/athyper-neon/`) — Next.js API routes handle login, callback, session, refresh, touch, logout, and debug. The BFF is the only component that touches tokens.
-2. **Auth Server Library** (`products/athyper-neon/auth/server/`) — PKCE utilities, Keycloak token exchange, session cookie management. Marked `"server-only"` to prevent client import.
+1. **Neon BFF** (`products/neon/`) — Next.js API routes handle login, callback, session, refresh, touch, logout, and debug. The BFF is the only component that touches tokens.
+2. **Auth Server Library** (`products/neon/auth/server/`) — PKCE utilities, Keycloak token exchange, session cookie management. Marked `"server-only"` to prevent client import.
 3. **Framework Security** (`framework/runtime/.../foundation/security/`) — RedisSessionStore, realm safety, environment profiles, auth audit events.
 4. **Framework IAM** (`framework/runtime/.../foundation/iam/`) — Tenant IAM profiles, session invalidation on IAM changes.
-5. **Client Hooks** (`products/athyper-neon/apps/web/lib/`) — `useSessionRefresh`, `useIdleTracker`, CSRF utilities, session bootstrap.
+5. **Client Hooks** (`products/neon/apps/web/lib/`) — `useSessionRefresh`, `useIdleTracker`, CSRF utilities, session bootstrap.
 
 ---
 
@@ -177,7 +177,7 @@ Both cookies have `path=/` and `maxAge=28800` (8 hours).
 
 ### Enforcement Location
 
-- [middleware.ts](products/athyper-neon/apps/web/middleware.ts) — Next.js edge middleware.
+- [middleware.ts](products/neon/apps/web/middleware.ts) — Next.js edge middleware.
 
 ---
 
@@ -398,32 +398,32 @@ All auth events are emitted via `emitAuthAudit()` to the kernel audit writer:
 
 | File | Purpose |
 |---|---|
-| [app/api/auth/login/route.ts](products/athyper-neon/apps/web/app/api/auth/login/route.ts) | PKCE login initiation (GET) |
-| [app/api/auth/callback/route.ts](products/athyper-neon/apps/web/app/api/auth/callback/route.ts) | OAuth callback, session creation (GET) |
-| [app/api/auth/session/route.ts](products/athyper-neon/apps/web/app/api/auth/session/route.ts) | Public session read (GET) + destroy (DELETE) |
-| [app/api/auth/refresh/route.ts](products/athyper-neon/apps/web/app/api/auth/refresh/route.ts) | Token refresh with idle enforcement (POST) |
-| [app/api/auth/touch/route.ts](products/athyper-neon/apps/web/app/api/auth/touch/route.ts) | Idle timer sync (POST) |
-| [app/api/auth/logout/route.ts](products/athyper-neon/apps/web/app/api/auth/logout/route.ts) | Backchannel + front-channel logout (POST) |
-| [app/api/auth/debug/route.ts](products/athyper-neon/apps/web/app/api/auth/debug/route.ts) | Debug console API — state machine, JWT introspection |
+| [app/api/auth/login/route.ts](products/neon/apps/web/app/api/auth/login/route.ts) | PKCE login initiation (GET) |
+| [app/api/auth/callback/route.ts](products/neon/apps/web/app/api/auth/callback/route.ts) | OAuth callback, session creation (GET) |
+| [app/api/auth/session/route.ts](products/neon/apps/web/app/api/auth/session/route.ts) | Public session read (GET) + destroy (DELETE) |
+| [app/api/auth/refresh/route.ts](products/neon/apps/web/app/api/auth/refresh/route.ts) | Token refresh with idle enforcement (POST) |
+| [app/api/auth/touch/route.ts](products/neon/apps/web/app/api/auth/touch/route.ts) | Idle timer sync (POST) |
+| [app/api/auth/logout/route.ts](products/neon/apps/web/app/api/auth/logout/route.ts) | Backchannel + front-channel logout (POST) |
+| [app/api/auth/debug/route.ts](products/neon/apps/web/app/api/auth/debug/route.ts) | Debug console API — state machine, JWT introspection |
 
 ### Neon BFF — Client Hooks and Utilities
 
 | File | Purpose |
 |---|---|
-| [lib/auth-refresh.ts](products/athyper-neon/apps/web/lib/auth-refresh.ts) | `useSessionRefresh` — proactive token refresh timer |
-| [lib/idle-tracker.ts](products/athyper-neon/apps/web/lib/idle-tracker.ts) | `useIdleTracker` — idle warning + auto-logout |
-| [lib/csrf.ts](products/athyper-neon/apps/web/lib/csrf.ts) | CSRF token generation and validation |
-| [lib/session-bootstrap.ts](products/athyper-neon/apps/web/lib/session-bootstrap.ts) | SSR session bootstrap (Redis -> HTML inline) |
-| [middleware.ts](products/athyper-neon/apps/web/middleware.ts) | CSRF enforcement + session cookie guard |
-| [app/layout.tsx](products/athyper-neon/apps/web/app/layout.tsx) | Injects `__SESSION_BOOTSTRAP__` into HTML |
+| [lib/auth-refresh.ts](products/neon/apps/web/lib/auth-refresh.ts) | `useSessionRefresh` — proactive token refresh timer |
+| [lib/idle-tracker.ts](products/neon/apps/web/lib/idle-tracker.ts) | `useIdleTracker` — idle warning + auto-logout |
+| [lib/csrf.ts](products/neon/apps/web/lib/csrf.ts) | CSRF token generation and validation |
+| [lib/session-bootstrap.ts](products/neon/apps/web/lib/session-bootstrap.ts) | SSR session bootstrap (Redis -> HTML inline) |
+| [middleware.ts](products/neon/apps/web/middleware.ts) | CSRF enforcement + session cookie guard |
+| [app/layout.tsx](products/neon/apps/web/app/layout.tsx) | Injects `__SESSION_BOOTSTRAP__` into HTML |
 
 ### Auth Server Library
 
 | File | Purpose |
 |---|---|
-| [auth/server/keycloak.ts](products/athyper-neon/auth/server/keycloak.ts) | PKCE, token exchange, refresh, logout, JWT decode |
-| [auth/server/session.ts](products/athyper-neon/auth/server/session.ts) | Cookie management (neon_sid, __csrf) |
-| [auth/server/types.ts](products/athyper-neon/auth/server/types.ts) | Session and ServerSession interfaces |
+| [auth/server/keycloak.ts](products/neon/auth/server/keycloak.ts) | PKCE, token exchange, refresh, logout, JWT decode |
+| [auth/server/session.ts](products/neon/auth/server/session.ts) | Cookie management (neon_sid, __csrf) |
+| [auth/server/types.ts](products/neon/auth/server/types.ts) | Session and ServerSession interfaces |
 
 ### Framework — Security
 

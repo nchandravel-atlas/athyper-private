@@ -73,7 +73,7 @@ pnpm install
 # This installs dependencies for:
 # - framework packages (core, runtime, adapters)
 # - shared packages (contracts, ui, auth, etc.)
-# - products (athyper-neon)
+# - products (neon)
 ```
 
 **Expected output**:

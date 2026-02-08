@@ -788,15 +788,15 @@ Every session stores a `lastSeenAt` timestamp (epoch seconds). The following end
 
 The idle timeout is currently hardcoded at 900 seconds in multiple files. To change it, update all of:
 
-- `products/athyper-neon/apps/web/app/api/auth/touch/route.ts` — `IDLE_TIMEOUT_SEC`
-- `products/athyper-neon/apps/web/app/api/auth/refresh/route.ts` — `IDLE_TIMEOUT_SEC`
-- `products/athyper-neon/apps/web/app/api/auth/debug/route.ts` — `IDLE_TIMEOUT_SEC`
-- `products/athyper-neon/apps/web/lib/session-bootstrap.ts` — `IDLE_TIMEOUT_SEC`
+- `products/neon/apps/web/app/api/auth/touch/route.ts` — `IDLE_TIMEOUT_SEC`
+- `products/neon/apps/web/app/api/auth/refresh/route.ts` — `IDLE_TIMEOUT_SEC`
+- `products/neon/apps/web/app/api/auth/debug/route.ts` — `IDLE_TIMEOUT_SEC`
+- `products/neon/apps/web/lib/session-bootstrap.ts` — `IDLE_TIMEOUT_SEC`
 
 The warning threshold (180s before timeout) is configured in:
 
-- `products/athyper-neon/apps/web/app/api/auth/debug/route.ts` — `IDLE_WARNING_SEC`
-- `products/athyper-neon/apps/web/lib/idle-tracker.ts` — `warningBeforeSec` default
+- `products/neon/apps/web/app/api/auth/debug/route.ts` — `IDLE_WARNING_SEC`
+- `products/neon/apps/web/lib/idle-tracker.ts` — `warningBeforeSec` default
 
 ---
 

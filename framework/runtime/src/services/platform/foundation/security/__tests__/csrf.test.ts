@@ -1,9 +1,9 @@
 // CSRF double-submit validation tests.
-// Tests the CSRF utility logic inline (same logic as products/athyper-neon/apps/web/lib/csrf.ts).
+// Tests the CSRF utility logic inline (same logic as products/neon/apps/web/lib/csrf.ts).
 
 import { randomUUID } from "node:crypto";
 
-// ─── Inline CSRF utilities (mirrors products/athyper-neon/apps/web/lib/csrf.ts) ───
+// ─── Inline CSRF utilities (mirrors products/neon/apps/web/lib/csrf.ts) ───
 
 function generateCsrfToken(): string {
     return randomUUID();

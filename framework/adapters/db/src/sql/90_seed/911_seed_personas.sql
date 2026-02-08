@@ -13,8 +13,8 @@ insert into core.persona (code, name, description, scope_mode, priority, is_syst
   ('requester',    'Requester',    'Can create and manage own requests',   'tenant', 30,  true),
   ('agent',        'Agent',        'Process requests within assigned OU',  'ou',     40,  true),
   ('manager',      'Manager',      'Manage and approve within OU scope',   'ou',     50,  true),
-  ('module_admin', 'Module Admin', 'Administer module entities',           'module', 60,  true),
-  ('tenant_admin', 'Tenant Admin', 'Full tenant administration',           'tenant', 100, true)
+  ('moduleAdmin',  'Module Admin', 'Administer module entities',           'module', 60,  true),
+  ('tenantAdmin',  'Tenant Admin', 'Full tenant administration',           'tenant', 100, true)
 on conflict (code) do nothing;
 
 -- ----------------------------------------------------------------------------
@@ -132,50 +132,50 @@ select core._seed_grant_capability('manager', 'tag');
 -- ============================================================================
 -- MODULE_ADMIN capabilities (module-scoped administration)
 -- ============================================================================
-select core._seed_grant_capability('module_admin', 'read',                    'module');
-select core._seed_grant_capability('module_admin', 'delete',                  'module');
-select core._seed_grant_capability('module_admin', 'merge',                   'module');
-select core._seed_grant_capability('module_admin', 'report');
-select core._seed_grant_capability('module_admin', 'print');
-select core._seed_grant_capability('module_admin', 'import',                  'module');
-select core._seed_grant_capability('module_admin', 'export');
-select core._seed_grant_capability('module_admin', 'bulk_import',             'module');
-select core._seed_grant_capability('module_admin', 'bulk_export',             'module');
-select core._seed_grant_capability('module_admin', 'bulk_update',             'module');
-select core._seed_grant_capability('module_admin', 'bulk_delete',             'module');
-select core._seed_grant_capability('module_admin', 'delegate');
-select core._seed_grant_capability('module_admin', 'share_readonly');
-select core._seed_grant_capability('module_admin', 'share_editable');
-select core._seed_grant_capability('module_admin', 'comment_add');
-select core._seed_grant_capability('module_admin', 'attachment_add');
-select core._seed_grant_capability('module_admin', 'comment_delete_other');
-select core._seed_grant_capability('module_admin', 'attachment_delete_other');
-select core._seed_grant_capability('module_admin', 'follow');
-select core._seed_grant_capability('module_admin', 'tag');
+select core._seed_grant_capability('moduleAdmin', 'read',                    'module');
+select core._seed_grant_capability('moduleAdmin', 'delete',                  'module');
+select core._seed_grant_capability('moduleAdmin', 'merge',                   'module');
+select core._seed_grant_capability('moduleAdmin', 'report');
+select core._seed_grant_capability('moduleAdmin', 'print');
+select core._seed_grant_capability('moduleAdmin', 'import',                  'module');
+select core._seed_grant_capability('moduleAdmin', 'export');
+select core._seed_grant_capability('moduleAdmin', 'bulk_import',             'module');
+select core._seed_grant_capability('moduleAdmin', 'bulk_export',             'module');
+select core._seed_grant_capability('moduleAdmin', 'bulk_update',             'module');
+select core._seed_grant_capability('moduleAdmin', 'bulk_delete',             'module');
+select core._seed_grant_capability('moduleAdmin', 'delegate');
+select core._seed_grant_capability('moduleAdmin', 'share_readonly');
+select core._seed_grant_capability('moduleAdmin', 'share_editable');
+select core._seed_grant_capability('moduleAdmin', 'comment_add');
+select core._seed_grant_capability('moduleAdmin', 'attachment_add');
+select core._seed_grant_capability('moduleAdmin', 'comment_delete_other');
+select core._seed_grant_capability('moduleAdmin', 'attachment_delete_other');
+select core._seed_grant_capability('moduleAdmin', 'follow');
+select core._seed_grant_capability('moduleAdmin', 'tag');
 
 -- ============================================================================
 -- TENANT_ADMIN capabilities (full access, no constraints)
 -- ============================================================================
-select core._seed_grant_capability('tenant_admin', 'read');
-select core._seed_grant_capability('tenant_admin', 'delete');
-select core._seed_grant_capability('tenant_admin', 'merge');
-select core._seed_grant_capability('tenant_admin', 'report');
-select core._seed_grant_capability('tenant_admin', 'print');
-select core._seed_grant_capability('tenant_admin', 'import');
-select core._seed_grant_capability('tenant_admin', 'export');
-select core._seed_grant_capability('tenant_admin', 'bulk_import');
-select core._seed_grant_capability('tenant_admin', 'bulk_export');
-select core._seed_grant_capability('tenant_admin', 'bulk_update');
-select core._seed_grant_capability('tenant_admin', 'bulk_delete');
-select core._seed_grant_capability('tenant_admin', 'delegate');
-select core._seed_grant_capability('tenant_admin', 'share_readonly');
-select core._seed_grant_capability('tenant_admin', 'share_editable');
-select core._seed_grant_capability('tenant_admin', 'comment_add');
-select core._seed_grant_capability('tenant_admin', 'attachment_add');
-select core._seed_grant_capability('tenant_admin', 'comment_delete_other');
-select core._seed_grant_capability('tenant_admin', 'attachment_delete_other');
-select core._seed_grant_capability('tenant_admin', 'follow');
-select core._seed_grant_capability('tenant_admin', 'tag');
+select core._seed_grant_capability('tenantAdmin', 'read');
+select core._seed_grant_capability('tenantAdmin', 'delete');
+select core._seed_grant_capability('tenantAdmin', 'merge');
+select core._seed_grant_capability('tenantAdmin', 'report');
+select core._seed_grant_capability('tenantAdmin', 'print');
+select core._seed_grant_capability('tenantAdmin', 'import');
+select core._seed_grant_capability('tenantAdmin', 'export');
+select core._seed_grant_capability('tenantAdmin', 'bulk_import');
+select core._seed_grant_capability('tenantAdmin', 'bulk_export');
+select core._seed_grant_capability('tenantAdmin', 'bulk_update');
+select core._seed_grant_capability('tenantAdmin', 'bulk_delete');
+select core._seed_grant_capability('tenantAdmin', 'delegate');
+select core._seed_grant_capability('tenantAdmin', 'share_readonly');
+select core._seed_grant_capability('tenantAdmin', 'share_editable');
+select core._seed_grant_capability('tenantAdmin', 'comment_add');
+select core._seed_grant_capability('tenantAdmin', 'attachment_add');
+select core._seed_grant_capability('tenantAdmin', 'comment_delete_other');
+select core._seed_grant_capability('tenantAdmin', 'attachment_delete_other');
+select core._seed_grant_capability('tenantAdmin', 'follow');
+select core._seed_grant_capability('tenantAdmin', 'tag');
 
 -- ----------------------------------------------------------------------------
 -- Drop helper function (cleanup)

@@ -1,1 +1,0 @@
-// Keycloak client stub

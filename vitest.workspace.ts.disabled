@@ -24,8 +24,8 @@ export default defineWorkspace([
   {
     extends: "./vitest.config.ts",
     test: {
-      name: "athyper-neon-web",
-      root: "./products/athyper-neon/apps/web",
+      name: "neon-web",
+      root: "./products/neon/apps/web",
       environment: "jsdom",
     },
   },

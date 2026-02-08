@@ -105,7 +105,7 @@ create table if not exists core.persona (
 );
 
 comment on table core.persona is
-'Persona definitions (viewer, reporter, requester, agent, manager, module_admin, tenant_admin).';
+'Persona definitions (viewer, reporter, requester, agent, manager, moduleAdmin, tenantAdmin).';
 
 comment on column core.persona.scope_mode is 'How the persona scopes access: tenant-wide, OU-scoped, or module-scoped.';
 comment on column core.persona.priority is 'Higher priority personas take precedence when user has multiple.';

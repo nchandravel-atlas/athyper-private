@@ -12,8 +12,8 @@ create table if not exists mdm.company_code (
 
   code          text not null,
   name          text not null,
-  base_currency text references ref.currency(code),
-  country_code  text references ref.country(code),
+  base_currency char(3) references ref.currency(code),
+  country_code  char(2) references ref.country(code2),
 
   ou_node_id    uuid references core.ou_node(id),
   config        jsonb,

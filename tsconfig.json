@@ -48,7 +48,7 @@
             "path": "packages/workbench-user"
         },
         {
-            "path": "products/athyper-neon/apps/web"
+            "path": "products/neon/apps/web"
         },
         {
             "path": "tools/codegen"

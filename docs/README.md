@@ -102,9 +102,12 @@ athyper-private/
 │   └── workbench-*/         # Workbench modules
 │
 ├── products/                # Product applications
-│   └── athyper-neon/        # Neon product
-│       └── apps/
-│           └── web/         # Next.js web application
+│   └── neon/                # Neon product
+│       ├── apps/
+│       │   └── web/         # Next.js web application
+│       ├── auth/            # Auth server helpers (session, audit)
+│       ├── shared/ui/       # Product-level UI components
+│       └── themes/          # Theme presets
 │
 └── mesh/                    # Local infrastructure
     ├── compose/             # Docker Compose configs

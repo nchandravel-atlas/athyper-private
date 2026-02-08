@@ -3,7 +3,7 @@
  */
 
 export const i18nConfig = {
-    locales: ["en", "ms", "ta", "hi", "ar"] as const,
+    locales: ["en", "ms", "ta", "hi", "ar", "fr", "de"] as const,
     defaultLocale: "en" as const,
 
     /** RTL locales */

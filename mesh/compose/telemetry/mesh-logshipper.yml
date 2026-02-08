@@ -22,18 +22,10 @@ services:
     depends_on:
       logging:
         condition: service_healthy
+    # Healthcheck: grafana/alloy is distroless (no shell) — disable
+    # If healthcheck needed, switch to grafana/alloy:v1.12.2-alpine and use wget
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget -q --spider http://127.0.0.1:12345/-/ready 2>/dev/null \
-          || (echo >/dev/tcp/127.0.0.1/12345 >/dev/null 2>&1) \
-          || exit 1"
-        ]
-      interval: 10s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
+      disable: true
     stop_grace_period: 20s
     restart: unless-stopped
     security_opt:

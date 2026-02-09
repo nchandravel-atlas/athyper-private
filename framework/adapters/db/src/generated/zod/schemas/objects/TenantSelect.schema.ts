@@ -11,6 +11,9 @@ import { OuNodeFindManySchema as OuNodeFindManySchema } from '../findManyOuNode.
 import { PrincipalAttributeFindManySchema as PrincipalAttributeFindManySchema } from '../findManyPrincipalAttribute.schema';
 import { EntitlementSnapshotFindManySchema as EntitlementSnapshotFindManySchema } from '../findManyEntitlementSnapshot.schema';
 import { PrincipalProfileFindManySchema as PrincipalProfileFindManySchema } from '../findManyPrincipalProfile.schema';
+import { UiDashboardFindManySchema as UiDashboardFindManySchema } from '../findManyUiDashboard.schema';
+import { UiDashboardVersionFindManySchema as UiDashboardVersionFindManySchema } from '../findManyUiDashboardVersion.schema';
+import { UiDashboardAclFindManySchema as UiDashboardAclFindManySchema } from '../findManyUiDashboardAcl.schema';
 import { TenantCountOutputTypeArgsObjectSchema as TenantCountOutputTypeArgsObjectSchema } from './TenantCountOutputTypeArgs.schema'
 
 const makeSchema = () => z.object({
@@ -35,6 +38,9 @@ const makeSchema = () => z.object({
   principalAttributes: z.union([z.boolean(), z.lazy(() => PrincipalAttributeFindManySchema)]).optional(),
   entitlementSnapshots: z.union([z.boolean(), z.lazy(() => EntitlementSnapshotFindManySchema)]).optional(),
   principalProfiles: z.union([z.boolean(), z.lazy(() => PrincipalProfileFindManySchema)]).optional(),
+  dashboards: z.union([z.boolean(), z.lazy(() => UiDashboardFindManySchema)]).optional(),
+  dashboardVersions: z.union([z.boolean(), z.lazy(() => UiDashboardVersionFindManySchema)]).optional(),
+  dashboardAcls: z.union([z.boolean(), z.lazy(() => UiDashboardAclFindManySchema)]).optional(),
   _count: z.union([z.boolean(), z.lazy(() => TenantCountOutputTypeArgsObjectSchema)]).optional()
 }).strict();
 export const TenantSelectObjectSchema: z.ZodType<Prisma.TenantSelect> = makeSchema() as unknown as z.ZodType<Prisma.TenantSelect>;

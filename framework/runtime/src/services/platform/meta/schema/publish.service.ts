@@ -24,6 +24,8 @@ import type {
 } from "@athyper/core/meta";
 import type { Kysely } from "kysely";
 
+import type { MigrationRunnerService } from "./migration-runner.service.js";
+import type { SchemaChangeNotifier } from "./schema-change-notifier.js";
 
 // RequestContext type (inline for now - should be imported from contracts)
 type RequestContext = {
@@ -117,6 +119,12 @@ export type PublishRequest = {
   /** Generate DDL migration plan */
   generateDdlPlan?: boolean;
 
+  /** Apply DDL to database (requires generateDdlPlan: true) */
+  applyDdl?: boolean;
+
+  /** Notify runtime of schema change via Redis pub/sub */
+  notifyRuntime?: boolean;
+
   /** Request context */
   ctx: RequestContext;
 };
@@ -151,22 +159,35 @@ export class PublishService {
     private readonly db: Kysely<DB>,
     private readonly registry: MetaRegistry,
     private readonly compiler: MetaCompiler,
-    private readonly ddlGenerator?: DdlGenerator
+    private readonly ddlGenerator?: DdlGenerator,
+    private readonly migrationRunner?: MigrationRunnerService,
+    private readonly notifier?: SchemaChangeNotifier,
   ) {}
 
   /**
    * Publish entity version
    *
    * Enforces the publish gate:
-   * 1. Draft → validate schema
-   * 2. Compile entity
-   * 3. Run diagnostics
-   * 4. (Optional) Generate DDL plan
-   * 5. Persist publish artifact
-   * 6. Mark version as published (immutable)
+   * 1. Immutability check (already published?)
+   * 2. Validate schema
+   * 3. Compile entity
+   * 4. Run diagnostics
+   * 5. (Optional) Generate DDL plan
+   * 6. (Optional) Apply DDL via MigrationRunnerService
+   * 7. Persist publish artifact
+   * 8. (Optional) Notify runtime via Redis pub/sub
    */
   async publish(request: PublishRequest): Promise<PublishResult> {
-    const { entityName, version, schema, overlaySet = [], generateDdlPlan = false, ctx } = request;
+    const {
+      entityName,
+      version,
+      schema,
+      overlaySet = [],
+      generateDdlPlan = false,
+      applyDdl = false,
+      notifyRuntime = false,
+      ctx,
+    } = request;
 
     console.log(
       JSON.stringify({
@@ -175,6 +196,8 @@ export class PublishService {
         version,
         overlaySet,
         generateDdlPlan,
+        applyDdl,
+        notifyRuntime,
         userId: ctx.userId,
       })
     );
@@ -298,7 +321,55 @@ export class PublishService {
         migrationPlanHash = this.hashString(migrationPlanSql);
       }
 
-      // Gate 6: Persist publish artifact
+      // Gate 6: Apply DDL (optional — requires generateDdlPlan + applyDdl)
+      if (applyDdl && migrationPlanSql && this.migrationRunner) {
+        console.log(
+          JSON.stringify({
+            msg: "publish_gate_apply_ddl",
+            entityName,
+            version,
+          })
+        );
+
+        const plan = [
+          {
+            entityName,
+            tableName: compiledModel.tableName,
+            action: "create" as const,
+            reason: "Publish-time DDL apply",
+            ddl: migrationPlanSql,
+          },
+        ];
+
+        const migrationResult = await this.migrationRunner.applyPlan(plan);
+
+        if (!migrationResult.success) {
+          console.error(
+            JSON.stringify({
+              msg: "publish_ddl_apply_failed",
+              entityName,
+              version,
+              errors: migrationResult.errors,
+            })
+          );
+          return {
+            success: false,
+            diagnostics,
+            errors: migrationResult.errors,
+          };
+        }
+      } else if (applyDdl && !this.migrationRunner) {
+        console.warn(
+          JSON.stringify({
+            msg: "publish_ddl_apply_skipped",
+            entityName,
+            version,
+            reason: "MigrationRunnerService not available",
+          })
+        );
+      }
+
+      // Gate 7: Persist publish artifact
       console.log(
         JSON.stringify({
           msg: "publish_gate_persist",
@@ -318,6 +389,11 @@ export class PublishService {
         ctx,
       });
 
+      // Gate 8: Notify runtime (optional — best-effort, never blocks publish)
+      if (notifyRuntime && this.notifier) {
+        await this.notifier.notify(entityName, version, ctx.tenantId, applyDdl);
+      }
+
       console.log(
         JSON.stringify({
           msg: "publish_success",
@@ -325,6 +401,8 @@ export class PublishService {
           version,
           artifactId: artifact.id,
           compiledHash: artifact.compiledHash,
+          ddlApplied: applyDdl && !!migrationPlanSql,
+          runtimeNotified: notifyRuntime && !!this.notifier,
         })
       );
 

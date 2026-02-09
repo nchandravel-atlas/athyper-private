@@ -25,3 +25,6 @@ export { PermissionRuleResultSchema } from './PermissionRule.result';
 export { PermissionRuleOperationResultSchema } from './PermissionRuleOperation.result';
 export { PermissionPolicyCompiledResultSchema } from './PermissionPolicyCompiled.result';
 export { PermissionDecisionLogResultSchema } from './PermissionDecisionLog.result';
+export { UiDashboardResultSchema } from './UiDashboard.result';
+export { UiDashboardVersionResultSchema } from './UiDashboardVersion.result';
+export { UiDashboardAclResultSchema } from './UiDashboardAcl.result';

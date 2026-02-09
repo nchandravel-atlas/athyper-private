@@ -14,6 +14,9 @@ import { GenericDataAPIService } from "./data/generic-data-api.service.js";
 import { LifecycleManagerService } from "./lifecycle/lifecycle-manager.service.js";
 import { LifecycleRouteCompilerService } from "./lifecycle/lifecycle-route-compiler.service.js";
 import { DdlGeneratorService } from "./schema/ddl-generator.service.js";
+import { MigrationRunnerService } from "./schema/migration-runner.service.js";
+import { PublishService } from "./schema/publish.service.js";
+import { SchemaChangeNotifier } from "./schema/schema-change-notifier.js";
 
 import type { MetaStore } from "./core/meta-store.service.js";
 import type { LifecycleDB_Type } from "./data/db-helpers.js";
@@ -62,6 +65,9 @@ export type MetaServices = {
   lifecycleRouteCompiler: LifecycleRouteCompiler;
   lifecycleManager: LifecycleManager;
   ddlGenerator: DdlGenerator;
+  migrationRunner: MigrationRunnerService;
+  publishService: PublishService;
+  schemaChangeNotifier: SchemaChangeNotifier;
 };
 
 /**
@@ -129,6 +135,28 @@ export function createMetaServices(
   // 9. DDL Generator (no dependencies - pure transformation service)
   const ddlGenerator = new DdlGeneratorService();
 
+  // 10. Migration Runner (depends on db, registry, compiler, ddlGenerator)
+  const migrationRunner = new MigrationRunnerService({
+    db: config.db,
+    registry,
+    compiler,
+    ddlGenerator,
+    mode: "dev",
+  });
+
+  // 11. Schema Change Notifier (depends on Redis)
+  const schemaChangeNotifier = new SchemaChangeNotifier(config.cache);
+
+  // 12. Publish Service (depends on db, registry, compiler, ddlGenerator, migrationRunner, notifier)
+  const publishService = new PublishService(
+    config.db,
+    registry,
+    compiler,
+    ddlGenerator,
+    migrationRunner,
+    schemaChangeNotifier,
+  );
+
   return {
     registry,
     compiler,
@@ -139,6 +167,9 @@ export function createMetaServices(
     lifecycleRouteCompiler,
     lifecycleManager,
     ddlGenerator,
+    migrationRunner,
+    publishService,
+    schemaChangeNotifier,
   };
 }
 

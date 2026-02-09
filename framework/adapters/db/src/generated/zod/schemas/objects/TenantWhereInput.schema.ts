@@ -16,7 +16,10 @@ import { RoleBindingListRelationFilterObjectSchema as RoleBindingListRelationFil
 import { OuNodeListRelationFilterObjectSchema as OuNodeListRelationFilterObjectSchema } from './OuNodeListRelationFilter.schema';
 import { PrincipalAttributeListRelationFilterObjectSchema as PrincipalAttributeListRelationFilterObjectSchema } from './PrincipalAttributeListRelationFilter.schema';
 import { EntitlementSnapshotListRelationFilterObjectSchema as EntitlementSnapshotListRelationFilterObjectSchema } from './EntitlementSnapshotListRelationFilter.schema';
-import { PrincipalProfileListRelationFilterObjectSchema as PrincipalProfileListRelationFilterObjectSchema } from './PrincipalProfileListRelationFilter.schema'
+import { PrincipalProfileListRelationFilterObjectSchema as PrincipalProfileListRelationFilterObjectSchema } from './PrincipalProfileListRelationFilter.schema';
+import { UiDashboardListRelationFilterObjectSchema as UiDashboardListRelationFilterObjectSchema } from './UiDashboardListRelationFilter.schema';
+import { UiDashboardVersionListRelationFilterObjectSchema as UiDashboardVersionListRelationFilterObjectSchema } from './UiDashboardVersionListRelationFilter.schema';
+import { UiDashboardAclListRelationFilterObjectSchema as UiDashboardAclListRelationFilterObjectSchema } from './UiDashboardAclListRelationFilter.schema'
 
 const tenantwhereinputSchema = z.object({
   AND: z.union([z.lazy(() => TenantWhereInputObjectSchema), z.lazy(() => TenantWhereInputObjectSchema).array()]).optional(),
@@ -42,7 +45,10 @@ const tenantwhereinputSchema = z.object({
   ouNodes: z.lazy(() => OuNodeListRelationFilterObjectSchema).optional(),
   principalAttributes: z.lazy(() => PrincipalAttributeListRelationFilterObjectSchema).optional(),
   entitlementSnapshots: z.lazy(() => EntitlementSnapshotListRelationFilterObjectSchema).optional(),
-  principalProfiles: z.lazy(() => PrincipalProfileListRelationFilterObjectSchema).optional()
+  principalProfiles: z.lazy(() => PrincipalProfileListRelationFilterObjectSchema).optional(),
+  dashboards: z.lazy(() => UiDashboardListRelationFilterObjectSchema).optional(),
+  dashboardVersions: z.lazy(() => UiDashboardVersionListRelationFilterObjectSchema).optional(),
+  dashboardAcls: z.lazy(() => UiDashboardAclListRelationFilterObjectSchema).optional()
 }).strict();
 export const TenantWhereInputObjectSchema: z.ZodType<Prisma.TenantWhereInput> = tenantwhereinputSchema as unknown as z.ZodType<Prisma.TenantWhereInput>;
 export const TenantWhereInputObjectZodSchema = tenantwhereinputSchema;

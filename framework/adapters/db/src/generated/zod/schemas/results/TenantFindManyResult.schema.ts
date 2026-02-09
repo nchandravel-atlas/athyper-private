@@ -21,7 +21,10 @@ export const TenantFindManyResultSchema = z.object({
   ouNodes: z.array(z.unknown()),
   principalAttributes: z.array(z.unknown()),
   entitlementSnapshots: z.array(z.unknown()),
-  principalProfiles: z.array(z.unknown())
+  principalProfiles: z.array(z.unknown()),
+  dashboards: z.array(z.unknown()),
+  dashboardVersions: z.array(z.unknown()),
+  dashboardAcls: z.array(z.unknown())
 })),
   pagination: z.object({
   page: z.number().int().min(1),

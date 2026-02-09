@@ -10,7 +10,10 @@ import { RoleBindingCreateNestedManyWithoutTenantInputObjectSchema as RoleBindin
 import { OuNodeCreateNestedManyWithoutTenantInputObjectSchema as OuNodeCreateNestedManyWithoutTenantInputObjectSchema } from './OuNodeCreateNestedManyWithoutTenantInput.schema';
 import { PrincipalAttributeCreateNestedManyWithoutTenantInputObjectSchema as PrincipalAttributeCreateNestedManyWithoutTenantInputObjectSchema } from './PrincipalAttributeCreateNestedManyWithoutTenantInput.schema';
 import { EntitlementSnapshotCreateNestedManyWithoutTenantInputObjectSchema as EntitlementSnapshotCreateNestedManyWithoutTenantInputObjectSchema } from './EntitlementSnapshotCreateNestedManyWithoutTenantInput.schema';
-import { PrincipalProfileCreateNestedManyWithoutTenantInputObjectSchema as PrincipalProfileCreateNestedManyWithoutTenantInputObjectSchema } from './PrincipalProfileCreateNestedManyWithoutTenantInput.schema'
+import { PrincipalProfileCreateNestedManyWithoutTenantInputObjectSchema as PrincipalProfileCreateNestedManyWithoutTenantInputObjectSchema } from './PrincipalProfileCreateNestedManyWithoutTenantInput.schema';
+import { UiDashboardCreateNestedManyWithoutTenantInputObjectSchema as UiDashboardCreateNestedManyWithoutTenantInputObjectSchema } from './UiDashboardCreateNestedManyWithoutTenantInput.schema';
+import { UiDashboardVersionCreateNestedManyWithoutTenantInputObjectSchema as UiDashboardVersionCreateNestedManyWithoutTenantInputObjectSchema } from './UiDashboardVersionCreateNestedManyWithoutTenantInput.schema';
+import { UiDashboardAclCreateNestedManyWithoutTenantInputObjectSchema as UiDashboardAclCreateNestedManyWithoutTenantInputObjectSchema } from './UiDashboardAclCreateNestedManyWithoutTenantInput.schema'
 
 const makeSchema = () => z.object({
   id: z.string().optional(),
@@ -33,7 +36,10 @@ const makeSchema = () => z.object({
   ouNodes: z.lazy(() => OuNodeCreateNestedManyWithoutTenantInputObjectSchema).optional(),
   principalAttributes: z.lazy(() => PrincipalAttributeCreateNestedManyWithoutTenantInputObjectSchema).optional(),
   entitlementSnapshots: z.lazy(() => EntitlementSnapshotCreateNestedManyWithoutTenantInputObjectSchema).optional(),
-  principalProfiles: z.lazy(() => PrincipalProfileCreateNestedManyWithoutTenantInputObjectSchema).optional()
+  principalProfiles: z.lazy(() => PrincipalProfileCreateNestedManyWithoutTenantInputObjectSchema).optional(),
+  dashboards: z.lazy(() => UiDashboardCreateNestedManyWithoutTenantInputObjectSchema).optional(),
+  dashboardVersions: z.lazy(() => UiDashboardVersionCreateNestedManyWithoutTenantInputObjectSchema).optional(),
+  dashboardAcls: z.lazy(() => UiDashboardAclCreateNestedManyWithoutTenantInputObjectSchema).optional()
 }).strict();
 export const TenantCreateInputObjectSchema: z.ZodType<Prisma.TenantCreateInput> = makeSchema() as unknown as z.ZodType<Prisma.TenantCreateInput>;
 export const TenantCreateInputObjectZodSchema = makeSchema();

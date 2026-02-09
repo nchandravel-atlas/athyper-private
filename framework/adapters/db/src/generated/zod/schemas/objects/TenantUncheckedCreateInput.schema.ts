@@ -10,7 +10,10 @@ import { RoleBindingUncheckedCreateNestedManyWithoutTenantInputObjectSchema as R
 import { OuNodeUncheckedCreateNestedManyWithoutTenantInputObjectSchema as OuNodeUncheckedCreateNestedManyWithoutTenantInputObjectSchema } from './OuNodeUncheckedCreateNestedManyWithoutTenantInput.schema';
 import { PrincipalAttributeUncheckedCreateNestedManyWithoutTenantInputObjectSchema as PrincipalAttributeUncheckedCreateNestedManyWithoutTenantInputObjectSchema } from './PrincipalAttributeUncheckedCreateNestedManyWithoutTenantInput.schema';
 import { EntitlementSnapshotUncheckedCreateNestedManyWithoutTenantInputObjectSchema as EntitlementSnapshotUncheckedCreateNestedManyWithoutTenantInputObjectSchema } from './EntitlementSnapshotUncheckedCreateNestedManyWithoutTenantInput.schema';
-import { PrincipalProfileUncheckedCreateNestedManyWithoutTenantInputObjectSchema as PrincipalProfileUncheckedCreateNestedManyWithoutTenantInputObjectSchema } from './PrincipalProfileUncheckedCreateNestedManyWithoutTenantInput.schema'
+import { PrincipalProfileUncheckedCreateNestedManyWithoutTenantInputObjectSchema as PrincipalProfileUncheckedCreateNestedManyWithoutTenantInputObjectSchema } from './PrincipalProfileUncheckedCreateNestedManyWithoutTenantInput.schema';
+import { UiDashboardUncheckedCreateNestedManyWithoutTenantInputObjectSchema as UiDashboardUncheckedCreateNestedManyWithoutTenantInputObjectSchema } from './UiDashboardUncheckedCreateNestedManyWithoutTenantInput.schema';
+import { UiDashboardVersionUncheckedCreateNestedManyWithoutTenantInputObjectSchema as UiDashboardVersionUncheckedCreateNestedManyWithoutTenantInputObjectSchema } from './UiDashboardVersionUncheckedCreateNestedManyWithoutTenantInput.schema';
+import { UiDashboardAclUncheckedCreateNestedManyWithoutTenantInputObjectSchema as UiDashboardAclUncheckedCreateNestedManyWithoutTenantInputObjectSchema } from './UiDashboardAclUncheckedCreateNestedManyWithoutTenantInput.schema'
 
 const makeSchema = () => z.object({
   id: z.string().optional(),
@@ -33,7 +36,10 @@ const makeSchema = () => z.object({
   ouNodes: z.lazy(() => OuNodeUncheckedCreateNestedManyWithoutTenantInputObjectSchema).optional(),
   principalAttributes: z.lazy(() => PrincipalAttributeUncheckedCreateNestedManyWithoutTenantInputObjectSchema).optional(),
   entitlementSnapshots: z.lazy(() => EntitlementSnapshotUncheckedCreateNestedManyWithoutTenantInputObjectSchema).optional(),
-  principalProfiles: z.lazy(() => PrincipalProfileUncheckedCreateNestedManyWithoutTenantInputObjectSchema).optional()
+  principalProfiles: z.lazy(() => PrincipalProfileUncheckedCreateNestedManyWithoutTenantInputObjectSchema).optional(),
+  dashboards: z.lazy(() => UiDashboardUncheckedCreateNestedManyWithoutTenantInputObjectSchema).optional(),
+  dashboardVersions: z.lazy(() => UiDashboardVersionUncheckedCreateNestedManyWithoutTenantInputObjectSchema).optional(),
+  dashboardAcls: z.lazy(() => UiDashboardAclUncheckedCreateNestedManyWithoutTenantInputObjectSchema).optional()
 }).strict();
 export const TenantUncheckedCreateInputObjectSchema: z.ZodType<Prisma.TenantUncheckedCreateInput> = makeSchema() as unknown as z.ZodType<Prisma.TenantUncheckedCreateInput>;
 export const TenantUncheckedCreateInputObjectZodSchema = makeSchema();

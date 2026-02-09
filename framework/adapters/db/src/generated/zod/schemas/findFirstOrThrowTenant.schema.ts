@@ -31,6 +31,9 @@ export const TenantFindFirstOrThrowSelectSchema: z.ZodType<Prisma.TenantSelect> 
     principalAttributes: z.boolean().optional(),
     entitlementSnapshots: z.boolean().optional(),
     principalProfiles: z.boolean().optional(),
+    dashboards: z.boolean().optional(),
+    dashboardVersions: z.boolean().optional(),
+    dashboardAcls: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.TenantSelect>;
 
@@ -56,6 +59,9 @@ export const TenantFindFirstOrThrowSelectZodSchema = z.object({
     principalAttributes: z.boolean().optional(),
     entitlementSnapshots: z.boolean().optional(),
     principalProfiles: z.boolean().optional(),
+    dashboards: z.boolean().optional(),
+    dashboardVersions: z.boolean().optional(),
+    dashboardAcls: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict();
 

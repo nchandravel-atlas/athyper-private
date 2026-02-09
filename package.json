@@ -58,6 +58,8 @@
     "meta:migrate:sql": "pnpm --filter @athyper/runtime migrate:sql",
     "athyper:codegen": "pnpm -C tools/codegen run codegen",
     "athyper:codegen:watch": "pnpm -C tools/codegen run codegen:watch",
+    "db:publish": "pnpm -C tools/codegen run publish",
+    "db:publish:dry-run": "pnpm -C tools/codegen run publish:dry-run",
     "runtime:start": "pnpm --filter @athyper/runtime start",
     "runtime:start:dev": "pnpm --filter @athyper/runtime start:dev",
     "runtime:start:watch": "pnpm --filter @athyper/runtime start:watch"

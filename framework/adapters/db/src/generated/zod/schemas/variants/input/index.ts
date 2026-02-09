@@ -25,3 +25,6 @@ export { PermissionRuleInputSchema } from './PermissionRule.input';
 export { PermissionRuleOperationInputSchema } from './PermissionRuleOperation.input';
 export { PermissionPolicyCompiledInputSchema } from './PermissionPolicyCompiled.input';
 export { PermissionDecisionLogInputSchema } from './PermissionDecisionLog.input';
+export { UiDashboardInputSchema } from './UiDashboard.input';
+export { UiDashboardVersionInputSchema } from './UiDashboardVersion.input';
+export { UiDashboardAclInputSchema } from './UiDashboardAcl.input';

@@ -25,3 +25,6 @@ export { PermissionRuleModelSchema } from './PermissionRule.pure';
 export { PermissionRuleOperationModelSchema } from './PermissionRuleOperation.pure';
 export { PermissionPolicyCompiledModelSchema } from './PermissionPolicyCompiled.pure';
 export { PermissionDecisionLogModelSchema } from './PermissionDecisionLog.pure';
+export { UiDashboardModelSchema } from './UiDashboard.pure';
+export { UiDashboardVersionModelSchema } from './UiDashboardVersion.pure';
+export { UiDashboardAclModelSchema } from './UiDashboardAcl.pure';

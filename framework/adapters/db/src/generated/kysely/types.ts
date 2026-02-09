@@ -263,6 +263,47 @@ export type TenantProfile = {
     updated_at: Timestamp | null;
     updated_by: string | null;
 };
+export type UiDashboard = {
+    id: string;
+    tenant_id: string | null;
+    code: string;
+    title_key: string;
+    description_key: string | null;
+    module_code: string;
+    workbench: string;
+    visibility: Generated<string>;
+    icon: string | null;
+    sort_order: Generated<number>;
+    is_hidden: Generated<boolean>;
+    forked_from_id: string | null;
+    owner_id: string | null;
+    created_at: Generated<Timestamp>;
+    created_by: string;
+    updated_at: Timestamp | null;
+    updated_by: string | null;
+};
+export type UiDashboardAcl = {
+    id: string;
+    tenant_id: string | null;
+    dashboard_id: string;
+    principal_type: string;
+    principal_key: string;
+    permission: Generated<string>;
+    created_at: Generated<Timestamp>;
+    created_by: string;
+};
+export type UiDashboardVersion = {
+    id: string;
+    tenant_id: string | null;
+    dashboard_id: string;
+    version_no: Generated<number>;
+    status: Generated<string>;
+    layout: unknown;
+    published_at: Timestamp | null;
+    published_by: string | null;
+    created_at: Generated<Timestamp>;
+    created_by: string;
+};
 export type DB = {
     "core.entitlement_snapshot": EntitlementSnapshot;
     "core.group": Group;
@@ -286,4 +327,7 @@ export type DB = {
     "meta.permission_policy_version": PermissionPolicyVersion;
     "meta.permission_rule": PermissionRule;
     "meta.permission_rule_operation": PermissionRuleOperation;
+    "ui.dashboard": UiDashboard;
+    "ui.dashboard_acl": UiDashboardAcl;
+    "ui.dashboard_version": UiDashboardVersion;
 };

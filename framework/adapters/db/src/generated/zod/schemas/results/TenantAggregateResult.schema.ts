@@ -20,7 +20,10 @@ export const TenantAggregateResultSchema = z.object({  _count: z.object({
     ouNodes: z.number(),
     principalAttributes: z.number(),
     entitlementSnapshots: z.number(),
-    principalProfiles: z.number()
+    principalProfiles: z.number(),
+    dashboards: z.number(),
+    dashboardVersions: z.number(),
+    dashboardAcls: z.number()
   }).optional(),
   _min: z.object({
     id: z.string().nullable(),

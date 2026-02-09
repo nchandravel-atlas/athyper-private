@@ -12,7 +12,10 @@ import { RoleBindingOrderByRelationAggregateInputObjectSchema as RoleBindingOrde
 import { OuNodeOrderByRelationAggregateInputObjectSchema as OuNodeOrderByRelationAggregateInputObjectSchema } from './OuNodeOrderByRelationAggregateInput.schema';
 import { PrincipalAttributeOrderByRelationAggregateInputObjectSchema as PrincipalAttributeOrderByRelationAggregateInputObjectSchema } from './PrincipalAttributeOrderByRelationAggregateInput.schema';
 import { EntitlementSnapshotOrderByRelationAggregateInputObjectSchema as EntitlementSnapshotOrderByRelationAggregateInputObjectSchema } from './EntitlementSnapshotOrderByRelationAggregateInput.schema';
-import { PrincipalProfileOrderByRelationAggregateInputObjectSchema as PrincipalProfileOrderByRelationAggregateInputObjectSchema } from './PrincipalProfileOrderByRelationAggregateInput.schema'
+import { PrincipalProfileOrderByRelationAggregateInputObjectSchema as PrincipalProfileOrderByRelationAggregateInputObjectSchema } from './PrincipalProfileOrderByRelationAggregateInput.schema';
+import { UiDashboardOrderByRelationAggregateInputObjectSchema as UiDashboardOrderByRelationAggregateInputObjectSchema } from './UiDashboardOrderByRelationAggregateInput.schema';
+import { UiDashboardVersionOrderByRelationAggregateInputObjectSchema as UiDashboardVersionOrderByRelationAggregateInputObjectSchema } from './UiDashboardVersionOrderByRelationAggregateInput.schema';
+import { UiDashboardAclOrderByRelationAggregateInputObjectSchema as UiDashboardAclOrderByRelationAggregateInputObjectSchema } from './UiDashboardAclOrderByRelationAggregateInput.schema'
 
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
@@ -35,7 +38,10 @@ const makeSchema = () => z.object({
   ouNodes: z.lazy(() => OuNodeOrderByRelationAggregateInputObjectSchema).optional(),
   principalAttributes: z.lazy(() => PrincipalAttributeOrderByRelationAggregateInputObjectSchema).optional(),
   entitlementSnapshots: z.lazy(() => EntitlementSnapshotOrderByRelationAggregateInputObjectSchema).optional(),
-  principalProfiles: z.lazy(() => PrincipalProfileOrderByRelationAggregateInputObjectSchema).optional()
+  principalProfiles: z.lazy(() => PrincipalProfileOrderByRelationAggregateInputObjectSchema).optional(),
+  dashboards: z.lazy(() => UiDashboardOrderByRelationAggregateInputObjectSchema).optional(),
+  dashboardVersions: z.lazy(() => UiDashboardVersionOrderByRelationAggregateInputObjectSchema).optional(),
+  dashboardAcls: z.lazy(() => UiDashboardAclOrderByRelationAggregateInputObjectSchema).optional()
 }).strict();
 export const TenantOrderByWithRelationInputObjectSchema: z.ZodType<Prisma.TenantOrderByWithRelationInput> = makeSchema() as unknown as z.ZodType<Prisma.TenantOrderByWithRelationInput>;
 export const TenantOrderByWithRelationInputObjectZodSchema = makeSchema();

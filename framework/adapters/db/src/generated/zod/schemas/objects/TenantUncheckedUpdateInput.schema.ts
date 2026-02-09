@@ -14,7 +14,10 @@ import { RoleBindingUncheckedUpdateManyWithoutTenantNestedInputObjectSchema as R
 import { OuNodeUncheckedUpdateManyWithoutTenantNestedInputObjectSchema as OuNodeUncheckedUpdateManyWithoutTenantNestedInputObjectSchema } from './OuNodeUncheckedUpdateManyWithoutTenantNestedInput.schema';
 import { PrincipalAttributeUncheckedUpdateManyWithoutTenantNestedInputObjectSchema as PrincipalAttributeUncheckedUpdateManyWithoutTenantNestedInputObjectSchema } from './PrincipalAttributeUncheckedUpdateManyWithoutTenantNestedInput.schema';
 import { EntitlementSnapshotUncheckedUpdateManyWithoutTenantNestedInputObjectSchema as EntitlementSnapshotUncheckedUpdateManyWithoutTenantNestedInputObjectSchema } from './EntitlementSnapshotUncheckedUpdateManyWithoutTenantNestedInput.schema';
-import { PrincipalProfileUncheckedUpdateManyWithoutTenantNestedInputObjectSchema as PrincipalProfileUncheckedUpdateManyWithoutTenantNestedInputObjectSchema } from './PrincipalProfileUncheckedUpdateManyWithoutTenantNestedInput.schema'
+import { PrincipalProfileUncheckedUpdateManyWithoutTenantNestedInputObjectSchema as PrincipalProfileUncheckedUpdateManyWithoutTenantNestedInputObjectSchema } from './PrincipalProfileUncheckedUpdateManyWithoutTenantNestedInput.schema';
+import { UiDashboardUncheckedUpdateManyWithoutTenantNestedInputObjectSchema as UiDashboardUncheckedUpdateManyWithoutTenantNestedInputObjectSchema } from './UiDashboardUncheckedUpdateManyWithoutTenantNestedInput.schema';
+import { UiDashboardVersionUncheckedUpdateManyWithoutTenantNestedInputObjectSchema as UiDashboardVersionUncheckedUpdateManyWithoutTenantNestedInputObjectSchema } from './UiDashboardVersionUncheckedUpdateManyWithoutTenantNestedInput.schema';
+import { UiDashboardAclUncheckedUpdateManyWithoutTenantNestedInputObjectSchema as UiDashboardAclUncheckedUpdateManyWithoutTenantNestedInputObjectSchema } from './UiDashboardAclUncheckedUpdateManyWithoutTenantNestedInput.schema'
 
 const makeSchema = () => z.object({
   id: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
@@ -37,7 +40,10 @@ const makeSchema = () => z.object({
   ouNodes: z.lazy(() => OuNodeUncheckedUpdateManyWithoutTenantNestedInputObjectSchema).optional(),
   principalAttributes: z.lazy(() => PrincipalAttributeUncheckedUpdateManyWithoutTenantNestedInputObjectSchema).optional(),
   entitlementSnapshots: z.lazy(() => EntitlementSnapshotUncheckedUpdateManyWithoutTenantNestedInputObjectSchema).optional(),
-  principalProfiles: z.lazy(() => PrincipalProfileUncheckedUpdateManyWithoutTenantNestedInputObjectSchema).optional()
+  principalProfiles: z.lazy(() => PrincipalProfileUncheckedUpdateManyWithoutTenantNestedInputObjectSchema).optional(),
+  dashboards: z.lazy(() => UiDashboardUncheckedUpdateManyWithoutTenantNestedInputObjectSchema).optional(),
+  dashboardVersions: z.lazy(() => UiDashboardVersionUncheckedUpdateManyWithoutTenantNestedInputObjectSchema).optional(),
+  dashboardAcls: z.lazy(() => UiDashboardAclUncheckedUpdateManyWithoutTenantNestedInputObjectSchema).optional()
 }).strict();
 export const TenantUncheckedUpdateInputObjectSchema: z.ZodType<Prisma.TenantUncheckedUpdateInput> = makeSchema() as unknown as z.ZodType<Prisma.TenantUncheckedUpdateInput>;
 export const TenantUncheckedUpdateInputObjectZodSchema = makeSchema();

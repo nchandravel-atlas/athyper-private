@@ -48,6 +48,8 @@
     "db:deploy": "pnpm -F @athyper/adapter-db prisma:deploy",
     "db:reset": "pnpm -F @athyper/adapter-db prisma migrate reset --schema prisma/schema.prisma",
     "db:generate": "pnpm -F @athyper/adapter-db prisma:generate",
+    "db:pull": "pnpm -F @athyper/adapter-db prisma:pull",
+    "db:pull:force": "pnpm -F @athyper/adapter-db prisma:pull:force",
     "db:studio": "pnpm -F @athyper/adapter-db prisma:studio",
     "kysely:codegen": "pnpm -F @athyper/adapter-db kysely:codegen",
     "db:migrate:dev": "pnpm run db:migrate",

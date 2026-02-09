@@ -1,201 +1,129 @@
 # Athyper Platform Documentation
 
-Welcome to the Athyper platform documentation. This guide covers the architecture, implementation, and deployment of the production-ready multi-tenant platform.
+Central index for all platform documentation.
 
-## 📚 Documentation Structure
+## Documentation Map
 
-### [Architecture](./architecture/README.md)
-System design, patterns, and architectural decisions
-- [System Overview](./architecture/OVERVIEW.md)
-- [Multi-Tenancy](./architecture/MULTI_TENANCY.md)
-- [DDD Patterns](./architecture/DDD_PATTERNS.md)
-- [Event-Driven Architecture](./architecture/EVENTS.md)
+### Architecture
 
-### [Framework](./framework/README.md)
-Core framework and runtime documentation
-- [Core Modules](./framework/CORE.md) - Domain models, events, lifecycle
-- [Runtime](./framework/RUNTIME.md) - Kernel, DI container, lifecycle
-- [Adapters](./framework/ADAPTERS.md) - Database, cache, storage, auth, telemetry
+| Document | Description |
+|----------|-------------|
+| [Architecture Overview](./architecture/README.md) | Design principles, module organization |
+| [System Overview](./architecture/OVERVIEW.md) | Components, data flows, runtime modes |
+| [Multi-Tenancy](./architecture/MULTI_TENANCY.md) | Single/multi-realm IAM, tenant isolation, data partitioning |
+| [DDD Patterns](./architecture/DDD_PATTERNS.md) | Entity, ValueObject, AggregateRoot, Repository, domain events |
+| [Event-Driven Architecture](./architecture/EVENTS.md) | Event bus, saga, outbox, event sourcing |
 
-### [Infrastructure](./infrastructure/README.md)
-Production-ready infrastructure patterns
-- [Job Queue System](./infrastructure/JOBS.md)
-- [Resilience Patterns](./infrastructure/RESILIENCE.md)
-- [Observability](./infrastructure/OBSERVABILITY.md)
+### Framework
 
-### [Security](./security/README.md)
-Security features and best practices
-- [Auth Architecture](./security/AUTH_ARCHITECTURE.md) - PKCE flow, Redis sessions, idle timeout, CSRF, tenant isolation
-- [Rate Limiting](./security/RATE_LIMITING.md)
-- [Input Validation](./security/VALIDATION.md)
-- [Sanitization](./security/SANITIZATION.md)
-- [Security Headers](./security/HEADERS.md)
+| Document | Description |
+|----------|-------------|
+| [Core Modules](./framework/CORE.md) | Resilience, observability, security, DDD models, lifecycle, RBAC |
+| [Runtime Kernel](./framework/RUNTIME.md) | Bootstrap, DI container, config, HTTP server, tenant context |
+| [Adapters](./framework/ADAPTERS.md) | DB (Kysely), cache (Redis), storage (S3), auth (Keycloak), telemetry (OTel) |
 
-### [Deployment](./deployment/README.md)
-Deployment guides for all environments
-- [Quick Start](./deployment/QUICKSTART.md)
-- [Environments](./deployment/ENVIRONMENTS.md) - Local, Staging, Production setup
-- [Configuration](./deployment/CONFIGURATION.md)
-- [Environment Variables](./deployment/ENVIRONMENT_VARIABLES.md)
-- [Production Deployment](./deployment/PRODUCTION.md)
+### Security
 
-### [MESH Infrastructure](../mesh/README.md)
+| Document | Description |
+|----------|-------------|
+| [Security Overview](./security/README.md) | Security architecture summary |
+| [Auth Architecture](./security/AUTH_ARCHITECTURE.md) | PKCE flow, Redis sessions, CSRF, token refresh, idle timeout, audit |
+| [Rate Limiting](./security/RATE_LIMITING.md) | Token bucket, sliding window, per-tenant limiting |
 
-Local infrastructure stack documentation
+### Infrastructure
 
-### [API Reference](./api/README.md)
-Complete API documentation
-- [Core API](./api/CORE.md)
-- [Runtime API](./api/RUNTIME.md)
-- [Middleware API](./api/MIDDLEWARE.md)
+| Document | Description |
+|----------|-------------|
+| [Infrastructure Overview](./infrastructure/README.md) | Resilience, observability, MESH stack |
+| [Job Queue System](./infrastructure/JOBS.md) | BullMQ job processing, retry, priority queues |
 
-## 🚀 Quick Links
+### Deployment
 
-- **Getting Started**: [Deployment Quick Start](./deployment/QUICKSTART.md)
-- **Core Concepts**: [Architecture Overview](./architecture/OVERVIEW.md)
-- **Security**: [Rate Limiting Guide](./security/RATE_LIMITING.md)
-- **Production**: [Production Deployment](./deployment/PRODUCTION.md)
+| Document | Description |
+|----------|-------------|
+| [Deployment Overview](./deployment/README.md) | Prerequisites, startup, environments |
+| [Quick Start](./deployment/QUICKSTART.md) | Install, start infrastructure, run kernel |
+| [Environments](./deployment/ENVIRONMENTS.md) | Local, staging, production configuration |
 
-## 📦 Project Structure
+### Meta Engine
+
+| Document | Description |
+|----------|-------------|
+| [META Engine MVP](./meta-engine/mvp.md) | MVP specification |
+| [Phase 1](./meta-engine/phase-1-complete.md) | Entity registration, versioning, compilation |
+| [Phase 2](./meta-engine/phase-2-complete.md) | Policy engine, field-level security |
+| [Phase 3](./meta-engine/phase-3-complete.md) | API layer, CRUD operations |
+| [Advanced Features](./META_ENGINE_ADVANCED_FEATURES.md) | Advanced meta engine capabilities |
+| [Compilation & Overlays](./COMPILATION_DETERMINISM.md) | Deterministic compilation, diagnostics, overlay engine |
+
+### Runbooks
+
+| Document | Description |
+|----------|-------------|
+| [Auth Operations](./runbooks/auth-operations.md) | Session management, outage recovery, debugging |
+| [Keycloak IAM Setup](./runbooks/keycloak-iam-setup.md) | Roles, groups, token mappers, test users |
+
+---
+
+## Key Capabilities
+
+- **Auth**: PKCE flow, Redis-backed sessions (no tokens in browser), CSRF, idle timeout, session rotation
+- **Multi-Tenancy**: Per-tenant isolation at DB (RLS), cache (key prefix), storage (path prefix), and session levels
+- **Resilience**: Circuit breakers, retry with backoff, adapter protection, graceful shutdown
+- **Observability**: Health checks, Prometheus metrics, distributed tracing (W3C), structured JSON logging
+- **Job Processing**: BullMQ with priority queues, retry strategies, concurrency control
+- **Security**: Input validation (14+ types), XSS sanitization, rate limiting (token bucket + sliding window)
+- **Meta Engine**: Dynamic entity registration, versioned schemas, deterministic compilation, tenant overlays
+
+## Project Structure
 
 ```
 athyper-private/
 ├── framework/
-│   ├── core/                 # Domain models, events, security
-│   │   ├── src/
-│   │   │   ├── access/      # RBAC and access control
-│   │   │   ├── events/      # Event bus and domain events
-│   │   │   ├── jobs/        # Job queue abstractions
-│   │   │   ├── lifecycle/   # Component lifecycle
-│   │   │   ├── meta/        # Metadata schema system
-│   │   │   ├── model/       # DDD base types
-│   │   │   ├── observability/ # Health, metrics, tracing
-│   │   │   ├── registry/    # Tenant and IdP registries
-│   │   │   ├── resilience/  # Retry, circuit breakers
-│   │   │   └── security/    # Rate limiting, validation, sanitization
-│   │   └── package.json
-│   │
-│   ├── runtime/             # Runtime kernel and services
-│   │   ├── src/
-│   │   │   ├── adapters/    # HTTP, telemetry adapters
-│   │   │   ├── jobs/        # Redis job queue implementation
-│   │   │   ├── kernel/      # Bootstrap, DI container, config
-│   │   │   ├── middleware/  # Express middleware (observability, security)
-│   │   │   ├── resilience/  # Adapter protection
-│   │   │   ├── runtimes/    # API, worker, scheduler modes
-│   │   │   ├── security/    # Redis rate limiters
-│   │   │   └── services/    # Service registry and modules
-│   │   └── package.json
-│   │
-│   └── adapters/            # External service adapters
-│       ├── auth/            # Authentication (Keycloak, JOSE)
-│       ├── db/              # Database (Kysely, PostgreSQL)
-│       ├── memorycache/     # Redis cache
-│       ├── objectstorage/   # S3-compatible storage
-│       └── telemetry/       # OpenTelemetry integration
-│
-├── packages/                # Shared packages
-│   ├── contracts/           # Shared types and schemas
-│   ├── api-client/          # API client library
-│   ├── auth/                # Auth utilities
-│   ├── ui/                  # UI components
-│   └── workbench-*/         # Workbench modules
-│
-├── products/                # Product applications
-│   └── neon/                # Neon product
-│       ├── apps/
-│       │   └── web/         # Next.js web application
-│       ├── auth/            # Auth server helpers (session, audit)
-│       ├── shared/ui/       # Product-level UI components
-│       └── themes/          # Theme presets
-│
-└── mesh/                    # Local infrastructure
-    ├── compose/             # Docker Compose configs
-    └── config/              # Configuration files
+│   ├── core/                     @athyper/core — pure business logic
+│   ├── runtime/                  @athyper/runtime — kernel, DI, HTTP, middleware
+│   └── adapters/
+│       ├── auth/                 @athyper/adapter-auth — Keycloak, JWKS
+│       ├── db/                   @athyper/adapter-db — Kysely, PostgreSQL
+│       ├── memorycache/          @athyper/adapter-memorycache — Redis
+│       ├── objectstorage/        @athyper/adapter-objectstorage — S3/MinIO
+│       └── telemetry/            @athyper/adapter-telemetry — OpenTelemetry
+├── products/neon/
+│   ├── apps/web/                 @neon/web — Next.js 16 application
+│   ├── auth/                     @neon/auth — BFF session management
+│   ├── shared/ui/                @neon/ui — product UI components
+│   └── themes/                   @neon/theme — theme presets
+├── packages/
+│   ├── contracts/                @athyper/contracts — generated Zod + Kysely types
+│   ├── ui/                       @athyper/ui — Radix component library
+│   ├── theme/                    @athyper/theme — design tokens
+│   ├── auth/                     @athyper/auth — shared auth utilities
+│   ├── api-client/               @athyper/api-client — typed API client
+│   ├── i18n/                     @athyper/i18n — internationalization
+│   ├── dashboard/                @athyper/dashboard — dashboard widgets
+│   └── workbench-*/              Admin, user, partner workbenches
+├── mesh/                         Docker Compose infrastructure
+├── tools/codegen/                Prisma -> Zod + Kysely pipeline
+└── docs/                         This documentation
 ```
 
-## 🎯 Key Features
+## Technology Stack
 
-### Production-Ready Infrastructure
-- ✅ **Job Queue System** - Redis-backed with BullMQ, persistence, retry
-- ✅ **Circuit Breakers** - Prevent cascading failures across services
-- ✅ **Retry Logic** - Exponential backoff with jitter for transient errors
-- ✅ **Health Checks** - Comprehensive per-adapter health monitoring
-- ✅ **Distributed Tracing** - W3C Trace Context standard, OpenTelemetry compatible
-- ✅ **Graceful Shutdown** - Priority-based cleanup with timeout protection
+| Category | Technologies |
+|----------|-------------|
+| Runtime | Node.js 20, TypeScript 5.9, Express 4 |
+| Frontend | Next.js 16, React 19, Tailwind CSS 4, Radix UI, Zustand 5 |
+| Database | PostgreSQL 16, Kysely, Prisma 6, PgBouncer |
+| Cache | Redis (ioredis), BullMQ |
+| Auth | Keycloak, JOSE, PKCE (S256) |
+| Storage | S3 (AWS SDK v3), MinIO |
+| Observability | OpenTelemetry, Pino, Grafana, Prometheus, Tempo, Loki |
+| Gateway | Traefik |
+| Build | pnpm 10, Turbo 2.8, Vitest 4, tsup, ESLint 9 |
 
-### Enterprise Security
-- ✅ **Per-Tenant Rate Limiting** - Token bucket and sliding window algorithms
-- ✅ **Request Validation** - Comprehensive input validation with 14+ types
-- ✅ **Input Sanitization** - XSS, injection, and path traversal prevention
-- ✅ **Security Headers** - OWASP-recommended headers (CSP, HSTS, etc.)
-- ✅ **Redis-Backed Rate Limiting** - Distributed rate limiting with Lua scripts
+## Quick Links
 
-### Multi-Tenancy
-- ✅ **Single & Multi-Realm IAM** - Flexible identity provider strategies
-- ✅ **Tenant Context** - Request-scoped tenant resolution
-- ✅ **Per-Tenant Rate Limits** - Fair resource allocation
-- ✅ **Tenant Isolation** - Data and resource isolation
-
-### Developer Experience
-- ✅ **TypeScript First** - Full type safety throughout
-- ✅ **Dependency Injection** - Clean, testable architecture
-- ✅ **Comprehensive Tests** - 158+ tests across all modules
-- ✅ **Hot Reload** - Fast development iteration
-- ✅ **Structured Logging** - JSON logs with trace correlation
-
-## 📊 Test Coverage
-
-- **Resilience**: 26/26 tests ✅ (Retry logic, Circuit breakers)
-- **Observability**: 13/13 tests ✅ (Health checks)
-- **Security**: 119/119 tests ✅ (Rate limiting, Validation, Sanitization)
-- **Total**: 158/158 tests passing ✅
-
-## 🔧 Technology Stack
-
-### Runtime
-- **Node.js** 20.11+ - JavaScript runtime
-- **TypeScript** - Type-safe development
-- **Express** - HTTP server
-- **BullMQ** - Redis-backed job queue
-
-### Data Layer
-- **PostgreSQL** - Primary database
-- **Kysely** - Type-safe SQL query builder
-- **Redis** - Cache and job queue
-- **MinIO/S3** - Object storage
-
-### Infrastructure
-- **Docker** - Containerization
-- **PgBouncer** - Connection pooling
-- **OpenTelemetry** - Observability
-- **Keycloak** - Identity and access management
-
-### Development
-- **Vitest** - Testing framework
-- **pnpm** - Package management
-- **Turbo** - Monorepo build system
-- **tsup** - TypeScript bundler
-
-## 📖 Next Steps
-
-1. **For New Developers**: Start with [Quick Start Guide](./deployment/QUICKSTART.md)
-2. **For Architects**: Read [System Overview](./architecture/OVERVIEW.md)
-3. **For DevOps**: Check [Production Deployment](./deployment/PRODUCTION.md)
-4. **For Security**: Review [Security Best Practices](./security/README.md)
-
-## 🤝 Contributing
-
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines on:
-- Code style and conventions
-- Testing requirements
-- Pull request process
-- Development workflow
-
-## 📝 License
-
-See [LICENSE](../LICENSE) for details.
-
----
-
-**Built with ❤️ for production-grade multi-tenant SaaS applications**
+- **Getting Started**: [Quick Start Guide](./deployment/QUICKSTART.md)
+- **Architecture**: [System Overview](./architecture/OVERVIEW.md)
+- **Auth Deep Dive**: [Auth Architecture](./security/AUTH_ARCHITECTURE.md)
+- **Operations**: [Auth Operations Runbook](./runbooks/auth-operations.md)

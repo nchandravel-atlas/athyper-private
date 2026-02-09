@@ -10,6 +10,8 @@ const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
   code: SortOrderSchema.optional(),
   name: SortOrderSchema.optional(),
+  display_name: SortOrderSchema.optional(),
+  realm_key: SortOrderSchema.optional(),
   status: SortOrderSchema.optional(),
   region: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   subscription: SortOrderSchema.optional(),

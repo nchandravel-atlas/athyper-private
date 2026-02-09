@@ -6,6 +6,8 @@ const makeSchema = () => z.object({
   id: z.string().optional(),
   code: z.string(),
   name: z.string(),
+  display_name: z.string(),
+  realm_key: z.string().optional(),
   status: z.string().optional(),
   region: z.string().optional().nullable(),
   subscription: z.string().optional(),

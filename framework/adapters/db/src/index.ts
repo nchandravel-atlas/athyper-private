@@ -11,10 +11,7 @@ export * from "./kysely/dialect.js";
 export * from "./kysely/query-helpers.js";
 
 // Generated types
-export type { DB } from "./generated/kysely/types.js";
-
-// Zod schemas (for input validation)
-export * from "./generated/zod/schemas/index.js";
+export type { DB } from "../generated/kysely/types.js";
 
 // Migrations
 export * from "./migrations/runner.js";

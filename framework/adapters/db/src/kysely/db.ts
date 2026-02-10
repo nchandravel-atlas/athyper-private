@@ -4,7 +4,7 @@ import { Kysely } from "kysely";
 import { createPostgresDialect } from "./dialect.js";
 import { createPool, closePool, healthCheck, type PoolConfig } from "./pool.js";
 
-import type { DB } from "../generated/kysely/types.js";
+import type { DB } from "../../generated/kysely/types.js";
 import type pg from "pg";
 
 export type DbClientConfig = {

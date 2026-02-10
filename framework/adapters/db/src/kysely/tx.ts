@@ -1,5 +1,5 @@
 // framework/adapters/db/src/kysely/tx.ts
-import type { DB } from "../generated/kysely/types.js";
+import type { DB } from "../../generated/kysely/types.js";
 import type { Kysely, Transaction } from "kysely";
 
 /**

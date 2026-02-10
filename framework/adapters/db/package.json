@@ -26,8 +26,8 @@
   ],
   "scripts": {
     "clean": "rimraf dist",
-    "build": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --external kysely --external pg --external zod --external @prisma/client --external @athyper/core",
-    "dev": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --watch --external kysely --external pg --external zod --external @prisma/client --external @athyper/core",
+    "build": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --external kysely --external pg --external @prisma/client --external @athyper/core",
+    "dev": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --watch --external kysely --external pg --external @prisma/client --external @athyper/core",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -51,13 +51,11 @@
     "@athyper/core": "workspace:*",
     "@prisma/client": "6.19.2",
     "kysely": "^0.27.4",
-    "pg": "^8.13.0",
-    "zod": "^3.24.1"
+    "pg": "^8.13.0"
   },
   "devDependencies": {
     "prisma": "6.19.2",
     "prisma-kysely": "^3.0.0",
-    "prisma-zod-generator": "^1.32.1",
     "rimraf": "^6.0.1",
     "tsup": "^8.3.0",
     "typescript": "^5.9.3",

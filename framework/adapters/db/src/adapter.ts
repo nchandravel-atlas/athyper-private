@@ -2,7 +2,7 @@
 import { DbClient, type DbClientConfig } from "./kysely/db.js";
 import { withTx, withTxIsolation } from "./kysely/tx.js";
 
-import type { DB } from "./generated/kysely/types.js";
+import type { DB } from "../generated/kysely/types.js";
 import type { Kysely } from "kysely";
 
 /**

@@ -112,6 +112,7 @@ module.exports = {
 
     options: {
         doNotFollow: { path: "node_modules" },
+        exclude: { path: ["generated", "\\.prisma"] },
         tsConfig: { fileName: "tsconfig.json" },
         enhancedResolveOptions: {
             exportsFields: ["exports"],

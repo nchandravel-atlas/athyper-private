@@ -2,14 +2,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
-generator zod {
-  provider = "prisma-zod-generator"
-  output   = "../generated/zod"
-}
-
 generator kysely {
   provider = "prisma-kysely"
-  output   = "../generated/kysely"
+  output   = "../../generated/kysely"
 }
 
 datasource db {

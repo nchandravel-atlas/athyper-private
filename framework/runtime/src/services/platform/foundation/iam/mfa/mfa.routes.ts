@@ -39,7 +39,7 @@ const CreateChallengeBodySchema = z.object({
   sessionId: z.string().optional(),
 });
 
-const TrustDeviceBodySchema = z.object({
+const _TrustDeviceBodySchema = z.object({
   deviceId: z.string().min(1).max(100),
   deviceName: z.string().max(100).optional(),
   deviceType: z.enum(["desktop", "mobile", "tablet"]).optional(),

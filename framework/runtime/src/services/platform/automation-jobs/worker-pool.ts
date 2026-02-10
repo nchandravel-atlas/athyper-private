@@ -42,7 +42,7 @@ export class WorkerPool {
           jobType: job.data.type,
         });
       },
-      onComplete: async (job, result) => {
+      onComplete: async (job, _result) => {
         this.config.logger.info({
           msg: "job_completed",
           jobId: job.id,

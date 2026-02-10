@@ -839,9 +839,9 @@ export class PolicyEvaluatorService implements IPolicyEvaluator {
    * Process obligations from winning rule
    */
   private async processObligations(
-    rule: MatchedRule,
-    input: PolicyInput,
-    effect: Effect
+    _rule: MatchedRule,
+    _input: PolicyInput,
+    _effect: Effect
   ): Promise<PolicyObligation[]> {
     // TODO: Load obligations from rule definition
     // For now, return empty - obligations would be stored with rules

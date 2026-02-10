@@ -136,7 +136,7 @@ export class GenericQueryService {
     const builtQuery = await this.buildQuery(query, plan, subject, context);
 
     // Select database (main or replica)
-    const targetDb =
+    const _targetDb =
       options.useReplica && this.replicaDb ? this.replicaDb : this.db;
 
     // Execute with timeout
@@ -198,7 +198,7 @@ export class GenericQueryService {
     query: QueryRequest,
     tenantId: string
   ): Promise<QueryValidationResult> {
-    const { plan, validation } = await this.joinPlanner.planJoins(query, tenantId);
+    const { plan: _plan, validation } = await this.joinPlanner.planJoins(query, tenantId);
     return validation;
   }
 
@@ -577,7 +577,7 @@ export class GenericQueryService {
     timeoutMs: number
   ): Promise<unknown[]> {
     // Set statement timeout
-    const timeoutSeconds = Math.ceil(timeoutMs / 1000);
+    const _timeoutSeconds = Math.ceil(timeoutMs / 1000);
 
     return this.db.transaction().execute(async (trx) => {
       // Set timeout for this transaction

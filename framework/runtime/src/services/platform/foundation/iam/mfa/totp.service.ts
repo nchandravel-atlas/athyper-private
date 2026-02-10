@@ -243,7 +243,7 @@ export class TotpService implements ITotpService {
    * This is a simplified QR code generator. For production,
    * consider using a library like 'qrcode' for better compatibility.
    */
-  private async generateQrCodeDataUrl(data: string): Promise<string> {
+  private async generateQrCodeDataUrl(_data: string): Promise<string> {
     // For a production implementation, use a proper QR code library
     // This placeholder returns a simple SVG with instructions
 

@@ -28,7 +28,7 @@ import { bootstrap } from "./kernel/bootstrap.js";
 
 async function main(): Promise<void> {
     try {
-        const result = await bootstrap();
+        const _result = await bootstrap();
 
         // Log successful boot (logger is now available via container)
         // The bootstrap function handles all logging internally

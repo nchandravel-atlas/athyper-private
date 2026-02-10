@@ -108,7 +108,7 @@ export class MetaRegistryService implements MetaRegistry {
   async updateEntity(
     name: string,
     updates: Partial<Pick<Entity, "description" | "activeVersion">>,
-    ctx: RequestContext
+    _ctx: RequestContext
   ): Promise<Entity> {
     const dbUpdates: any = {};
 
@@ -130,7 +130,7 @@ export class MetaRegistryService implements MetaRegistry {
     return this.mapEntityFromDb(entity);
   }
 
-  async deleteEntity(name: string, ctx: RequestContext): Promise<void> {
+  async deleteEntity(name: string, _ctx: RequestContext): Promise<void> {
     await this.db
       .deleteFrom("meta.meta_entities")
       .where("name", "=", name)
@@ -238,7 +238,7 @@ export class MetaRegistryService implements MetaRegistry {
   async activateVersion(
     entityName: string,
     version: string,
-    ctx: RequestContext
+    _ctx: RequestContext
   ): Promise<EntityVersion> {
     // Deactivate all versions for this entity
     await this.db
@@ -269,7 +269,7 @@ export class MetaRegistryService implements MetaRegistry {
   async deactivateVersion(
     entityName: string,
     version: string,
-    ctx: RequestContext
+    _ctx: RequestContext
   ): Promise<EntityVersion> {
     const entityVersion = await this.db
       .updateTable("meta.meta_versions")
@@ -296,7 +296,7 @@ export class MetaRegistryService implements MetaRegistry {
     entityName: string,
     version: string,
     schema: EntitySchema,
-    ctx: RequestContext
+    _ctx: RequestContext
   ): Promise<EntityVersion> {
     const entityVersion = await this.db
       .updateTable("meta.meta_versions")
@@ -312,7 +312,7 @@ export class MetaRegistryService implements MetaRegistry {
   async deleteVersion(
     entityName: string,
     version: string,
-    ctx: RequestContext
+    _ctx: RequestContext
   ): Promise<void> {
     await this.db
       .deleteFrom("meta.meta_versions")

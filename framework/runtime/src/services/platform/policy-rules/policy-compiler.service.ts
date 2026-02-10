@@ -22,21 +22,6 @@ import type { DB } from "@athyper/adapter-db";
 import type { Kysely } from "kysely";
 
 /**
- * Rule from database
- */
-type DBRule = {
-  id: string;
-  scope_type: string;
-  scope_key: string | null;
-  subject_type: string;
-  subject_key: string;
-  effect: string;
-  conditions: unknown;
-  priority: number;
-  is_active: boolean;
-};
-
-/**
  * Rule operation from database
  */
 type DBRuleOperation = {

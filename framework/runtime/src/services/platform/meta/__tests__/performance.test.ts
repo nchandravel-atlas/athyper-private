@@ -292,7 +292,7 @@ async function mockListQuery(query: any): Promise<any[]> {
 /**
  * Mock policy evaluation
  */
-async function mockPolicyEval(context: any): Promise<boolean> {
+async function mockPolicyEval(_context: any): Promise<boolean> {
   // Simulate policy evaluation (5-20ms)
   await new Promise((resolve) => setTimeout(resolve, Math.random() * 15 + 5));
 

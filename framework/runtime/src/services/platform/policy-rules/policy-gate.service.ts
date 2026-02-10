@@ -463,7 +463,7 @@ export class PolicyGateService implements IPolicyGate {
    */
   private async getSubjectOuPath(
     principalId: string,
-    tenantId: string
+    _tenantId: string
   ): Promise<{ nodeId: string; path: string } | undefined> {
     // ou_membership table may not be in generated Kysely types yet; use `as any` to bypass strict type checking
     const membership = await (this.db as any)

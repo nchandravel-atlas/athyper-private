@@ -490,8 +490,8 @@ export class DecisionLoggerService {
    * Update configuration
    */
   updateConfig(config: Partial<DecisionLoggerConfig>): void {
-    const wasEnabled = this.config.enabled;
-    const wasBatching = this.config.batchSize > 1;
+    const _wasEnabled = this.config.enabled;
+    const _wasBatching = this.config.batchSize > 1;
 
     this.config = { ...this.config, ...config };
 

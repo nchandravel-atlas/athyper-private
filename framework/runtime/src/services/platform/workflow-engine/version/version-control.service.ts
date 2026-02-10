@@ -33,13 +33,6 @@ type TemplateDefinition = {
 type ApprovalTemplate = ApprovalWorkflowTemplate & { definition: TemplateDefinition };
 
 /**
- * Generate unique ID
- */
-function generateId(prefix: string = "id"): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-}
-
-/**
  * Version Control Service Implementation
  */
 export class VersionControlService implements IVersionControlService {

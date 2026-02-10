@@ -27,7 +27,7 @@ const CODE_CHARSET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Excludes ambiguous: 
 /**
  * bcrypt cost factor for hashing backup codes
  */
-const BCRYPT_ROUNDS = 10;
+const _BCRYPT_ROUNDS = 10;
 
 // ============================================================================
 // Helper Functions

@@ -164,7 +164,7 @@ export function fieldLevelWriteMiddleware(
     writeDenialMode = "remove",
     allowedFields = [],
     deniedFields = [],
-    enableAudit = true,
+    enableAudit: _enableAudit = true,
     bypassRoles = [],
   } = options;
 

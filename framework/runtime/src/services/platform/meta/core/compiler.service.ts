@@ -959,7 +959,7 @@ export class MetaCompilerService implements MetaCompiler {
    */
   private collectDiagnostics(
     schema: EntitySchema,
-    compiledFields: CompiledField[]
+    _compiledFields: CompiledField[]
   ): CompileDiagnostic[] {
     const diagnostics: CompileDiagnostic[] = [];
 

@@ -469,7 +469,7 @@ export class GovernanceApiController {
     try {
       const tenantId = this.getTenantId(req);
       const userId = this.getUserId(req);
-      const { instanceId, reason, message } = req.body as PauseWorkflowRequest;
+      const { instanceId, reason: _reason, message } = req.body as PauseWorkflowRequest;
 
       const pause = await this.recoveryService.pauseWorkflow(
         tenantId,

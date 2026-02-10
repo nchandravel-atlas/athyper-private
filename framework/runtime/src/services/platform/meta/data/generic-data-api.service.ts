@@ -224,7 +224,7 @@ export class GenericDataAPIService implements GenericDataAPI {
   async count(
     entityName: string,
     ctx: RequestContext,
-    filters?: Record<string, unknown>
+    _filters?: Record<string, unknown>
   ): Promise<number> {
     // Check policy
     await this.policyGate.enforce("read", entityName, ctx);
@@ -558,10 +558,10 @@ export class GenericDataAPIService implements GenericDataAPI {
   private async handleCascadeDeletes(
     entityName: string,
     id: string,
-    ctx: RequestContext
+    _ctx: RequestContext
   ): Promise<void> {
     // Get the model being deleted
-    const model = await this.compiler.compile(entityName, "v1");
+    const _model = await this.compiler.compile(entityName, "v1");
 
     // Find all reference fields in the schema
     // In a full implementation, we would:
@@ -1510,7 +1510,7 @@ export class GenericDataAPIService implements GenericDataAPI {
               `Field '${fieldName}' does not match required pattern`
             );
           }
-        } catch (error) {
+        } catch {
           // Invalid regex pattern - skip validation
           console.error(
             `Invalid regex pattern for field ${fieldName}: ${field.pattern}`

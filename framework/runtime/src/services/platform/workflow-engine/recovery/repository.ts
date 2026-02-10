@@ -48,7 +48,7 @@ export class InMemoryRecoveryRepository implements IRecoveryErrorRepository {
     );
   }
 
-  async getActiveErrors(tenantId: string): Promise<WorkflowError[]> {
+  async getActiveErrors(_tenantId: string): Promise<WorkflowError[]> {
     return Array.from(this.errors.values()).filter(
       (e) => e.status !== "resolved" && e.status !== "ignored"
     );

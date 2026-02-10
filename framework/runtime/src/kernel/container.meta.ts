@@ -17,7 +17,7 @@ import type { Kysely } from "kysely";
  */
 export async function registerMetaServices(
   container: Container,
-  config: RuntimeConfig
+  _config: RuntimeConfig
 ) {
   // Get health registry to register health checks
   const healthRegistry = await container.resolve<any>(TOKENS.healthRegistry);

@@ -36,7 +36,7 @@ function generateId(): string {
 /**
  * Calculate due date from SLA duration
  */
-function calculateDueDate(sla: SlaDuration, startFrom: Date = new Date()): Date {
+function _calculateDueDate(sla: SlaDuration, startFrom: Date = new Date()): Date {
   const dueDate = new Date(startFrom);
 
   switch (sla.unit) {

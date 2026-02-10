@@ -225,7 +225,7 @@ export function createCacheHealthChecker(
   return async () => {
     try {
       // Try to get a non-existent key (should return null)
-      const result = await cache.get("__health_check__");
+      const _result = await cache.get("__health_check__");
       return {
         status: "healthy",
         message: "Cache is responding",

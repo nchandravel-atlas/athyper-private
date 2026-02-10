@@ -1867,9 +1867,9 @@ export class ActionExecutionService implements IActionExecutionService {
    * Find task for an approver
    */
   private async findTaskForApprover(
-    tenantId: string,
-    stepInstanceId: string,
-    userId: string
+    _tenantId: string,
+    _stepInstanceId: string,
+    _userId: string
   ): Promise<{ id: string } | undefined> {
     // This would query the task repository
     // For now, return undefined - the task service will handle this internally

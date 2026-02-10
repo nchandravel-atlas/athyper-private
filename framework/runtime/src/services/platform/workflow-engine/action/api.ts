@@ -449,8 +449,8 @@ export class ApprovalActionApiController {
    * Get SLA status for instance
    */
   async getSlaStatus(
-    tenantId: string,
-    instanceId: string
+    _tenantId: string,
+    _instanceId: string
   ): Promise<GetSlaStatusResponse> {
     // Get instance first (would normally be passed in)
     // For now, return empty array if we can't get instance

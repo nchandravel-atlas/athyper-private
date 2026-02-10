@@ -22,13 +22,6 @@ import type {
 } from "../instance/types.js";
 
 /**
- * Generate unique ID
- */
-function generateId(prefix: string = "id"): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-}
-
-/**
  * User validation service interface (would be provided by IAM)
  */
 interface IUserValidationService {

@@ -88,7 +88,7 @@ export class PolicySimulatorService implements IPolicySimulator {
         input,
         correlationId
       );
-      const resolveTime = Date.now() - resolveStart;
+      const _resolveTime = Date.now() - resolveStart;
 
       // 2. Build subject keys for explain tree
       const subjectKeys = this.buildSubjectKeys(policyInput.subject);
@@ -461,9 +461,9 @@ export class PolicySimulatorService implements IPolicySimulator {
   }
 
   private async resolveAuditReplayInput(
-    tenantId: string,
-    input: AuditReplayInput,
-    correlationId: string
+    _tenantId: string,
+    _input: AuditReplayInput,
+    _correlationId: string
   ): Promise<{
     policyInput: PolicyInput;
     subjectResolution: { method: "database"; timeMs: number };
@@ -849,7 +849,7 @@ export class PolicySimulatorService implements IPolicySimulator {
           if (cond.operator === "matches" && cond.value) {
             try {
               new RegExp(cond.value);
-            } catch (e) {
+            } catch {
               throw new Error(`Invalid regex pattern: ${cond.value}`);
             }
           }

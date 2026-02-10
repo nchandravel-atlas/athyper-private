@@ -732,7 +732,7 @@ describe("META Engine Integration Tests", () => {
         realmId: "realm-1",
       });
 
-      const tenant2Ctx = createTestContext({
+      const _tenant2Ctx = createTestContext({
         tenantId: "tenant-2",
         realmId: "realm-1",
       });

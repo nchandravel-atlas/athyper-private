@@ -236,14 +236,14 @@ class MockFactsProvider {
 // ============================================================================
 
 describe("Facts Provider - Subject Resolution", () => {
-  let provider: MockFactsProvider;
+  let _provider: MockFactsProvider;
 
   beforeEach(() => {
-    provider = new MockFactsProvider();
+    _provider = new MockFactsProvider();
   });
 
   it("should resolve subject with roles and groups", async () => {
-    const customFetcher = async (principalId: string, tenantId: string): Promise<PolicySubject> => ({
+    const customFetcher = async (principalId: string, _tenantId: string): Promise<PolicySubject> => ({
       principalId,
       principalType: "user",
       roles: ["admin", "editor"],
@@ -273,7 +273,7 @@ describe("Facts Provider - Subject Resolution", () => {
   });
 
   it("should resolve service principal", async () => {
-    const customFetcher = async (principalId: string, tenantId: string): Promise<PolicySubject> => ({
+    const customFetcher = async (principalId: string, _tenantId: string): Promise<PolicySubject> => ({
       principalId,
       principalType: "service",
       roles: ["service-role"],
@@ -630,7 +630,7 @@ describe("Facts Provider - Resolve Facts", () => {
 
     const slowProvider = new MockFactsProvider(
       {},
-      async (principalId, tenantId) => {
+      async (principalId, _tenantId) => {
         await new Promise((resolve) => setTimeout(resolve, subjectDelay));
         return {
           principalId,
@@ -677,7 +677,7 @@ describe("Facts Provider - Edge Cases", () => {
   it("should handle empty roles and groups", async () => {
     const provider = new MockFactsProvider(
       {},
-      async (principalId, tenantId) => ({
+      async (principalId, _tenantId) => ({
         principalId,
         principalType: "user",
         roles: [],
@@ -711,7 +711,7 @@ describe("Facts Provider - Edge Cases", () => {
     let fetchCount = 0;
     const provider = new MockFactsProvider(
       {},
-      async (principalId, tenantId) => {
+      async (principalId, _tenantId) => {
         fetchCount++;
         await new Promise((resolve) => setTimeout(resolve, 10));
         return {
@@ -741,7 +741,7 @@ describe("Facts Provider - Edge Cases", () => {
   it("should handle null/undefined in attributes gracefully", async () => {
     const provider = new MockFactsProvider(
       {},
-      async (principalId, tenantId) => ({
+      async (principalId, _tenantId) => ({
         principalId,
         principalType: "user",
         roles: [],

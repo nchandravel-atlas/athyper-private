@@ -442,7 +442,7 @@ export class PublishService {
    */
   private runDiagnostics(
     compiledModel: CompiledModel,
-    schema: EntitySchema
+    _schema: EntitySchema
   ): DiagnosticsSummary {
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -603,9 +603,9 @@ export class PublishService {
    * Get existing publish artifact
    */
   private async getPublishArtifact(
-    entityName: string,
-    version: string,
-    tenantId: string
+    _entityName: string,
+    _version: string,
+    _tenantId: string
   ): Promise<PublishArtifact | undefined> {
     // TODO: Query meta_publish_artifact table
     // For now, return undefined (allow republish during development)
@@ -658,8 +658,8 @@ export class PublishService {
    * Get publish history for entity
    */
   async getPublishHistory(
-    entityName: string,
-    tenantId: string
+    _entityName: string,
+    _tenantId: string
   ): Promise<PublishArtifact[]> {
     // TODO: Query meta_publish_artifact table
     // ORDER BY published_at DESC

@@ -90,7 +90,7 @@ const FALLBACK_TREE: NavTree = {
 };
 
 export async function GET(req: NextRequest) {
-    const wb = req.nextUrl.searchParams.get("wb") ?? "user";
+    const _wb = req.nextUrl.searchParams.get("wb") ?? "user";
 
     // TODO: Replace with actual DB query to core.module table
     // const modules = await prisma.module.findMany({

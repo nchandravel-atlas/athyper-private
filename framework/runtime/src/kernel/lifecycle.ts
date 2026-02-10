@@ -9,7 +9,7 @@ export class Lifecycle {
         this.shutdownHandlers.push(fn);
     }
 
-    async shutdown(reason: string) {
+    async shutdown(_reason: string) {
         if (this.shuttingDown) return;
         this.shuttingDown = true;
 

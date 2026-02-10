@@ -221,9 +221,9 @@ export class PolicyGateService implements PolicyGate {
   }
 
   async evaluatePolicy(
-    policyName: string,
-    ctx: RequestContext,
-    record?: unknown
+    _policyName: string,
+    _ctx: RequestContext,
+    _record?: unknown
   ): Promise<boolean> {
     // This would require loading the policy by name
     // For MVP, just return false

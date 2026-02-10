@@ -143,7 +143,7 @@ describe("listParamsSchema", () => {
     });
 
     it("applies default page_size of 10", () => {
-        const { page_size, ...noPageSize } = valid;
+        const { page_size: _page_size, ...noPageSize } = valid;
         const result = listParamsSchema.safeParse(noPageSize);
         expect(result.success).toBe(true);
         if (result.success) {
@@ -169,7 +169,7 @@ describe("listParamsSchema", () => {
     });
 
     it("rejects missing query_key", () => {
-        const { query_key, ...missing } = valid;
+        const { query_key: _query_key, ...missing } = valid;
         expect(listParamsSchema.safeParse(missing).success).toBe(false);
     });
 });
@@ -206,12 +206,12 @@ describe("chartParamsSchema", () => {
     });
 
     it("rejects missing title_key", () => {
-        const { title_key, ...missing } = valid;
+        const { title_key: _title_key, ...missing } = valid;
         expect(chartParamsSchema.safeParse(missing).success).toBe(false);
     });
 
     it("rejects missing query_key", () => {
-        const { query_key, ...missing } = valid;
+        const { query_key: _query_key, ...missing } = valid;
         expect(chartParamsSchema.safeParse(missing).success).toBe(false);
     });
 });

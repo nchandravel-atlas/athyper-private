@@ -85,7 +85,7 @@ function createMockAction(overrides: Partial<PolicyAction> = {}): PolicyAction {
   };
 }
 
-function createMockContext(overrides: Partial<PolicyContext> = {}): PolicyContext {
+function createMockContext(_overrides: Partial<PolicyContext> = {}): PolicyContext {
   return {
     tenantId: "tenant-1",
     realmId: "realm-1",

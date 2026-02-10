@@ -448,11 +448,11 @@ export class StaticMetaSchemaLoader implements IMetaSchemaLoader {
     }
   }
 
-  async loadEntity(entityKey: string, tenantId: string): Promise<MetaEntitySchema | null> {
+  async loadEntity(entityKey: string, _tenantId: string): Promise<MetaEntitySchema | null> {
     return this.schemas.get(entityKey) ?? null;
   }
 
-  async loadAllEntities(tenantId: string): Promise<MetaEntitySchema[]> {
+  async loadAllEntities(_tenantId: string): Promise<MetaEntitySchema[]> {
     return Array.from(this.schemas.values());
   }
 }

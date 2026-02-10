@@ -597,7 +597,7 @@ export class ApprovalInstanceService implements IApprovalInstanceService {
   /**
    * Determine lock mode from template
    */
-  private determineLockMode(template: ApprovalWorkflowTemplate): "none" | "soft" | "hard" {
+  private determineLockMode(_template: ApprovalWorkflowTemplate): "none" | "soft" | "hard" {
     // Default to soft lock for approval workflows
     return "soft";
   }

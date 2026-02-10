@@ -540,7 +540,7 @@ export class EscalationService implements IEscalationService {
     instance: ApprovalInstance,
     stepInstance: ApprovalStepInstance,
     targets: EscalationTarget[],
-    reason: string
+    _reason: string
   ): Promise<AssignedApprover[]> {
     const now = new Date();
     const newApprovers: AssignedApprover[] = [];
@@ -591,7 +591,7 @@ export class EscalationService implements IEscalationService {
     instance: ApprovalInstance,
     stepInstance: ApprovalStepInstance,
     targets: EscalationTarget[],
-    reason: string
+    _reason: string
   ): Promise<AssignedApprover[]> {
     const now = new Date();
     const newApprovers: AssignedApprover[] = [];

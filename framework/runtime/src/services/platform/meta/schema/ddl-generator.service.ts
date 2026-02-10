@@ -186,7 +186,7 @@ export class DdlGeneratorService implements DdlGenerator {
   private generateIndexes(
     qualifiedTableName: string,
     model: CompiledModel,
-    opts: Required<CoreDdlGenerationOptions>
+    _opts: Required<CoreDdlGenerationOptions>
   ): string[] {
     const indexes: string[] = [];
     const tableName = model.tableName;

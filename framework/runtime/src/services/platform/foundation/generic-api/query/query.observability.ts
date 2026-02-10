@@ -303,9 +303,9 @@ export interface QuerySpan {
  */
 export class NoOpTracer implements IQueryTracer {
   startSpan(
-    name: string,
-    attributes: Partial<QuerySpanAttributes>,
-    parentContext?: SpanContext
+    _name: string,
+    _attributes: Partial<QuerySpanAttributes>,
+    _parentContext?: SpanContext
   ): QuerySpan {
     return new NoOpSpan();
   }
@@ -320,9 +320,9 @@ class NoOpSpan implements QuerySpan {
     spanId: "0000000000000000",
   };
 
-  setAttribute(key: string, value: string | number | boolean): void {}
-  addEvent(name: string, attributes?: Record<string, unknown>): void {}
-  setStatus(status: "ok" | "error", message?: string): void {}
+  setAttribute(_key: string, _value: string | number | boolean): void {}
+  addEvent(_name: string, _attributes?: Record<string, unknown>): void {}
+  setStatus(_status: "ok" | "error", _message?: string): void {}
   end(): void {}
 }
 
@@ -452,7 +452,7 @@ export function createQueryObservabilityHooks(options: ObservableQueryServiceOpt
      */
     onQueryStart(
       query: QueryRequest,
-      tenantId: string,
+      _tenantId: string,
       requestId?: string,
       traceId?: string
     ): { span: QuerySpan; startTime: number } {

@@ -14,13 +14,6 @@ import type {
 } from "./types.js";
 
 /**
- * Generate unique ID
- */
-function generateId(prefix: string = "id"): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-}
-
-/**
  * Default retry configuration
  */
 const DEFAULT_RETRY_CONFIG: RetryConfig = {

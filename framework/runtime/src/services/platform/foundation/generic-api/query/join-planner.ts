@@ -250,7 +250,7 @@ export class JoinPlanner {
   /**
    * Validate and plan joins for a query
    */
-  async planJoins(query: QueryRequest, tenantId: string): Promise<{
+  async planJoins(query: QueryRequest, _tenantId: string): Promise<{
     plan?: JoinPlan;
     validation: QueryValidationResult;
   }> {
@@ -269,7 +269,7 @@ export class JoinPlanner {
     }
 
     // Validate aliases
-    const aliases = extractAliases(query);
+    const _aliases = extractAliases(query);
     const aliasSet = new Set<string>();
     const baseAlias = query.as ?? query.from.charAt(0).toLowerCase();
 
@@ -509,7 +509,7 @@ export class JoinPlanner {
     query: QueryRequest,
     baseEntity: EntityMetadata,
     plannedJoins: PlannedJoin[],
-    aliasToEntity: Map<string, string>
+    _aliasToEntity: Map<string, string>
   ): JoinGraphNode[] {
     const nodes: JoinGraphNode[] = [];
     const baseAlias = query.as ?? query.from.charAt(0).toLowerCase();

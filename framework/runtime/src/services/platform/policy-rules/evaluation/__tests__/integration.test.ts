@@ -354,7 +354,7 @@ class MockPolicyEvaluator {
     }
   }
 
-  private buildReasons(effect: Effect, decidingRule?: MatchedRule, matchedCount?: number): string[] {
+  private buildReasons(effect: Effect, decidingRule?: MatchedRule, _matchedCount?: number): string[] {
     if (!decidingRule) {
       return ["No matching rules found (default deny)"];
     }
@@ -810,7 +810,7 @@ describe("Integration: Performance", () => {
 
     const input = createTestInput();
     const start = Date.now();
-    const decision = await evaluator.evaluate(input);
+    const _decision = await evaluator.evaluate(input);
     const duration = Date.now() - start;
 
     expect(duration).toBeLessThan(100);

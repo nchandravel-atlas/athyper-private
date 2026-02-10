@@ -561,7 +561,7 @@ export class WorkflowCompletionService implements IWorkflowCompletionService {
         }
         break;
 
-      case "event":
+      case "event": {
         // Fire a domain event
         const event: WorkflowEvent = {
           id: generateId("evt"),
@@ -578,6 +578,7 @@ export class WorkflowCompletionService implements IWorkflowCompletionService {
         };
         await this.fireEvent(event);
         return { eventId: event.id };
+      }
 
       case "workflow":
         // Trigger another workflow (would integrate with workflow engine)

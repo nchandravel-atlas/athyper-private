@@ -49,7 +49,7 @@ function calculateDueDate(sla: SlaDuration, startFrom: Date = new Date()): Date 
     case "days":
       dueDate.setDate(dueDate.getDate() + sla.value);
       break;
-    case "business_days":
+    case "business_days": {
       // Simple implementation: add days, skipping weekends
       let daysToAdd = sla.value;
       while (daysToAdd > 0) {
@@ -60,6 +60,7 @@ function calculateDueDate(sla: SlaDuration, startFrom: Date = new Date()): Date 
         }
       }
       break;
+    }
   }
 
   return dueDate;

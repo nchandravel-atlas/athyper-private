@@ -202,7 +202,7 @@ export class StepCompletionService implements IStepCompletionService {
         }
         break;
 
-      case "majority":
+      case "majority": {
         // More than half must approve for approval
         requiredCount = Math.floor(counts.total / 2) + 1;
         const majorityApproved = counts.approved >= requiredCount;
@@ -214,8 +214,9 @@ export class StepCompletionService implements IStepCompletionService {
           reason = `Majority (${requiredCount} of ${counts.total}) ${outcome}`;
         }
         break;
+      }
 
-      case "quorum":
+      case "quorum": {
         // Configurable quorum
         if (stepInstance.quorum) {
           if (stepInstance.quorum.type === "count") {
@@ -238,6 +239,7 @@ export class StepCompletionService implements IStepCompletionService {
           reason = `Quorum (${requiredCount} of ${counts.total}) ${outcome}`;
         }
         break;
+      }
 
       default:
         requiredCount = 1;

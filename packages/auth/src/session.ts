@@ -4,8 +4,8 @@ import type { Session, WorkbenchType } from "./types";
 
 const COOKIE_NAME = "neon_session";
 
-export function setSession(session: Session) {
-  cookies().set(COOKIE_NAME, JSON.stringify(session), {
+export async function setSession(session: Session) {
+  (await cookies()).set(COOKIE_NAME, JSON.stringify(session), {
     httpOnly: true,
     sameSite: "lax",
     secure: false, // set true behind HTTPS
@@ -13,12 +13,12 @@ export function setSession(session: Session) {
   });
 }
 
-export function clearSession() {
-  cookies().delete(COOKIE_NAME);
+export async function clearSession() {
+  (await cookies()).delete(COOKIE_NAME);
 }
 
-export function getSession(): Session | null {
-  const raw = cookies().get(COOKIE_NAME)?.value;
+export async function getSession(): Promise<Session | null> {
+  const raw = (await cookies()).get(COOKIE_NAME)?.value;
   if (!raw) return null;
   try {
     return JSON.parse(raw) as Session;
@@ -27,6 +27,6 @@ export function getSession(): Session | null {
   }
 }
 
-export function getWorkbenchFromSession(): WorkbenchType | null {
-  return getSession()?.workbench ?? null;
+export async function getWorkbenchFromSession(): Promise<WorkbenchType | null> {
+  return (await getSession())?.workbench ?? null;
 }

@@ -53,16 +53,15 @@ export class JwksManager {
      */
     getKeySet(): ReturnType<typeof jose.createRemoteJWKSet> {
         // Wrap the key set to track health
-        const self = this;
         const wrapped = async (protectedHeader: jose.JWSHeaderParameters, token: jose.FlattenedJWSInput) => {
             try {
-                const key = await self.remoteKeySet(protectedHeader, token);
-                self._lastFetchAt = Date.now();
-                self._keyCount++;
+                const key = await this.remoteKeySet(protectedHeader, token);
+                this._lastFetchAt = Date.now();
+                this._keyCount++;
                 return key;
             } catch (err) {
-                self._lastFailureAt = Date.now();
-                self._lastFailureReason = err instanceof Error ? err.message : String(err);
+                this._lastFailureAt = Date.now();
+                this._lastFailureReason = err instanceof Error ? err.message : String(err);
                 throw err;
             }
         };

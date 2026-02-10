@@ -24,7 +24,7 @@ export function sanitizeHtml(input: string): string {
     return "";
   }
 
-  return input.replace(/[&<>"'\/]/g, (char) => HTML_ENTITIES[char] || char);
+  return input.replace(/[&<>"'/]/g, (char) => HTML_ENTITIES[char] || char);
 }
 
 /**
@@ -60,7 +60,7 @@ export function sanitizeFilename(input: string): string {
   }
 
   // Remove path separators and null bytes
-  let safe = input.replace(/[\/\\:\0]/g, "");
+  let safe = input.replace(/[/\\:\0]/g, "");
 
   // Remove leading dots to prevent hidden files
   safe = safe.replace(/^\.+/, "");

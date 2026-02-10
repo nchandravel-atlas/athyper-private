@@ -530,9 +530,10 @@ export class GenericQueryService {
         return eb(column, "is", null);
       case "is_not_null":
         return eb(column, "is not", null);
-      case "between":
+      case "between": {
         const [min, max] = value as [unknown, unknown];
         return eb.and([eb(column, ">=", min), eb(column, "<=", max)]);
+      }
       default:
         throw new Error(`Unsupported operator: ${condition.operator}`);
     }

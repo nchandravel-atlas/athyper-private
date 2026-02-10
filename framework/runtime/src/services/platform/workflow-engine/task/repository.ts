@@ -126,11 +126,12 @@ export class InMemoryApprovalTaskRepository implements IApprovalTaskRepository {
           aVal = a.sla.dueAt.getTime();
           bVal = b.sla.dueAt.getTime();
           break;
-        case "priority":
+        case "priority": {
           const priorityOrder = { urgent: 0, high: 1, normal: 2, low: 3 };
           aVal = priorityOrder[a.priority];
           bVal = priorityOrder[b.priority];
           break;
+        }
         case "status":
           aVal = a.status;
           bVal = b.status;

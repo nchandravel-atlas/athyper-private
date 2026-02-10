@@ -14,6 +14,8 @@
 
 import { createHash } from "crypto";
 
+import type { MigrationRunnerService } from "./migration-runner.service.js";
+import type { SchemaChangeNotifier } from "./schema-change-notifier.js";
 import type { DB } from "@athyper/adapter-db";
 import type {
   MetaCompiler,
@@ -24,8 +26,6 @@ import type {
 } from "@athyper/core/meta";
 import type { Kysely } from "kysely";
 
-import type { MigrationRunnerService } from "./migration-runner.service.js";
-import type { SchemaChangeNotifier } from "./schema-change-notifier.js";
 
 // RequestContext type (inline for now - should be imported from contracts)
 type RequestContext = {

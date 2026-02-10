@@ -37,14 +37,19 @@ export async function startWorkerRuntime(container: Container) {
     const jobQueue = await container.resolve<any>(TOKENS.jobQueue);
     await jobQueue.start?.();
 
-    logger.info?.(
-        { service: config.serviceName },
-        "[worker] started"
-    ) ?? logger.log?.(`[worker] ${config.serviceName} started`);
+    if (logger.info) {
+        logger.info({ service: config.serviceName }, "[worker] started");
+    } else {
+        logger.log?.(`[worker] ${config.serviceName} started`);
+    }
 
     // Graceful shutdown: stop pulling jobs, finish in-flight tasks, close resources
     lifecycle.onShutdown?.(async () => {
-        logger.info?.("[worker] shutdown requested") ?? logger.log?.("[worker] shutdown requested");
+        if (logger.info) {
+            logger.info("[worker] shutdown requested");
+        } else {
+            logger.log?.("[worker] shutdown requested");
+        }
 
         // Stop consuming new jobs first
         await jobQueue.stop?.();

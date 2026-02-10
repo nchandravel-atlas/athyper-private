@@ -7,9 +7,10 @@
 
 import { useCallback, useRef, useState } from "react";
 
+import { useMessages } from "@/lib/i18n/messages-context";
+
 import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
-import { useMessages } from "@/lib/i18n/messages-context";
 
 export interface ActionResult {
     ok: boolean;

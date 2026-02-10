@@ -2,8 +2,6 @@ import "./globals.css";
 import { getIntl, isValidLocale } from "@athyper/i18n";
 import { cookies } from "next/headers";
 
-import type { Locale } from "@athyper/i18n";
-import type { Metadata } from "next";
 
 import { Toaster } from "@/components/ui/sonner";
 import { APP_CONFIG } from "@/config/app-config";
@@ -13,6 +11,9 @@ import { PREFERENCE_DEFAULTS } from "@/lib/preferences/preferences-config";
 import { getSessionBootstrap } from "@/lib/session-bootstrap";
 import { ThemeBootScript } from "@/scripts/theme-boot";
 import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provider";
+
+import type { Locale } from "@athyper/i18n";
+import type { Metadata } from "next";
 
 
 

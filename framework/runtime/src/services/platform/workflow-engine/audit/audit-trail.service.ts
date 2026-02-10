@@ -140,9 +140,10 @@ export class InMemoryAuditRepository implements IAuditRepository {
       switch (options?.sortBy) {
         case "eventType":
           return a.eventType.localeCompare(b.eventType) * sortDir;
-        case "severity":
+        case "severity": {
           const severityOrder = { info: 0, warning: 1, error: 2, critical: 3 };
           return (severityOrder[a.severity] - severityOrder[b.severity]) * sortDir;
+        }
         default:
           return (a.timestamp.getTime() - b.timestamp.getTime()) * sortDir;
       }
@@ -531,7 +532,7 @@ export class AuditTrailService implements IAuditTrailService {
           mimeType: "application/json",
         };
 
-      case "csv":
+      case "csv": {
         const csvHeader =
           "Event ID,Timestamp,Event Type,Severity,Actor,Action,Comment,Step,Previous Status,New Status\n";
         const csvRows = trail.events
@@ -544,8 +545,9 @@ export class AuditTrailService implements IAuditTrailService {
           content: csvHeader + csvRows,
           mimeType: "text/csv",
         };
+      }
 
-      case "pdf":
+      case "pdf": {
         // In real implementation, would use a PDF library
         // For now, return a placeholder
         const pdfContent = `
@@ -578,6 +580,7 @@ ${trail.events.map((e) => `[${e.timestamp.toISOString()}] ${e.eventType} by ${e.
           content: pdfContent,
           mimeType: "text/plain", // Would be application/pdf with real PDF
         };
+      }
 
       default:
         throw new Error(`Unsupported export format: ${format}`);

@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import type { Workbench } from "@/lib/auth/types";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +20,8 @@ import {
 import { useAuthOptional } from "@/lib/auth/auth-context";
 import { setLastWorkbench } from "@/lib/auth/context-resolver";
 import { WORKBENCH_CONFIGS } from "@/lib/auth/workbench-config";
+
+import type { Workbench } from "@/lib/auth/types";
 
 
 const ICON_MAP: Record<string, typeof Shield> = {

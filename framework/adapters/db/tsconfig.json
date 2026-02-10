@@ -20,6 +20,8 @@
   "exclude": [
     "dist",
     "node_modules",
-    ".turbo"
+    ".turbo",
+    "src/generated",
+    "src/prisma"
   ]
 }

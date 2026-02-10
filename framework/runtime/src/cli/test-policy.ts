@@ -256,7 +256,7 @@ async function main(): Promise<void> {
       report = await testRunner.runRegressionTests();
       break;
 
-    case "pack":
+    case "pack": {
       if (!packName) {
         console.error("Error: pack name required");
         process.exit(1);
@@ -306,6 +306,7 @@ async function main(): Promise<void> {
         budgetViolations: [],
       };
       break;
+    }
 
     default:
       console.error(`Unknown command: ${command}`);

@@ -7,11 +7,12 @@ import { Command } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
 import { Button } from "@/components/ui/button";
 import { isWorkbench, type Workbench } from "@/lib/auth/types";
 import { WORKBENCH_CONFIGS, getWorkbenchDefaultRoute } from "@/lib/auth/workbench-config";
+
+import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
 const LAST_WB_KEY = "neon_last_workbench";
 

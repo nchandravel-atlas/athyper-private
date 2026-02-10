@@ -14,11 +14,21 @@
         "NEXT_PUBLIC_*",
 
         "DATABASE_URL",
+        "DATABASE_ADMIN_URL",
 
         "AUTH_SECRET",
+        "AUTH_DEBUG_EXPOSE_TOKENS",
         "KEYCLOAK_URL",
+        "KEYCLOAK_BASE_URL",
         "KEYCLOAK_REALM",
-        "KEYCLOAK_CLIENT_ID"
+        "KEYCLOAK_CLIENT_ID",
+
+        "REDIS_URL",
+        "RUNTIME_API_URL",
+        "PUBLIC_BASE_URL",
+        "DEFAULT_TENANT_ID",
+        "ENVIRONMENT",
+        "TENANT_ID"
       ],
       "inputs": [
         "$TURBO_DEFAULT$",
@@ -146,5 +156,5 @@
     "kysely:codegen": { "cache": false }
   },
   "globalEnv": [],
-  "globalPassThroughEnv": ["CI", "FORCE_COLOR"]
+  "globalPassThroughEnv": ["CI", "FORCE_COLOR", "NODE_OPTIONS"]
 }

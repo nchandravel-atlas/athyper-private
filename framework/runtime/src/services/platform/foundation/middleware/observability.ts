@@ -10,13 +10,12 @@ import {
   generateSpanId,
   CorrelationHeaders,
   createTraceparent,
-  type MetricsRegistry,
-  type DependencyHealth,
-
-  RequestContextStorage} from "@athyper/core";
+} from "@athyper/core";
 
 import type { Logger } from "../../../../kernel/logger.js";
+import type { DependencyHealth, MetricsRegistry, RequestContextStorage } from "@athyper/core";
 import type { Request, Response, NextFunction } from "express";
+
 
 /**
  * Request correlation middleware

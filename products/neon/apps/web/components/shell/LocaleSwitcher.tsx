@@ -8,7 +8,6 @@
 import { Globe, Check } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +16,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
 
 const LOCALES = [

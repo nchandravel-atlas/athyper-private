@@ -7,12 +7,13 @@
 import { RefreshCw, Database, Shield, Trash2, Wrench } from "lucide-react";
 import { useState } from "react";
 
+import { useMessages } from "@/lib/i18n/messages-context";
+
 import { ActionCard } from "./ActionCard";
 import { useDiagnosticAction } from "./useDiagnosticAction";
 
 import type { ActionResult } from "./useDiagnosticAction";
 
-import { useMessages } from "@/lib/i18n/messages-context";
 
 interface Tier1ActionsProps {
     onActionComplete?: () => void;

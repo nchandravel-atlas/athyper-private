@@ -9,7 +9,6 @@ import { ChevronsUpDown, UserCircle, CreditCard, ArrowLeftRight } from "lucide-r
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useMessages } from "@/lib/i18n/messages-context";
+
+import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
 function getTenantInitials(tenantId: string): string {
     return tenantId.slice(0, 2).toUpperCase();

@@ -9,6 +9,8 @@
  * Phase 15.3: Caching strategy for compiled + policy + route
  */
 
+import { createHash } from "node:crypto";
+
 import type {
   CompiledModel,
   MetaCompiler,
@@ -509,9 +511,7 @@ export class CompilerCacheService implements MetaCompiler {
    * Hash overlay set for cache key
    */
   private hashOverlaySet(overlaySet: string[]): string {
-    const crypto = require("crypto");
-    const hash = crypto
-      .createHash("sha256")
+    const hash = createHash("sha256")
       .update(JSON.stringify(overlaySet))
       .digest("hex");
     return hash.substring(0, 16); // Use first 16 chars for brevity

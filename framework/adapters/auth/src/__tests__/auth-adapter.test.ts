@@ -9,7 +9,7 @@ import { createAuthAdapter, type AuthAdapterConfig } from "../keycloak/auth-adap
 // ─── Mocks ──────────────────────────────────────────────────────
 
 vi.mock("jose", async () => {
-    const actual = await vi.importActual<typeof import("jose")>("jose");
+    const actual = await vi.importActual<typeof jose>("jose");
     return {
         ...actual,
         createRemoteJWKSet: vi.fn().mockReturnValue(vi.fn()),
@@ -58,7 +58,7 @@ describe("AuthAdapter", () => {
 
         // Make the mocked jwtVerify throw an expiration error, simulating jose behaviour
         vi.mocked(jose.jwtVerify).mockRejectedValueOnce(
-            new jose.errors.JWTExpired('"exp" claim timestamp check failed'),
+            new jose.errors.JWTExpired('"exp" claim timestamp check failed', {}, "exp", "check_failed"),
         );
 
         const adapter = createAuthAdapter(baseConfig());

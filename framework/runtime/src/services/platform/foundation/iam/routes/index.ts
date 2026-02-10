@@ -11,28 +11,31 @@ import {
   PersonaCapabilityService,
 } from "../persona-model/persona-capability.service.js";
 
+
+// Route creators
+import { createCapabilitiesRoutes } from "./capabilities.routes.js";
+import { createGroupsRoutes } from "./groups.routes.js";
+import { createOusRoutes } from "./ous.routes.js";
+import { createPrincipalsRoutes } from "./principals.routes.js";
+import { createRoleBindingsRoutes } from "./role-bindings.routes.js";
+import { createRolesRoutes } from "./roles.routes.js";
+
 import type { Logger } from "../../../../../kernel/logger.js";
 import type { Router, Request } from "express";
 import type { Kysely } from "kysely";
 
-// Route creators
-export { createPrincipalsRoutes } from "./principals.routes.js";
-export type { PrincipalsRoutesDependencies } from "./principals.routes.js";
-
-export { createGroupsRoutes } from "./groups.routes.js";
-export type { GroupsRoutesDependencies } from "./groups.routes.js";
-
-export { createRolesRoutes } from "./roles.routes.js";
-export type { RolesRoutesDependencies } from "./roles.routes.js";
-
-export { createRoleBindingsRoutes } from "./role-bindings.routes.js";
-export type { RoleBindingsRoutesDependencies } from "./role-bindings.routes.js";
-
-export { createOusRoutes } from "./ous.routes.js";
-export type { OusRoutesDependencies } from "./ous.routes.js";
-
 export { createCapabilitiesRoutes } from "./capabilities.routes.js";
 export type { CapabilitiesRoutesDependencies } from "./capabilities.routes.js";
+export { createGroupsRoutes } from "./groups.routes.js";
+export type { GroupsRoutesDependencies } from "./groups.routes.js";
+export { createOusRoutes } from "./ous.routes.js";
+export type { OusRoutesDependencies } from "./ous.routes.js";
+export { createPrincipalsRoutes } from "./principals.routes.js";
+export type { PrincipalsRoutesDependencies } from "./principals.routes.js";
+export { createRoleBindingsRoutes } from "./role-bindings.routes.js";
+export type { RoleBindingsRoutesDependencies } from "./role-bindings.routes.js";
+export { createRolesRoutes } from "./roles.routes.js";
+export type { RolesRoutesDependencies } from "./roles.routes.js";
 
 // ============================================================================
 // Combined IAM Routes
@@ -70,14 +73,6 @@ export function registerIamRoutes(
 
   // Initialize MFA service
   const mfaService = new MfaService(db, logger);
-
-  // Import route creators
-  const { createPrincipalsRoutes } = require("./principals.routes.js");
-  const { createGroupsRoutes } = require("./groups.routes.js");
-  const { createRolesRoutes } = require("./roles.routes.js");
-  const { createRoleBindingsRoutes } = require("./role-bindings.routes.js");
-  const { createOusRoutes } = require("./ous.routes.js");
-  const { createCapabilitiesRoutes } = require("./capabilities.routes.js");
 
   // Register all route handlers
   createPrincipalsRoutes(router, { db, logger, getTenantId });

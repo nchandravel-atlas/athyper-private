@@ -29,14 +29,19 @@ export async function startSchedulerRuntime(container: Container) {
     const scheduler = await container.resolve<any>(TOKENS.scheduler);
     await scheduler.start?.();
 
-    logger.info?.(
-        { service: config.serviceName },
-        "[scheduler] started"
-    ) ?? logger.log?.(`[scheduler] ${config.serviceName} started`);
+    if (logger.info) {
+        logger.info({ service: config.serviceName }, "[scheduler] started");
+    } else {
+        logger.log?.(`[scheduler] ${config.serviceName} started`);
+    }
 
     // Graceful shutdown: stop triggering schedules and wait for in-flight tasks if needed
     lifecycle.onShutdown?.(async () => {
-        logger.info?.("[scheduler] shutdown requested") ?? logger.log?.("[scheduler] shutdown requested");
+        if (logger.info) {
+            logger.info("[scheduler] shutdown requested");
+        } else {
+            logger.log?.("[scheduler] shutdown requested");
+        }
         await scheduler.stop?.();
     });
 }

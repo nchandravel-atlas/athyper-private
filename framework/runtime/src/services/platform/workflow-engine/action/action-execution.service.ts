@@ -1206,15 +1206,17 @@ export class ActionExecutionService implements IActionExecutionService {
         // Complete if all responded (none pending)
         return counts.pending === 0;
 
-      case "majority":
+      case "majority": {
         // Complete if majority approved or rejected
         const majorityNeeded = Math.floor(counts.total / 2) + 1;
         return counts.approved >= majorityNeeded || counts.rejected >= majorityNeeded;
+      }
 
-      case "quorum":
+      case "quorum": {
         // Complete if quorum reached
         const requiredCount = step.quorum?.requiredCount || Math.ceil(counts.total / 2);
         return counts.approved >= requiredCount || counts.rejected >= requiredCount;
+      }
 
       default:
         return false;

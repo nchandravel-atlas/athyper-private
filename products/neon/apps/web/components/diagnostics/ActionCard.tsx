@@ -6,13 +6,14 @@
 
 import { Loader2, Check, X } from "lucide-react";
 
-import type { ActionResult } from "./useDiagnosticAction";
-import type { LucideIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useMessages } from "@/lib/i18n/messages-context";
+
+import type { ActionResult } from "./useDiagnosticAction";
+import type { LucideIcon } from "lucide-react";
 
 interface ActionCardProps {
     icon: LucideIcon;

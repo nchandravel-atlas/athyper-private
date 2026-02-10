@@ -501,7 +501,7 @@ export class EscalationService implements IEscalationService {
         }
         break;
 
-      case "hierarchy":
+      case "hierarchy": {
         // Hierarchy-based escalation (manager chain)
         const managerId = (instance.metadata as Record<string, unknown> | undefined)?.requesterManagerId as string | undefined;
         if (managerId) {
@@ -513,6 +513,7 @@ export class EscalationService implements IEscalationService {
           });
         }
         break;
+      }
 
       case "group":
         // Group-based - in real implementation would resolve groups to users

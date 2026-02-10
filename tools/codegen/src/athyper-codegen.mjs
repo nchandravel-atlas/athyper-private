@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
-import { mkdir, rm, cp, stat, readdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { mkdir, rm, cp, stat, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const args = new Set(process.argv.slice(2));

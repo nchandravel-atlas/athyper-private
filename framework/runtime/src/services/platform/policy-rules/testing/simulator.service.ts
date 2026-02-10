@@ -961,7 +961,7 @@ export class PolicySimulatorService implements IPolicySimulator {
           expected: assertion.value,
         };
 
-      case "has_obligation":
+      case "has_obligation": {
         const hasObligation = result.decision.obligations.some(
           (ob) => ob.type === assertion.obligationType
         );
@@ -971,6 +971,7 @@ export class PolicySimulatorService implements IPolicySimulator {
           actual: hasObligation ? "present" : "absent",
           expected: "present",
         };
+      }
 
       case "no_obligations":
         return {
@@ -980,7 +981,7 @@ export class PolicySimulatorService implements IPolicySimulator {
           expected: 0,
         };
 
-      case "matched_rules_count":
+      case "matched_rules_count": {
         const count = result.decision.matchedRules.length;
         let countPassed = false;
         switch (assertion.operator) {
@@ -1006,6 +1007,7 @@ export class PolicySimulatorService implements IPolicySimulator {
           actual: count,
           expected: assertion.value,
         };
+      }
 
       case "deciding_rule_is":
         return {

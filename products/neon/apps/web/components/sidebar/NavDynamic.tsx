@@ -16,8 +16,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 
-import type { NavWorkspace, NavModule, NavEntity } from "@/lib/nav/nav-types";
-import type { LucideIcon } from "lucide-react";
 
 import {
     Collapsible,
@@ -40,6 +38,9 @@ import { useAuthOptional } from "@/lib/auth/auth-context";
 import { useMessages } from "@/lib/i18n/messages-context";
 import { filterNavTree } from "@/lib/nav/filter-nav";
 import { useNavTree } from "@/lib/nav/use-nav-tree";
+
+import type { NavWorkspace, NavModule, NavEntity } from "@/lib/nav/nav-types";
+import type { LucideIcon } from "lucide-react";
 
 // Icon map for resolving icon names to Lucide components
 const ICON_MAP: Record<string, LucideIcon> = {

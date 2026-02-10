@@ -20,7 +20,8 @@ export default [
             "**/.turbo/**",
             "**/coverage/**",
             "**/generated/**",
-            "**/prisma/migrations/**"
+            "**/prisma/migrations/**",
+            "**/temp/**"
         ]
     },
 
@@ -157,6 +158,20 @@ export default [
      * --------------------------- */
     {
         files: ["**/*.config.{js,ts,mjs,cjs}", "**/scripts/**/*.{js,ts,mjs,cjs}", "**/*.{mjs,cjs}"],
+        languageOptions: {
+            globals: {
+                process: "readonly",
+                URL: "readonly",
+                console: "readonly",
+                setTimeout: "readonly",
+                clearTimeout: "readonly",
+                setInterval: "readonly",
+                clearInterval: "readonly",
+                __dirname: "readonly",
+                __filename: "readonly",
+                Buffer: "readonly",
+            }
+        },
         rules: {
             "no-console": "off"
         }

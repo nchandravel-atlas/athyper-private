@@ -9,7 +9,6 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -28,6 +27,8 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar";
 import { useMessages } from "@/lib/i18n/messages-context";
+
+import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
 function getInitials(name: string): string {
     return name

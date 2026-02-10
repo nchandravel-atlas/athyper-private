@@ -7,6 +7,8 @@
 import { RotateCcw, UserCheck, Download, Activity } from "lucide-react";
 import { useState, useCallback } from "react";
 
+import { useMessages } from "@/lib/i18n/messages-context";
+
 import { ActionCard } from "./ActionCard";
 import { HealthPanel } from "./HealthPanel";
 import { useDiagnosticAction } from "./useDiagnosticAction";
@@ -14,7 +16,6 @@ import { useDiagnosticAction } from "./useDiagnosticAction";
 import type { ActionResult } from "./useDiagnosticAction";
 import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
-import { useMessages } from "@/lib/i18n/messages-context";
 
 interface Tier2ActionsProps {
     onActionComplete?: () => void;

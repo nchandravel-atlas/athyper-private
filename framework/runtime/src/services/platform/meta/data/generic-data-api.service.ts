@@ -396,12 +396,7 @@ export class GenericDataAPIService implements GenericDataAPI {
 
     // Check if record is in terminal state (prevent updates to finalized records)
     if (this.lifecycleManager) {
-      try {
-        await this.lifecycleManager.enforceTerminalState(entityName, id, ctx.tenantId);
-      } catch (terminalError) {
-        // Re-throw terminal state errors - these should block the update
-        throw terminalError;
-      }
+      await this.lifecycleManager.enforceTerminalState(entityName, id, ctx.tenantId);
     }
 
     // Validate version for optimistic locking

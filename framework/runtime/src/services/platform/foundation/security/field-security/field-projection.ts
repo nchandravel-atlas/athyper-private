@@ -311,17 +311,19 @@ export class FieldProjectionBuilder {
         // Field should be excluded entirely
         return "NULL";
 
-      case "redact":
+      case "redact": {
         const replacement = (config?.replacement as string) ?? "[REDACTED]";
         return `'${replacement.replace(/'/g, "''")}'`;
+      }
 
-      case "hash":
+      case "hash": {
         // PostgreSQL: encode(sha256(field::bytea), 'hex')
         // Use LEFT to truncate to desired length
         const hashLength = (config?.hashLength as number) ?? 16;
         return `LEFT(encode(sha256(COALESCE(${column}::text, '')::bytea), 'hex'), ${hashLength})`;
+      }
 
-      case "partial":
+      case "partial": {
         const visibleChars = (config?.visibleChars as number) ?? 4;
         const position = (config?.position as string) ?? "end";
         const maskChar = (config?.maskChar as string) ?? "*";
@@ -340,6 +342,7 @@ export class FieldProjectionBuilder {
                   ELSE REPEAT('${maskChar}', LENGTH(${column}::text) - ${visibleChars}) || RIGHT(${column}::text, ${visibleChars})
                   END`;
         }
+      }
 
       default:
         return column;

@@ -12,14 +12,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { SessionDebugConsole } from "@/components/debug/SessionDebugConsole";
+import { Separator } from "@/components/ui/separator";
+import { useMessages } from "@/lib/i18n/messages-context";
+
 import { Tier1Actions } from "./Tier1Actions";
 import { Tier2Actions } from "./Tier2Actions";
 
 import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
-import { SessionDebugConsole } from "@/components/debug/SessionDebugConsole";
-import { Separator } from "@/components/ui/separator";
-import { useMessages } from "@/lib/i18n/messages-context";
 
 type DebugData = Record<string, unknown>;
 

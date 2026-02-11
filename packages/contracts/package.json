@@ -17,6 +17,7 @@
   "files": ["dist", "src"],
   "scripts": {
     "clean": "rimraf dist",
+    "prebuild": "node scripts/ensure-generated-stubs.cjs",
     "build": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist",
     "dev": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",

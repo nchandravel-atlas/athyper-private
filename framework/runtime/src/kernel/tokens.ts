@@ -55,6 +55,14 @@ export const TOKENS = {
     dashboardService: "ui.dashboard",
     widgetRegistry: "ui.widgetRegistry",
     contributionLoader: "ui.contributionLoader",
+
+    // Notification Framework
+    notificationOrchestrator: "notify.orchestrator",
+    notificationRuleEngine: "notify.ruleEngine",
+    notificationTemplateRenderer: "notify.templateRenderer",
+    notificationPreferenceEvaluator: "notify.preferenceEvaluator",
+    notificationChannelRegistry: "notify.channelRegistry",
+    notificationMetrics: "notify.metrics",
 } as const;
 
 export type TokenName = (typeof TOKENS)[keyof typeof TOKENS]; // "kernel.config" | ...

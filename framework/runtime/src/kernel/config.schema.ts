@@ -140,6 +140,38 @@ export const RuntimeConfigSchema = z.object({
         otlpEndpoint: z.string().min(1).optional(),
         enabled: Bool.default(true),
     }),
+
+    notification: z.object({
+        enabled: Bool.default(true),
+        providers: z.object({
+            email: z.object({
+                sendgrid: z.object({
+                    apiKeyRef: z.string().optional(),
+                    fromAddress: z.string().optional(),
+                    fromName: z.string().optional(),
+                    enabled: Bool.default(false),
+                }).default({}),
+            }).default({}),
+            teams: z.object({
+                powerAutomate: z.object({
+                    webhookUrl: z.string().optional(),
+                    enabled: Bool.default(false),
+                }).default({}),
+            }).default({}),
+        }).default({}),
+        delivery: z.object({
+            maxRetries: z.coerce.number().int().min(0).default(3),
+            retryBackoffMs: z.coerce.number().int().positive().default(2000),
+            dedupWindowMs: z.coerce.number().int().positive().default(300000),
+            defaultPriority: z.enum(["low", "normal", "high", "critical"]).default("normal"),
+            defaultLocale: z.string().min(2).default("en"),
+            workerConcurrency: z.coerce.number().int().positive().default(5),
+        }).default({}),
+        retention: z.object({
+            messageDays: z.coerce.number().int().positive().default(90),
+            deliveryDays: z.coerce.number().int().positive().default(30),
+        }).default({}),
+    }).default({}),
 });
 
 export type RuntimeConfig = z.infer<typeof RuntimeConfigSchema>;

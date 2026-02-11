@@ -5,6 +5,7 @@ import { TOKENS } from "../kernel/tokens";
 import { module as httpFoundation } from "./platform/foundation/http/module";
 import { module as metaModule } from "./platform/meta/module";
 import { module as dashboardModule } from "./platform/ui/module";
+import { module as notificationModule } from "./platform-services/notification/index";
 
 import type { AuditWriter, AuditEvent } from "../kernel/audit";
 import type { Container } from "../kernel/container";
@@ -23,6 +24,7 @@ const modules: RuntimeModule[] = [
     httpFoundation,
     metaModule,
     dashboardModule,
+    notificationModule,
 ];
 
 export async function loadServices(container: Container) {

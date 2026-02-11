@@ -74,7 +74,6 @@ export {
 // Notification Service
 export {
   NotificationService,
-  ConsoleNotificationSender,
   createNotificationService,
 } from "./notification.service.js";
 

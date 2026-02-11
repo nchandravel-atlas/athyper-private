@@ -45,6 +45,14 @@ import type {
   NumberingRule,
 } from "./types.js";
 
+import type {
+  EntityPageStaticDescriptor,
+  EntityPageDynamicDescriptor,
+  ViewMode,
+  ActionExecutionRequest,
+  ActionExecutionResult,
+} from "./descriptor-types.js";
+
 // ============================================================================
 // Meta Registry Service
 // ============================================================================
@@ -300,6 +308,20 @@ export interface PolicyGate {
     ctx: RequestContext,
     record?: unknown
   ): Promise<string[] | null>;
+
+  /**
+   * Batch authorize multiple action/resource pairs (Phase 0: Entity Page Descriptor)
+   *
+   * Optimized for page-load scenarios where multiple permissions need checking.
+   * Groups by resource to minimize compile calls.
+   *
+   * @returns Map keyed by "action:resource" → PolicyDecision
+   */
+  authorizeMany(
+    checks: Array<{ action: string; resource: string }>,
+    ctx: RequestContext,
+    record?: unknown
+  ): Promise<Map<string, PolicyDecision>>;
 
   /**
    * Invalidate policy cache
@@ -1266,6 +1288,115 @@ export interface NumberingEngine {
    * Health check.
    */
   healthCheck(): Promise<HealthCheckResult>;
+}
+
+// ============================================================================
+// Entity Page Descriptor Service (Entity Page Orchestration)
+// ============================================================================
+
+/**
+ * Entity Page Descriptor Service
+ *
+ * Orchestrates multiple backend services into a single descriptor
+ * that tells the frontend exactly what to render.
+ *
+ * "React is a renderer" — the backend is authoritative for all
+ * UI orchestration decisions.
+ */
+export interface EntityPageDescriptorService {
+  /**
+   * Compute static descriptor for an entity type.
+   * Cacheable by compiledModel.hash — invalidated on schema publish.
+   * Contains structural info: tabs, sections, classification, feature flags.
+   */
+  describeStatic(
+    entityName: string,
+    ctx: RequestContext
+  ): Promise<EntityPageStaticDescriptor>;
+
+  /**
+   * Compute dynamic descriptor for a specific entity instance.
+   * Per-request, never cached.
+   * Contains state-dependent info: view mode, badges, actions, permissions.
+   */
+  describeDynamic(
+    entityName: string,
+    entityId: string,
+    ctx: RequestContext,
+    requestedViewMode?: ViewMode
+  ): Promise<EntityPageDynamicDescriptor>;
+}
+
+// ============================================================================
+// Meta Event Bus (Cross-Cutting Notifications)
+// ============================================================================
+
+/**
+ * Meta Event Types
+ *
+ * Typed events emitted by META services for cross-cutting concerns:
+ * audit logging, cache invalidation, telemetry, UI refresh hints.
+ */
+export type MetaEvent =
+  | { type: "lifecycle.transitioned"; entityName: string; entityId: string; operationCode: string; fromStateCode: string; toStateCode: string; userId: string; tenantId: string }
+  | { type: "approval.decision_made"; entityName: string; entityId: string; instanceId: string; decision: string; userId: string; tenantId: string }
+  | { type: "approval.instance_created"; entityName: string; entityId: string; instanceId: string; tenantId: string }
+  | { type: "entity.created"; entityName: string; entityId: string; userId: string; tenantId: string }
+  | { type: "entity.updated"; entityName: string; entityId: string; userId: string; tenantId: string }
+  | { type: "entity.deleted"; entityName: string; entityId: string; userId: string; tenantId: string }
+  | { type: "schema.published"; entityName: string; version: string; tenantId: string }
+  | { type: "descriptor.cache_invalidated"; entityName: string; tenantId: string };
+
+export type MetaEventType = MetaEvent["type"];
+
+export type MetaEventHandler = (event: MetaEvent) => void | Promise<void>;
+
+/**
+ * Meta Event Bus
+ *
+ * In-process notification bus for META Engine events.
+ * Subscribers receive events asynchronously (fire-and-forget).
+ * Subscriber errors are logged but do not propagate.
+ */
+export interface MetaEventBus {
+  /**
+   * Subscribe to specific event types.
+   * Returns an unsubscribe function.
+   */
+  on(eventType: MetaEventType, handler: MetaEventHandler): () => void;
+
+  /**
+   * Subscribe to all events.
+   * Returns an unsubscribe function.
+   */
+  onAny(handler: MetaEventHandler): () => void;
+
+  /**
+   * Emit an event. Delivery is asynchronous and best-effort.
+   */
+  emit(event: MetaEvent): void;
+}
+
+// ============================================================================
+// Action Dispatcher Service (Entity Page Actions)
+// ============================================================================
+
+/**
+ * Action Dispatcher Service
+ *
+ * Routes action execution requests to the correct backend service
+ * based on the action's handler routing key.
+ */
+export interface ActionDispatcher {
+  /**
+   * Execute an action.
+   * Routes to lifecycle, approval, entity, or posting service
+   * based on the action's handler prefix.
+   */
+  execute(
+    request: ActionExecutionRequest,
+    ctx: RequestContext
+  ): Promise<ActionExecutionResult>;
 }
 
 // Note: All interfaces are already exported inline above

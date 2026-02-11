@@ -51,6 +51,12 @@ Central index for all platform documentation.
 | [Quick Start](./deployment/QUICKSTART.md) | Install, start infrastructure, run kernel |
 | [Environments](./deployment/ENVIRONMENTS.md) | Local, staging, production configuration |
 
+### Neon Entity UI
+
+| Document | Description |
+|----------|-------------|
+| [Entity UI Framework](./NEON_ENTITY_UI_FRAMEWORK.md) | Descriptor engine, plugin system, page shell, API surface, implementation phases |
+
 ### Meta Engine
 
 | Document | Description |

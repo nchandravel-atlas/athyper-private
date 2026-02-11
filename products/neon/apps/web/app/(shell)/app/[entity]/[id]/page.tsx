@@ -1,5 +1,11 @@
-import { StubPage } from "@/components/stubs/StubPage";
+import { EntityPageShell } from "@/components/entity-page/EntityPageShell";
 
-export default function RecordDetailPage() {
-    return <StubPage epic={5} title="Record Detail" description="View entity record details." route="/app/:entity/:id" />;
+interface RecordDetailPageProps {
+    params: Promise<{ entity: string; id: string }>;
+}
+
+export default async function RecordDetailPage({ params }: RecordDetailPageProps) {
+    const { entity, id } = await params;
+
+    return <EntityPageShell entityName={entity} entityId={id} />;
 }

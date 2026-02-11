@@ -1,5 +1,11 @@
-import { StubPage } from "@/components/stubs/StubPage";
+import { EntityPageShell } from "@/components/entity-page/EntityPageShell";
 
-export default function EditRecordPage() {
-    return <StubPage epic={5} title="Edit Record" description="Edit entity record fields and properties." route="/app/:entity/:id/edit" />;
+interface EditRecordPageProps {
+    params: Promise<{ entity: string; id: string }>;
+}
+
+export default async function EditRecordPage({ params }: EditRecordPageProps) {
+    const { entity, id } = await params;
+
+    return <EntityPageShell entityName={entity} entityId={id} initialViewMode="edit" />;
 }

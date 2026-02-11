@@ -139,6 +139,24 @@ export type {
 } from "./contracts.js";
 
 // ============================================================================
+// Descriptor Type Exports (Entity Page Orchestration)
+// ============================================================================
+
+export type {
+  ReasonCode,
+  ViewMode,
+  BadgeDescriptor,
+  ActionGroup,
+  ActionDescriptor,
+  TabDescriptor,
+  SectionDescriptor,
+  EntityPageStaticDescriptor,
+  EntityPageDynamicDescriptor,
+  ActionExecutionRequest,
+  ActionExecutionResult,
+} from "./descriptor-types.js";
+
+// ============================================================================
 // Contract Exports
 // ============================================================================
 
@@ -173,6 +191,16 @@ export type {
 
   // Lifecycle types
   AvailableTransition,
+
+  // Entity Page Descriptor (Entity Page Orchestration)
+  EntityPageDescriptorService,
+  ActionDispatcher,
+
+  // Event Bus (Cross-Cutting Notifications)
+  MetaEvent,
+  MetaEventType,
+  MetaEventHandler,
+  MetaEventBus,
 } from "./contracts.js";
 
 // ============================================================================

@@ -310,6 +310,134 @@ export class PolicyGateService implements PolicyGate {
     }
   }
 
+  async authorizeMany(
+    checks: Array<{ action: string; resource: string }>,
+    ctx: RequestContext,
+    record?: unknown
+  ): Promise<Map<string, PolicyDecision>> {
+    const results = new Map<string, PolicyDecision>();
+
+    // Group checks by resource to minimize compile calls
+    const byResource = new Map<string, string[]>();
+    for (const check of checks) {
+      const actions = byResource.get(check.resource) ?? [];
+      actions.push(check.action);
+      byResource.set(check.resource, actions);
+    }
+
+    for (const [resource, actions] of byResource) {
+      try {
+        // Single compile per resource
+        const compiledModel = await this.compiler.compile(resource, "v1");
+        const allPolicies = compiledModel.policies;
+
+        for (const action of actions) {
+          const key = `${action}:${resource}`;
+
+          // Get applicable policies for this action
+          const policies = allPolicies.filter(
+            (p) => p.action === action || p.action === "*"
+          );
+
+          if (policies.length === 0) {
+            const decision: PolicyDecision = {
+              allowed: false,
+              effect: "deny",
+              reason: "No policies defined for this resource",
+              evaluatedRules: [],
+              timestamp: new Date(),
+            };
+            results.set(key, decision);
+            continue;
+          }
+
+          const evalCtx = { ...ctx, action, resource };
+          const evaluatedRules: PolicyDecision["evaluatedRules"] = [];
+
+          // Check deny policies first
+          let decided = false;
+          const denyPolicies = policies.filter((p) => p.effect === "deny");
+          for (const policy of denyPolicies) {
+            const matched = policy.evaluate(evalCtx, record);
+            evaluatedRules.push({
+              ruleId: policy.name,
+              effect: "deny",
+              matched,
+              reason: matched ? "Deny policy matched" : "Deny policy did not match",
+            });
+
+            if (matched) {
+              results.set(key, {
+                allowed: false,
+                effect: "deny",
+                matchedRuleId: policy.name,
+                reason: `Access denied by policy '${policy.name}'`,
+                evaluatedRules,
+                timestamp: new Date(),
+              });
+              decided = true;
+              break;
+            }
+          }
+
+          if (decided) continue;
+
+          // Check allow policies
+          const allowPolicies = policies
+            .filter((p) => p.effect === "allow")
+            .sort((a, b) => b.priority - a.priority);
+
+          for (const policy of allowPolicies) {
+            const matched = policy.evaluate(evalCtx, record);
+            evaluatedRules.push({
+              ruleId: policy.name,
+              effect: "allow",
+              matched,
+              reason: matched ? "Allow policy matched" : "Allow policy did not match",
+            });
+
+            if (matched) {
+              results.set(key, {
+                allowed: true,
+                effect: "allow",
+                matchedRuleId: policy.name,
+                reason: `Access granted by policy '${policy.name}'`,
+                evaluatedRules,
+                timestamp: new Date(),
+              });
+              decided = true;
+              break;
+            }
+          }
+
+          if (!decided) {
+            results.set(key, {
+              allowed: false,
+              effect: "deny",
+              reason: "No matching allow policy found",
+              evaluatedRules,
+              timestamp: new Date(),
+            });
+          }
+        }
+      } catch (error) {
+        // On error, deny all actions for this resource
+        for (const action of actions) {
+          const key = `${action}:${resource}`;
+          results.set(key, {
+            allowed: false,
+            effect: "deny",
+            reason: `Policy evaluation error: ${String(error)}`,
+            evaluatedRules: [],
+            timestamp: new Date(),
+          });
+        }
+      }
+    }
+
+    return results;
+  }
+
   async invalidatePolicyCache(resource: string): Promise<void> {
     // Invalidate compiled model cache which includes policies
     await this.compiler.invalidateCache(resource, "v1");

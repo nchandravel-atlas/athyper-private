@@ -33,6 +33,11 @@ import {
   ActivateVersionHandler,
   DeleteVersionHandler,
 } from "./handlers/versions.handler.js";
+import {
+  StaticDescriptorHandler,
+  DynamicDescriptorHandler,
+  ActionExecutionHandler,
+} from "./handlers/descriptor.handler.js";
 
 import type { Container } from "../../../kernel/container.js";
 import type { RuntimeModule } from "../../registry.js";
@@ -77,6 +82,11 @@ const META_HANDLER_TOKENS = {
   bulkCreateRecords: "meta.handler.data.bulkCreate",
   bulkUpdateRecords: "meta.handler.data.bulkUpdate",
   bulkDeleteRecords: "meta.handler.data.bulkDelete",
+
+  // Entity Page Descriptor handlers
+  staticDescriptor: "meta.handler.descriptor.static",
+  dynamicDescriptor: "meta.handler.descriptor.dynamic",
+  actionExecution: "meta.handler.descriptor.action",
 } as const;
 
 // ============================================================================
@@ -115,6 +125,11 @@ export const module: RuntimeModule = {
     c.register(META_HANDLER_TOKENS.bulkCreateRecords, async () => new BulkCreateRecordsHandler(), "singleton");
     c.register(META_HANDLER_TOKENS.bulkUpdateRecords, async () => new BulkUpdateRecordsHandler(), "singleton");
     c.register(META_HANDLER_TOKENS.bulkDeleteRecords, async () => new BulkDeleteRecordsHandler(), "singleton");
+
+    // Register entity page descriptor handlers
+    c.register(META_HANDLER_TOKENS.staticDescriptor, async () => new StaticDescriptorHandler(), "singleton");
+    c.register(META_HANDLER_TOKENS.dynamicDescriptor, async () => new DynamicDescriptorHandler(), "singleton");
+    c.register(META_HANDLER_TOKENS.actionExecution, async () => new ActionExecutionHandler(), "singleton");
   },
 
   async contribute(c: Container) {
@@ -301,6 +316,34 @@ export const module: RuntimeModule = {
       handlerToken: META_HANDLER_TOKENS.bulkDeleteRecords,
       authRequired: true,
       tags: ["meta", "data", "bulk"],
+    });
+
+    // ========================================================================
+    // Entity Page Descriptor Routes
+    // ========================================================================
+
+    routes.add({
+      method: "GET",
+      path: "/api/entity-page/:entityName",
+      handlerToken: META_HANDLER_TOKENS.staticDescriptor,
+      authRequired: true,
+      tags: ["entity-page"],
+    });
+
+    routes.add({
+      method: "GET",
+      path: "/api/entity-page/:entityName/:id",
+      handlerToken: META_HANDLER_TOKENS.dynamicDescriptor,
+      authRequired: true,
+      tags: ["entity-page"],
+    });
+
+    routes.add({
+      method: "POST",
+      path: "/api/entity-page/:entityName/:id/actions/:actionCode",
+      handlerToken: META_HANDLER_TOKENS.actionExecution,
+      authRequired: true,
+      tags: ["entity-page", "actions"],
     });
   },
 };

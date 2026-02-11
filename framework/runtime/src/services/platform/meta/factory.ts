@@ -20,6 +20,8 @@ import { DdlGeneratorService } from "./schema/ddl-generator.service.js";
 import { MigrationRunnerService } from "./schema/migration-runner.service.js";
 import { PublishService } from "./schema/publish.service.js";
 import { SchemaChangeNotifier } from "./schema/schema-change-notifier.js";
+import { EntityPageDescriptorServiceImpl, ActionDispatcherServiceImpl } from "./descriptor/index.js";
+import { MetaEventBusService } from "./core/event-bus.service.js";
 
 import type { MetaStore } from "./core/meta-store.service.js";
 import type { LifecycleDB_Type } from "./data/db-helpers.js";
@@ -36,6 +38,9 @@ import type {
   NumberingEngine,
   ApprovalService,
   DdlGenerator,
+  EntityPageDescriptorService,
+  ActionDispatcher,
+  MetaEventBus,
 } from "@athyper/core/meta";
 import type { Redis } from "ioredis";
 import type { Kysely } from "kysely";
@@ -77,6 +82,9 @@ export type MetaServices = {
   migrationRunner: MigrationRunnerService;
   publishService: PublishService;
   schemaChangeNotifier: SchemaChangeNotifier;
+  descriptorService: EntityPageDescriptorService;
+  actionDispatcher: ActionDispatcher;
+  eventBus: MetaEventBus;
 };
 
 /**
@@ -102,6 +110,9 @@ export function createMetaServices(
   config: MetaServicesConfig
 ): MetaServices {
   // Create services in dependency order
+
+  // 0. Event Bus (no dependencies — created first so other services can subscribe)
+  const eventBus = new MetaEventBusService();
 
   // 1. Registry (no dependencies on other META services)
   const registry = new MetaRegistryService(config.db);
@@ -187,6 +198,22 @@ export function createMetaServices(
     schemaChangeNotifier,
   );
 
+  // 13. Entity Page Descriptor Service (depends on compiler, classificationService, lifecycleManager, approvalService, policyGate)
+  const descriptorService = new EntityPageDescriptorServiceImpl(
+    compiler,
+    classificationService,
+    lifecycleManager,
+    approvalService,
+    policyGate,
+  );
+
+  // 14. Action Dispatcher (depends on lifecycleManager, approvalService, dataAPI)
+  const actionDispatcher = new ActionDispatcherServiceImpl(
+    lifecycleManager,
+    approvalService,
+    dataAPI,
+  );
+
   return {
     registry,
     compiler,
@@ -203,6 +230,9 @@ export function createMetaServices(
     migrationRunner,
     publishService,
     schemaChangeNotifier,
+    descriptorService,
+    actionDispatcher,
+    eventBus,
   };
 }
 

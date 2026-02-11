@@ -21,6 +21,9 @@ import type {
   EntityClassificationService,
   NumberingEngine,
   ApprovalService,
+  EntityPageDescriptorService,
+  ActionDispatcher,
+  MetaEventBus,
 } from "./contracts.js";
 
 // ============================================================================
@@ -81,6 +84,19 @@ export const META_TOKENS = {
 
   /** Approval Service - approval workflow management */
   approvalService: "meta.approvalService",
+
+  // ===== Entity Page Descriptor =====
+
+  /** Entity Page Descriptor Service - page orchestration */
+  descriptorService: "meta.descriptorService",
+
+  /** Action Dispatcher - routes action execution to backend services */
+  actionDispatcher: "meta.actionDispatcher",
+
+  // ===== Event Bus =====
+
+  /** Meta Event Bus - cross-cutting notification bus */
+  eventBus: "meta.eventBus",
 } as const;
 
 // ============================================================================
@@ -136,6 +152,13 @@ export interface MetaTokenTypes {
   [META_TOKENS.classificationService]: EntityClassificationService;
   [META_TOKENS.numberingEngine]: NumberingEngine;
   [META_TOKENS.approvalService]: ApprovalService;
+
+  // Entity Page Descriptor
+  [META_TOKENS.descriptorService]: EntityPageDescriptorService;
+  [META_TOKENS.actionDispatcher]: ActionDispatcher;
+
+  // Event Bus
+  [META_TOKENS.eventBus]: MetaEventBus;
 }
 
 /**

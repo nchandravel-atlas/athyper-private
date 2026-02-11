@@ -192,6 +192,23 @@ export class SendGridAdapter implements IChannelAdapter {
         if (request.correlationId) {
             headers["X-Correlation-Id"] = request.correlationId;
         }
+
+        // Email threading: Message-ID, In-Reply-To, References
+        headers["Message-ID"] = `<${request.deliveryId}@notifications.athyper.com>`;
+
+        const entityType = request.metadata?.entityType as string | undefined;
+        const entityId = request.metadata?.entityId as string | undefined;
+        if (entityType && entityId) {
+            const threadRef = `<thread-${entityType}-${entityId}@notifications.athyper.com>`;
+            const threadRoot = request.metadata?.threadRootMessageId as string | undefined;
+            if (threadRoot) {
+                headers["In-Reply-To"] = threadRoot;
+                headers["References"] = `${threadRoot} ${threadRef}`;
+            } else {
+                headers["References"] = threadRef;
+            }
+        }
+
         (payload.personalizations as any[])[0].headers = headers;
 
         return payload;

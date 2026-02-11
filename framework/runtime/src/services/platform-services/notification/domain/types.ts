@@ -204,6 +204,21 @@ export interface IChannelRegistry {
     getAllHealthStatuses(): Promise<Record<string, { healthy: boolean }>>;
 }
 
+// ─── WhatsApp Template Component ────────────────────────────────────
+export interface WhatsAppTemplateComponent {
+    type: "header" | "body" | "button";
+    sub_type?: string;
+    index?: number;
+    parameters: Array<{
+        type: "text" | "currency" | "date_time" | "image" | "document" | "video";
+        text?: string;
+        currency?: { fallback_value: string; code: string; amount_1000: number };
+        date_time?: { fallback_value: string };
+        image?: { link: string };
+        document?: { link: string; filename?: string };
+    }>;
+}
+
 // ─── Rendered Template ───────────────────────────────────────────────
 export interface RenderedTemplate {
     subject?: string;
@@ -211,6 +226,47 @@ export interface RenderedTemplate {
     bodyHtml?: string;
     bodyJson?: Record<string, unknown>;
 }
+
+// ─── Effective Preference (Scoped Resolution Result) ────────────────
+export interface EffectivePreference {
+    isEnabled: boolean;
+    frequency: PreferenceFrequency;
+    quietHours: QuietHours | null;
+    resolvedFrom: PreferenceScope | "default";
+}
+
+// ─── Explainability Trace ───────────────────────────────────────────
+export interface NotificationExplainTrace {
+    messageId: string;
+    eventType: string;
+    eventId: string;
+    timestamp: string;
+    steps: ExplainStep[];
+}
+
+export type ExplainPhase =
+    | "rule_match"
+    | "recipient_resolution"
+    | "preference_check"
+    | "dedup_check"
+    | "quiet_hours"
+    | "digest_staging"
+    | "delivery";
+
+export interface ExplainStep {
+    phase: ExplainPhase;
+    timestamp: string;
+    input: Record<string, unknown>;
+    output: Record<string, unknown>;
+    decision: "passed" | "blocked" | "deferred" | "staged";
+    reason?: string;
+}
+
+// ─── DLQ Entry ──────────────────────────────────────────────────────
+export interface DlqEntryId extends String { readonly __brand: "DlqEntryId" }
+
+// ─── Digest Staging ─────────────────────────────────────────────────
+export interface DigestStagingId extends String { readonly __brand: "DigestStagingId" }
 
 // ─── Notification Domain Events ──────────────────────────────────────
 export const NotificationEventType = {

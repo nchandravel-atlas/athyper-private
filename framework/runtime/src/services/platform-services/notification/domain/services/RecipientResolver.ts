@@ -16,6 +16,7 @@ import type { Logger } from "../../../../../kernel/logger.js";
 export interface ResolvedRecipient {
     principalId: string;
     email: string | null;
+    phone: string | null;
     displayName: string | null;
 }
 
@@ -94,6 +95,7 @@ export class RecipientResolver {
         return [{
             principalId: row.id,
             email: row.email ?? null,
+            phone: row.phone ?? null,
             displayName: row.display_name ?? null,
         }];
     }
@@ -138,6 +140,7 @@ export class RecipientResolver {
         return principals.map((p: any) => ({
             principalId: p.id,
             email: p.email ?? null,
+            phone: p.phone ?? null,
             displayName: p.display_name ?? null,
         }));
     }
@@ -181,6 +184,7 @@ export class RecipientResolver {
         return principals.map((p: any) => ({
             principalId: p.id,
             email: p.email ?? null,
+            phone: p.phone ?? null,
             displayName: p.display_name ?? null,
         }));
     }

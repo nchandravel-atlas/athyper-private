@@ -42,6 +42,12 @@ export class TeamsAdapter implements IChannelAdapter {
         try {
             const card = this.buildAdaptiveCard(request);
 
+            // Teams threading: if replying to an existing thread, add replyToId
+            const teamsActivityId = request.metadata?.teamsActivityId as string | undefined;
+            if (teamsActivityId) {
+                (card as Record<string, unknown>).replyToId = teamsActivityId;
+            }
+
             const response = await fetch(this.config.webhookUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -49,15 +55,25 @@ export class TeamsAdapter implements IChannelAdapter {
             });
 
             if (response.ok) {
+                // Try to extract activityId from response for future threading
+                let activityId: string | undefined;
+                try {
+                    const responseBody = (await response.json()) as { id?: string };
+                    activityId = responseBody.id;
+                } catch {
+                    // Response may not be JSON — that's fine
+                }
+
                 this.logger.info(
-                    { deliveryId: request.deliveryId },
+                    { deliveryId: request.deliveryId, activityId },
                     "[notify:teams] Adaptive card sent",
                 );
 
                 return {
                     success: true,
                     status: "sent",
-                    externalId: request.deliveryId,
+                    externalId: activityId ?? request.deliveryId,
+                    metadata: activityId ? { activityId } : undefined,
                 };
             }
 

@@ -1421,6 +1421,74 @@ export type workspace_usage_metric = {
     recorded_at: Generated<Timestamp>;
     created_at: Generated<Timestamp>;
 };
+// ─── Phase 2 Notification Types ─────────────────────────────────────────────
+export type core_notification_preference = {
+    id: Generated<string>;
+    tenant_id: string;
+    scope: string;
+    scope_id: string;
+    event_code: string;
+    channel: string;
+    is_enabled: Generated<boolean>;
+    frequency: Generated<string>;
+    quiet_hours: unknown | null;
+    metadata: unknown | null;
+    created_at: Generated<Timestamp>;
+    created_by: string;
+    updated_at: Timestamp | null;
+    updated_by: string | null;
+};
+export type notification_dlq = {
+    id: Generated<string>;
+    tenant_id: string;
+    delivery_id: string;
+    message_id: string;
+    channel: string;
+    provider_code: string;
+    recipient_id: string | null;
+    recipient_addr: string;
+    last_error: string | null;
+    error_category: string | null;
+    attempt_count: Generated<number>;
+    payload: unknown;
+    metadata: unknown | null;
+    dead_at: Generated<Timestamp>;
+    replayed_at: Timestamp | null;
+    replayed_by: string | null;
+    replay_count: Generated<number>;
+    created_at: Generated<Timestamp>;
+};
+export type notification_digest_staging = {
+    id: Generated<string>;
+    tenant_id: string;
+    principal_id: string;
+    channel: string;
+    frequency: string;
+    message_id: string;
+    event_type: string;
+    subject: string | null;
+    payload: unknown;
+    template_key: string;
+    priority: Generated<string>;
+    metadata: unknown | null;
+    staged_at: Generated<Timestamp>;
+    delivered_at: Timestamp | null;
+};
+export type whatsapp_consent = {
+    id: Generated<string>;
+    tenant_id: string;
+    phone_number: string;
+    principal_id: string | null;
+    opted_in: Generated<boolean>;
+    opted_in_at: Timestamp | null;
+    opted_out_at: Timestamp | null;
+    opt_in_method: string | null;
+    conversation_window_start: Timestamp | null;
+    conversation_window_end: Timestamp | null;
+    metadata: unknown | null;
+    created_at: Generated<Timestamp>;
+    updated_at: Timestamp | null;
+};
 export type DB = {
     "core.address": address;
     "core.address_link": address_link;
@@ -1519,6 +1587,10 @@ export type DB = {
     "ref.uom": uom;
     schema_provisions: schema_provisions;
     "ui.dashboard_widget": dashboard_widget;
+    "core.notification_dlq": notification_dlq;
+    "core.notification_digest_staging": notification_digest_staging;
+    "core.notification_preference": core_notification_preference;
+    "core.whatsapp_consent": whatsapp_consent;
     "ui.notification": notification;
     "ui.notification_preference": notification_preference;
     "ui.recent_activity": recent_activity;

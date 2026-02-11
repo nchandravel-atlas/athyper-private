@@ -87,7 +87,6 @@ function FieldRenderer({ fieldName, value, viewMode }: FieldRendererProps) {
         id={fieldName}
         name={fieldName}
         defaultValue={displayValue}
-        readOnly={viewMode === "view"}
       />
     </div>
   );

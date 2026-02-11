@@ -15,6 +15,11 @@ import { NotificationTemplateRepo } from "./persistence/NotificationTemplateRepo
 import { NotificationPreferenceRepo } from "./persistence/NotificationPreferenceRepo.js";
 import { NotificationSuppressionRepo } from "./persistence/NotificationSuppressionRepo.js";
 import { InAppNotificationRepo } from "./persistence/InAppNotificationRepo.js";
+// Phase 2 persistence
+import { NotificationDlqRepo } from "./persistence/NotificationDlqRepo.js";
+import { ScopedNotificationPreferenceRepo } from "./persistence/ScopedNotificationPreferenceRepo.js";
+import { WhatsAppConsentRepo } from "./persistence/WhatsAppConsentRepo.js";
+import { DigestStagingRepo } from "./persistence/DigestStagingRepo.js";
 
 // Domain services
 import { NotificationOrchestrator } from "./domain/services/NotificationOrchestrator.js";
@@ -23,12 +28,19 @@ import { TemplateRenderer } from "./domain/services/TemplateRenderer.js";
 import { PreferenceEvaluator } from "./domain/services/PreferenceEvaluator.js";
 import { DeduplicationService } from "./domain/services/DeduplicationService.js";
 import { RecipientResolver } from "./domain/services/RecipientResolver.js";
+// Phase 2 domain services
+import { ScopedPreferenceResolver } from "./domain/services/ScopedPreferenceResolver.js";
+import { DlqManager } from "./domain/services/DlqManager.js";
+import { ExplainabilityService } from "./domain/services/ExplainabilityService.js";
+import { DigestAggregator } from "./domain/services/DigestAggregator.js";
 
 // Adapters
 import { ChannelRegistry } from "./adapters/ChannelRegistry.js";
 import { SendGridAdapter } from "./adapters/email/SendGridAdapter.js";
 import { TeamsAdapter } from "./adapters/teams/TeamsAdapter.js";
 import { InAppAdapter } from "./adapters/inapp/InAppAdapter.js";
+import { WhatsAppAdapter } from "./adapters/whatsapp/WhatsAppAdapter.js";
+import { WhatsAppTemplateSync } from "./adapters/whatsapp/WhatsAppTemplateSync.js";
 
 // Observability
 import { NotificationMetrics } from "./observability/metrics.js";
@@ -63,12 +75,34 @@ import {
     MessageStatsHandler,
 } from "./api/handlers/delivery-admin.handler.js";
 import { SendGridCallbackHandler } from "./api/handlers/callback.handler.js";
+import {
+    SyncWhatsAppTemplatesHandler,
+    ListWhatsAppTemplatesHandler,
+    ManageWhatsAppConsentHandler,
+    ListWhatsAppConsentsHandler,
+    CheckConversationWindowHandler,
+} from "./api/handlers/whatsapp-admin.handler.js";
+// Phase 2 handlers
+import {
+    ListDlqHandler,
+    InspectDlqHandler,
+    RetryDlqHandler,
+    BulkReplayDlqHandler,
+} from "./api/handlers/dlq-admin.handler.js";
+import { ExplainNotificationHandler } from "./api/handlers/explain.handler.js";
+import {
+    SetTenantPreferenceHandler,
+    SetOrgPreferenceHandler,
+    GetEffectivePreferenceHandler,
+} from "./api/handlers/scoped-preference.handler.js";
+import { WhatsAppWebhookHandler } from "./api/handlers/whatsapp-webhook.handler.js";
 
 // Workers
 import { createPlanNotificationHandler } from "./jobs/workers/planNotification.worker.js";
 import { createDeliverNotificationHandler } from "./jobs/workers/deliverNotification.worker.js";
 import { createProcessCallbackHandler } from "./jobs/workers/processCallback.worker.js";
 import { createCleanupExpiredHandler } from "./jobs/workers/cleanupExpired.worker.js";
+import { createDigestNotificationHandler } from "./jobs/workers/digestNotification.worker.js";
 
 import type { Container } from "../../../kernel/container.js";
 import type { Logger } from "../../../kernel/logger.js";
@@ -92,6 +126,11 @@ const REPO_TOKENS = {
     preference: "notify.repo.preference",
     suppression: "notify.repo.suppression",
     inapp: "notify.repo.inapp",
+    // Phase 2
+    dlq: "notify.repo.dlq",
+    scopedPreference: "notify.repo.scopedPreference",
+    whatsappConsent: "notify.repo.whatsappConsent",
+    digestStaging: "notify.repo.digestStaging",
 } as const;
 
 // ============================================================================
@@ -117,6 +156,21 @@ const HANDLER_TOKENS = {
     listDeliveries: "notify.handler.listDeliveries",
     messageStats: "notify.handler.messageStats",
     sendgridCallback: "notify.handler.sendgridCallback",
+    syncWhatsAppTemplates: "notify.handler.syncWhatsAppTemplates",
+    listWhatsAppTemplates: "notify.handler.listWhatsAppTemplates",
+    // Phase 2
+    listDlq: "notify.handler.listDlq",
+    inspectDlq: "notify.handler.inspectDlq",
+    retryDlq: "notify.handler.retryDlq",
+    bulkReplayDlq: "notify.handler.bulkReplayDlq",
+    explainNotification: "notify.handler.explainNotification",
+    setTenantPreference: "notify.handler.setTenantPreference",
+    setOrgPreference: "notify.handler.setOrgPreference",
+    getEffectivePreference: "notify.handler.getEffectivePreference",
+    whatsappWebhook: "notify.handler.whatsappWebhook",
+    manageWhatsAppConsent: "notify.handler.manageWhatsAppConsent",
+    listWhatsAppConsents: "notify.handler.listWhatsAppConsents",
+    checkConversationWindow: "notify.handler.checkConversationWindow",
 } as const;
 
 // ============================================================================
@@ -141,6 +195,11 @@ export const module: RuntimeModule = {
         c.register(REPO_TOKENS.preference, async () => new NotificationPreferenceRepo(db), "singleton");
         c.register(REPO_TOKENS.suppression, async () => new NotificationSuppressionRepo(db), "singleton");
         c.register(REPO_TOKENS.inapp, async () => new InAppNotificationRepo(db), "singleton");
+        // Phase 2 repos
+        c.register(REPO_TOKENS.dlq, async () => new NotificationDlqRepo(db), "singleton");
+        c.register(REPO_TOKENS.scopedPreference, async () => new ScopedNotificationPreferenceRepo(db), "singleton");
+        c.register(REPO_TOKENS.whatsappConsent, async () => new WhatsAppConsentRepo(db), "singleton");
+        c.register(REPO_TOKENS.digestStaging, async () => new DigestStagingRepo(db), "singleton");
 
         // ── Channel Adapters + Registry ─────────────────────────────────
         c.register(TOKENS.notificationChannelRegistry, async () => {
@@ -170,7 +229,31 @@ export const module: RuntimeModule = {
                 }, adapterLogger));
             }
 
+            // WhatsApp adapter (if configured) — with consent repo for Phase 2
+            const waConfig = config.notification?.providers?.whatsapp;
+            if (waConfig?.enabled && waConfig.phoneNumberId && waConfig.accessTokenRef) {
+                const consentRepo = await c.resolve<WhatsAppConsentRepo>(REPO_TOKENS.whatsappConsent);
+                registry.register(new WhatsAppAdapter({
+                    phoneNumberId: waConfig.phoneNumberId,
+                    accessTokenRef: waConfig.accessTokenRef,
+                    businessAccountId: waConfig.businessAccountId,
+                }, adapterLogger, consentRepo));
+            }
+
             return registry;
+        }, "singleton");
+
+        // ── WhatsApp Template Sync ──────────────────────────────────────
+        c.register(TOKENS.notificationWhatsAppSync, async () => {
+            const config = await c.resolve<RuntimeConfig>(TOKENS.config);
+            const waConfig = config.notification?.providers?.whatsapp;
+            const templateRepo = await c.resolve<NotificationTemplateRepo>(REPO_TOKENS.template);
+            const syncLogger = createNotifyLogger(baseLogger, "adapter");
+
+            return new WhatsAppTemplateSync({
+                businessAccountId: waConfig?.businessAccountId ?? "",
+                accessTokenRef: waConfig?.accessTokenRef ?? "",
+            }, templateRepo, syncLogger);
         }, "singleton");
 
         // ── Domain Services ─────────────────────────────────────────────
@@ -184,12 +267,61 @@ export const module: RuntimeModule = {
             return new TemplateRenderer(templateRepo, createNotifyLogger(baseLogger, "template"));
         }, "singleton");
 
+        // Phase 2: Scoped Preference Resolver
+        c.register(TOKENS.notificationScopedPreferences, async () => {
+            const scopedRepo = await c.resolve<ScopedNotificationPreferenceRepo>(REPO_TOKENS.scopedPreference);
+            return new ScopedPreferenceResolver(scopedRepo, db, createNotifyLogger(baseLogger, "preference"));
+        }, "singleton");
+
         c.register(TOKENS.notificationPreferenceEvaluator, async () => {
             const prefRepo = await c.resolve<NotificationPreferenceRepo>(REPO_TOKENS.preference);
             const suppRepo = await c.resolve<NotificationSuppressionRepo>(REPO_TOKENS.suppression);
-            return new PreferenceEvaluator(prefRepo, suppRepo, createNotifyLogger(baseLogger, "preference"));
+            const scopedResolver = await c.resolve<ScopedPreferenceResolver>(TOKENS.notificationScopedPreferences);
+            return new PreferenceEvaluator(prefRepo, suppRepo, createNotifyLogger(baseLogger, "preference"), scopedResolver);
         }, "singleton");
 
+        // Phase 2: DLQ Manager
+        c.register(TOKENS.notificationDlqManager, async () => {
+            const dlqRepo = await c.resolve<NotificationDlqRepo>(REPO_TOKENS.dlq);
+            const jobQueue = await c.resolve<JobQueue>(TOKENS.jobQueue);
+            return new DlqManager(dlqRepo, jobQueue, createNotifyLogger(baseLogger, "dlq"));
+        }, "singleton");
+
+        // Phase 2: Explainability Service
+        c.register(TOKENS.notificationExplainability, async () => {
+            const messageRepo = await c.resolve<NotificationMessageRepo>(REPO_TOKENS.message);
+            const deliveryRepo = await c.resolve<NotificationDeliveryRepo>(REPO_TOKENS.delivery);
+            return new ExplainabilityService(messageRepo, deliveryRepo, createNotifyLogger(baseLogger, "explain"));
+        }, "singleton");
+
+        // Phase 2: Digest Aggregator
+        c.register(TOKENS.notificationDigestAggregator, async () => {
+            const config = await c.resolve<RuntimeConfig>(TOKENS.config);
+            const stagingRepo = await c.resolve<DigestStagingRepo>(REPO_TOKENS.digestStaging);
+            const templateRenderer = await c.resolve<TemplateRenderer>(TOKENS.notificationTemplateRenderer);
+            const channelRegistry = await c.resolve<ChannelRegistry>(TOKENS.notificationChannelRegistry);
+            const messageRepo = await c.resolve<NotificationMessageRepo>(REPO_TOKENS.message);
+            const deliveryRepo = await c.resolve<NotificationDeliveryRepo>(REPO_TOKENS.delivery);
+            const jobQueue = await c.resolve<JobQueue>(TOKENS.jobQueue);
+
+            const digestConfig = config.notification?.digest ?? {};
+
+            return new DigestAggregator(
+                stagingRepo,
+                templateRenderer,
+                channelRegistry,
+                messageRepo,
+                deliveryRepo,
+                jobQueue,
+                createNotifyLogger(baseLogger, "digest"),
+                {
+                    maxItemsPerDigest: digestConfig.maxItemsPerDigest ?? 50,
+                    defaultLocale: config.notification?.delivery?.defaultLocale ?? "en",
+                },
+            );
+        }, "singleton");
+
+        // Orchestrator — now with Phase 2 optional dependencies
         c.register(TOKENS.notificationOrchestrator, async () => {
             const config = await c.resolve<RuntimeConfig>(TOKENS.config);
             const redis = await c.resolve<Redis>(TOKENS.cache);
@@ -206,6 +338,10 @@ export const module: RuntimeModule = {
             const dedupService = new DeduplicationService(redis, createNotifyLogger(baseLogger, "dedup"));
 
             const deliveryConfig = config.notification?.delivery ?? {};
+
+            // Phase 2 optional deps
+            const dlqManager = await c.resolve<DlqManager>(TOKENS.notificationDlqManager);
+            const digestAggregator = await c.resolve<DigestAggregator>(TOKENS.notificationDigestAggregator);
 
             return new NotificationOrchestrator(
                 ruleEngine,
@@ -224,6 +360,9 @@ export const module: RuntimeModule = {
                     defaultPriority: deliveryConfig.defaultPriority ?? "normal",
                     defaultLocale: deliveryConfig.defaultLocale ?? "en",
                 },
+                redis,
+                dlqManager,
+                digestAggregator,
             );
         }, "singleton");
 
@@ -252,6 +391,22 @@ export const module: RuntimeModule = {
         c.register(HANDLER_TOKENS.listDeliveries, async () => new ListDeliveriesHandler(), "singleton");
         c.register(HANDLER_TOKENS.messageStats, async () => new MessageStatsHandler(), "singleton");
         c.register(HANDLER_TOKENS.sendgridCallback, async () => new SendGridCallbackHandler(), "singleton");
+        c.register(HANDLER_TOKENS.syncWhatsAppTemplates, async () => new SyncWhatsAppTemplatesHandler(), "singleton");
+        c.register(HANDLER_TOKENS.listWhatsAppTemplates, async () => new ListWhatsAppTemplatesHandler(), "singleton");
+
+        // Phase 2 handlers
+        c.register(HANDLER_TOKENS.listDlq, async () => new ListDlqHandler(), "singleton");
+        c.register(HANDLER_TOKENS.inspectDlq, async () => new InspectDlqHandler(), "singleton");
+        c.register(HANDLER_TOKENS.retryDlq, async () => new RetryDlqHandler(), "singleton");
+        c.register(HANDLER_TOKENS.bulkReplayDlq, async () => new BulkReplayDlqHandler(), "singleton");
+        c.register(HANDLER_TOKENS.explainNotification, async () => new ExplainNotificationHandler(), "singleton");
+        c.register(HANDLER_TOKENS.setTenantPreference, async () => new SetTenantPreferenceHandler(), "singleton");
+        c.register(HANDLER_TOKENS.setOrgPreference, async () => new SetOrgPreferenceHandler(), "singleton");
+        c.register(HANDLER_TOKENS.getEffectivePreference, async () => new GetEffectivePreferenceHandler(), "singleton");
+        c.register(HANDLER_TOKENS.whatsappWebhook, async () => new WhatsAppWebhookHandler(), "singleton");
+        c.register(HANDLER_TOKENS.manageWhatsAppConsent, async () => new ManageWhatsAppConsentHandler(), "singleton");
+        c.register(HANDLER_TOKENS.listWhatsAppConsents, async () => new ListWhatsAppConsentsHandler(), "singleton");
+        c.register(HANDLER_TOKENS.checkConversationWindow, async () => new CheckConversationWindowHandler(), "singleton");
     },
 
     async contribute(c: Container) {
@@ -314,6 +469,18 @@ export const module: RuntimeModule = {
             method: "PUT",
             path: "/api/notifications/preferences",
             handlerToken: HANDLER_TOKENS.updatePreferences,
+            authRequired: true,
+            tags: ["notify"],
+        });
+
+        // ================================================================
+        // User-facing: Explainability
+        // ================================================================
+
+        routes.add({
+            method: "GET",
+            path: "/api/notifications/:messageId/explain",
+            handlerToken: HANDLER_TOKENS.explainNotification,
             authRequired: true,
             tags: ["notify"],
         });
@@ -404,6 +571,65 @@ export const module: RuntimeModule = {
         });
 
         // ================================================================
+        // Admin: DLQ (Phase 2)
+        // ================================================================
+
+        routes.add({
+            method: "GET",
+            path: "/api/admin/notifications/dlq",
+            handlerToken: HANDLER_TOKENS.listDlq,
+            authRequired: true,
+            tags: ["notify", "admin"],
+        });
+        routes.add({
+            method: "GET",
+            path: "/api/admin/notifications/dlq/:id",
+            handlerToken: HANDLER_TOKENS.inspectDlq,
+            authRequired: true,
+            tags: ["notify", "admin"],
+        });
+        routes.add({
+            method: "POST",
+            path: "/api/admin/notifications/dlq/:id/retry",
+            handlerToken: HANDLER_TOKENS.retryDlq,
+            authRequired: true,
+            tags: ["notify", "admin"],
+        });
+        routes.add({
+            method: "POST",
+            path: "/api/admin/notifications/dlq/replay",
+            handlerToken: HANDLER_TOKENS.bulkReplayDlq,
+            authRequired: true,
+            tags: ["notify", "admin"],
+        });
+
+        // ================================================================
+        // Admin: Scoped Preferences (Phase 2)
+        // ================================================================
+
+        routes.add({
+            method: "PUT",
+            path: "/api/admin/notifications/preferences/tenant",
+            handlerToken: HANDLER_TOKENS.setTenantPreference,
+            authRequired: true,
+            tags: ["notify", "admin"],
+        });
+        routes.add({
+            method: "PUT",
+            path: "/api/admin/notifications/preferences/org/:ouId",
+            handlerToken: HANDLER_TOKENS.setOrgPreference,
+            authRequired: true,
+            tags: ["notify", "admin"],
+        });
+        routes.add({
+            method: "GET",
+            path: "/api/admin/notifications/preferences/effective/:principalId",
+            handlerToken: HANDLER_TOKENS.getEffectivePreference,
+            authRequired: true,
+            tags: ["notify", "admin"],
+        });
+
+        // ================================================================
         // Provider Webhooks
         // ================================================================
 
@@ -413,6 +639,62 @@ export const module: RuntimeModule = {
             handlerToken: HANDLER_TOKENS.sendgridCallback,
             authRequired: false,
             tags: ["notify", "webhook"],
+        });
+
+        // WhatsApp Meta webhook (GET for verification, POST for updates)
+        routes.add({
+            method: "GET",
+            path: "/api/webhooks/notification/whatsapp",
+            handlerToken: HANDLER_TOKENS.whatsappWebhook,
+            authRequired: false,
+            tags: ["notify", "webhook"],
+        });
+        routes.add({
+            method: "POST",
+            path: "/api/webhooks/notification/whatsapp",
+            handlerToken: HANDLER_TOKENS.whatsappWebhook,
+            authRequired: false,
+            tags: ["notify", "webhook"],
+        });
+
+        // ================================================================
+        // Admin: WhatsApp
+        // ================================================================
+
+        routes.add({
+            method: "POST",
+            path: "/api/admin/notifications/whatsapp/sync-templates",
+            handlerToken: HANDLER_TOKENS.syncWhatsAppTemplates,
+            authRequired: true,
+            tags: ["notify", "admin"],
+        });
+        routes.add({
+            method: "GET",
+            path: "/api/admin/notifications/whatsapp/templates",
+            handlerToken: HANDLER_TOKENS.listWhatsAppTemplates,
+            authRequired: true,
+            tags: ["notify", "admin"],
+        });
+        routes.add({
+            method: "POST",
+            path: "/api/admin/notifications/whatsapp/consent",
+            handlerToken: HANDLER_TOKENS.manageWhatsAppConsent,
+            authRequired: true,
+            tags: ["notify", "admin"],
+        });
+        routes.add({
+            method: "GET",
+            path: "/api/admin/notifications/whatsapp/consents",
+            handlerToken: HANDLER_TOKENS.listWhatsAppConsents,
+            authRequired: true,
+            tags: ["notify", "admin"],
+        });
+        routes.add({
+            method: "GET",
+            path: "/api/admin/notifications/whatsapp/window/:phone",
+            handlerToken: HANDLER_TOKENS.checkConversationWindow,
+            authRequired: true,
+            tags: ["notify", "admin"],
         });
 
         // ================================================================
@@ -432,6 +714,10 @@ export const module: RuntimeModule = {
         await jobQueue.process("deliver-notification", concurrency, createDeliverNotificationHandler(orchestrator, workerLogger));
         await jobQueue.process("process-callback", 2, createProcessCallbackHandler(orchestrator, workerLogger));
         await jobQueue.process("cleanup-expired", 1, createCleanupExpiredHandler(db, suppressionRepo, workerLogger));
+
+        // Phase 2: Digest worker
+        const digestAggregator = await c.resolve<DigestAggregator>(TOKENS.notificationDigestAggregator);
+        await jobQueue.process("digest-notification", 1, createDigestNotificationHandler(digestAggregator, workerLogger));
 
         logger.info("Notification module contributed — routes and workers registered");
     },

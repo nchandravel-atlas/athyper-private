@@ -348,6 +348,7 @@ export class PolicyGateService implements PolicyGate {
               timestamp: new Date(),
             };
             results.set(key, decision);
+            await this.logDecision(decision, action, resource, ctx);
             continue;
           }
 
@@ -367,14 +368,16 @@ export class PolicyGateService implements PolicyGate {
             });
 
             if (matched) {
-              results.set(key, {
+              const decision: PolicyDecision = {
                 allowed: false,
                 effect: "deny",
                 matchedRuleId: policy.name,
                 reason: `Access denied by policy '${policy.name}'`,
                 evaluatedRules,
                 timestamp: new Date(),
-              });
+              };
+              results.set(key, decision);
+              await this.logDecision(decision, action, resource, ctx);
               decided = true;
               break;
             }
@@ -397,27 +400,31 @@ export class PolicyGateService implements PolicyGate {
             });
 
             if (matched) {
-              results.set(key, {
+              const decision: PolicyDecision = {
                 allowed: true,
                 effect: "allow",
                 matchedRuleId: policy.name,
                 reason: `Access granted by policy '${policy.name}'`,
                 evaluatedRules,
                 timestamp: new Date(),
-              });
+              };
+              results.set(key, decision);
+              await this.logDecision(decision, action, resource, ctx);
               decided = true;
               break;
             }
           }
 
           if (!decided) {
-            results.set(key, {
+            const decision: PolicyDecision = {
               allowed: false,
               effect: "deny",
               reason: "No matching allow policy found",
               evaluatedRules,
               timestamp: new Date(),
-            });
+            };
+            results.set(key, decision);
+            await this.logDecision(decision, action, resource, ctx);
           }
         }
       } catch (error) {

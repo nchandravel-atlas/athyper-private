@@ -63,6 +63,11 @@ export const TOKENS = {
     notificationPreferenceEvaluator: "notify.preferenceEvaluator",
     notificationChannelRegistry: "notify.channelRegistry",
     notificationMetrics: "notify.metrics",
+    notificationWhatsAppSync: "notify.whatsappSync",
+    notificationDigestAggregator: "notify.digestAggregator",
+    notificationDlqManager: "notify.dlqManager",
+    notificationExplainability: "notify.explainability",
+    notificationScopedPreferences: "notify.scopedPreferences",
 } as const;
 
 export type TokenName = (typeof TOKENS)[keyof typeof TOKENS]; // "kernel.config" | ...

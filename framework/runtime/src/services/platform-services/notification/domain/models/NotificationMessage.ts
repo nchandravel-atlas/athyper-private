@@ -59,4 +59,5 @@ export interface UpdateMessageInput {
     deliveredCount?: number;
     failedCount?: number;
     completedAt?: Date;
+    metadata?: Record<string, unknown>;
 }

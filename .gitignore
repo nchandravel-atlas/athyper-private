@@ -171,7 +171,9 @@ tools/SAMPLE TEMPLATES
 lib-cov/
 
 
-# Generated
+# Generated (output dirs only — do NOT ignore source packages)
 **/generated/
+!framework/adapters/db/generated/
 **/codegen/
+!tools/codegen/
 **/.prisma/

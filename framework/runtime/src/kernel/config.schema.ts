@@ -158,6 +158,13 @@ export const RuntimeConfigSchema = z.object({
                     enabled: Bool.default(false),
                 }).default({}),
             }).default({}),
+            whatsapp: z.object({
+                phoneNumberId: z.string().optional(),
+                accessTokenRef: z.string().optional(),
+                businessAccountId: z.string().optional(),
+                webhookVerifyToken: z.string().optional(),
+                enabled: Bool.default(false),
+            }).default({}),
         }).default({}),
         delivery: z.object({
             maxRetries: z.coerce.number().int().min(0).default(3),
@@ -166,6 +173,12 @@ export const RuntimeConfigSchema = z.object({
             defaultPriority: z.enum(["low", "normal", "high", "critical"]).default("normal"),
             defaultLocale: z.string().min(2).default("en"),
             workerConcurrency: z.coerce.number().int().positive().default(5),
+        }).default({}),
+        digest: z.object({
+            hourlyAt: z.coerce.number().int().min(0).max(59).default(0),
+            dailyAtHourUtc: z.coerce.number().int().min(0).max(23).default(8),
+            weeklyDay: z.coerce.number().int().min(0).max(6).default(1),
+            maxItemsPerDigest: z.coerce.number().int().positive().default(50),
         }).default({}),
         retention: z.object({
             messageDays: z.coerce.number().int().positive().default(90),

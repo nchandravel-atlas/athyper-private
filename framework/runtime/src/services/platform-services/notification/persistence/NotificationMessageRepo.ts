@@ -129,6 +129,7 @@ export class NotificationMessageRepo {
         if (input.deliveredCount !== undefined) data.delivered_count = input.deliveredCount;
         if (input.failedCount !== undefined) data.failed_count = input.failedCount;
         if (input.completedAt !== undefined) data.completed_at = input.completedAt;
+        if (input.metadata !== undefined) data.metadata = JSON.stringify(input.metadata);
 
         if (Object.keys(data).length === 0) return;
 

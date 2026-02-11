@@ -15,7 +15,10 @@ export type NotifyLogCategory =
     | "preference"
     | "dedup"
     | "adapter"
-    | "lifecycle";
+    | "lifecycle"
+    | "dlq"
+    | "explain"
+    | "digest";
 
 /**
  * Create a notification-scoped child logger.

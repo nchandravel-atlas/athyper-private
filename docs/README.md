@@ -4,6 +4,12 @@ Central index for all platform documentation.
 
 ## Documentation Map
 
+### Technical Reference
+
+| Document | Description |
+|----------|-------------|
+| [Technical Specification](./TECHNICAL_SPECIFICATION.md) | Complete package catalog, 4-layer architecture, dependency matrix, META workflow, platform services |
+
 ### Architecture
 
 | Document | Description |
@@ -267,6 +273,7 @@ All scripts are run from the monorepo root via `pnpm run <script>`.
 
 ## Quick Links
 
+- **Technical Specification**: [Full Package & Architecture Reference](./TECHNICAL_SPECIFICATION.md)
 - **Getting Started**: [Quick Start Guide](./deployment/QUICKSTART.md)
 - **Architecture**: [System Overview](./architecture/OVERVIEW.md)
 - **Auth Deep Dive**: [Auth Architecture](./security/AUTH_ARCHITECTURE.md)

@@ -51,6 +51,7 @@ $steps = @(
     @{ file = '10_meta/010_meta_core_tables.sql';                label = 'Meta entity registry' }
     @{ file = '10_meta/020_meta_policy_tables.sql';              label = 'Meta policy tables' }
     @{ file = '10_meta/030_meta_workflow_tables.sql';             label = 'Meta workflow tables' }
+    @{ file = '10_meta/035_meta_numbering_sequence.sql';         label = 'Meta numbering sequence (Approvable Core Engine)' }
     @{ file = '10_meta/040_meta_overlay_tables.sql';             label = 'Meta overlay tables' }
 
     # --- Core IAM + extensions ---

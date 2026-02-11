@@ -40,6 +40,9 @@ import type {
   ApprovalDecisionResult,
   ApprovalCreationRequest,
   ApprovalCreationResult,
+  EntityClass,
+  EntityFeatureFlags,
+  NumberingRule,
 } from "./types.js";
 
 // ============================================================================
@@ -1165,6 +1168,104 @@ export interface DdlGenerator {
     models: CompiledModel[],
     options?: DdlGenerationOptions
   ): string;
+}
+
+// ============================================================================
+// Entity Classification Service (Approvable Core Engine)
+// ============================================================================
+
+/**
+ * Entity Classification Service
+ *
+ * Resolves EntityClass and EntityFeatureFlags from entity metadata.
+ * Reads meta.entity.kind and meta.entity.feature_flags from the database.
+ *
+ * Entities without classification (not in meta.entity or kind not set)
+ * return undefined class and all-false default flags.
+ */
+export interface EntityClassificationService {
+  /**
+   * Resolve the EntityClass for an entity.
+   * Maps DB kind: ref/mdm → MASTER, ent → CONTROL, doc → DOCUMENT.
+   * Returns undefined if entity has no classification (legacy entity).
+   */
+  resolveClass(
+    entityName: string,
+    tenantId: string
+  ): Promise<EntityClass | undefined>;
+
+  /**
+   * Resolve feature flags for an entity.
+   * Parses meta.entity.feature_flags JSONB column with safe defaults.
+   * Returns all-false defaults if entity has no classification.
+   */
+  resolveFeatureFlags(
+    entityName: string,
+    tenantId: string
+  ): Promise<EntityFeatureFlags>;
+
+  /**
+   * Get combined classification: class + flags in one query.
+   */
+  getClassification(
+    entityName: string,
+    tenantId: string
+  ): Promise<{
+    entityClass: EntityClass | undefined;
+    featureFlags: EntityFeatureFlags;
+  }>;
+}
+
+// ============================================================================
+// Numbering Engine Service (Approvable Core Engine)
+// ============================================================================
+
+/**
+ * Numbering Engine Service
+ *
+ * Generates unique document numbers atomically using INSERT...ON CONFLICT DO UPDATE.
+ * Numbers are formatted from patterns like "INV-{YYYY}-{SEQ:6}".
+ * Sequences can reset by period (yearly, monthly, daily, or never).
+ */
+export interface NumberingEngine {
+  /**
+   * Generate the next number for an entity.
+   * Uses atomic INSERT...ON CONFLICT DO UPDATE for gap-free sequences.
+   * Returns the formatted document number string.
+   *
+   * @param entityName Entity to generate number for
+   * @param tenantId Tenant context
+   * @param referenceDate Date used for period key and pattern tokens (default: now())
+   */
+  generateNumber(
+    entityName: string,
+    tenantId: string,
+    referenceDate?: Date
+  ): Promise<string>;
+
+  /**
+   * Preview what the next number would be (best-effort, non-atomic).
+   * May not reflect actual next number if concurrent requests exist.
+   */
+  previewNextNumber(
+    entityName: string,
+    tenantId: string,
+    referenceDate?: Date
+  ): Promise<string | undefined>;
+
+  /**
+   * Get the numbering rule for an entity.
+   * Returns undefined if numbering is not configured.
+   */
+  getRule(
+    entityName: string,
+    tenantId: string
+  ): Promise<NumberingRule | undefined>;
+
+  /**
+   * Health check.
+   */
+  healthCheck(): Promise<HealthCheckResult>;
 }
 
 // Note: All interfaces are already exported inline above

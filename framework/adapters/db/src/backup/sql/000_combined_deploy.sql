@@ -8,7 +8,7 @@
    resolved order (NOT numeric file-naming order) so that every CREATE TABLE,
    ALTER TABLE, and INSERT runs without violating foreign-key constraints.
 
-   Execution order (42 steps):
+   Execution order (43 steps):
       1.  00_bootstrap/001_create_schemas.sql                 -- Schemas
       2.  00_bootstrap/002_extensions.sql                     -- Extensions
       3.  20_core/010_core_runtime_tables.sql                 -- core.tenant + runtime tables
@@ -33,29 +33,30 @@
      22.  10_meta/010_meta_core_tables.sql                    -- Meta entity registry
      23.  10_meta/020_meta_policy_tables.sql                  -- Meta policy tables
      24.  10_meta/030_meta_workflow_tables.sql                -- Meta workflow tables
-     25.  10_meta/040_meta_overlay_tables.sql                 -- Meta overlay tables
-     26.  20_core/020_core_iam_tables.sql                     -- IAM (principal, group, role, address, etc.)
-     27.  20_core/030_core_workflow_runtime.sql               -- Workflow runtime
-     28.  20_core/041_field_security.sql                      -- Field security
-     29.  20_core/043_mfa_tables.sql                          -- MFA tables
-     30.  20_core/044_tenant_iam_profile.sql                  -- Tenant IAM profile
-     31.  20_core/045_tenant_profile_update.sql               -- Workspace + feature catalog + tenant feature subscriptions
-     32.  20_core/046_address_link.sql                        -- Address link (polymorphic)
-     33.  20_core/047_tenant_locale_policy.sql                -- Tenant locale policy
-     34.  40_mdm/010_mdm_master_tables.sql                    -- MDM master tables
-     35.  50_ui/010_ui_dashboard_tables.sql                   -- UI dashboard tables
-     36.  90_seed/910_seed_operations.sql                     -- Seed: operations
-     37.  90_seed/911_seed_personas.sql                       -- Seed: personas + capability matrix
-     38.  90_seed/912_seed_modules.sql                        -- Seed: modules
-     39.  90_seed/913_seed_workspaces.sql                     -- Seed: workspaces + module linkage
-     40.  90_seed/920_seed_default_deny_policy.sql            -- Seed: default deny policy
-     41.  90_seed/930_seed_platform_admin_allow.sql           -- Seed: platform admin allow
-     42.  90_seed/940_refresh_compiled_policies.sql           -- Seed: refresh compiled policies
+     25.  10_meta/035_meta_numbering_sequence.sql             -- Meta numbering sequence (Approvable Core Engine)
+     26.  10_meta/040_meta_overlay_tables.sql                 -- Meta overlay tables
+     27.  20_core/020_core_iam_tables.sql                     -- IAM (principal, group, role, address, etc.)
+     28.  20_core/030_core_workflow_runtime.sql               -- Workflow runtime
+     29.  20_core/041_field_security.sql                      -- Field security
+     30.  20_core/043_mfa_tables.sql                          -- MFA tables
+     31.  20_core/044_tenant_iam_profile.sql                  -- Tenant IAM profile
+     32.  20_core/045_tenant_profile_update.sql               -- Workspace + feature catalog + tenant feature subscriptions
+     33.  20_core/046_address_link.sql                        -- Address link (polymorphic)
+     34.  20_core/047_tenant_locale_policy.sql                -- Tenant locale policy
+     35.  40_mdm/010_mdm_master_tables.sql                    -- MDM master tables
+     36.  50_ui/010_ui_dashboard_tables.sql                   -- UI dashboard tables
+     37.  90_seed/910_seed_operations.sql                     -- Seed: operations
+     38.  90_seed/911_seed_personas.sql                       -- Seed: personas + capability matrix
+     39.  90_seed/912_seed_modules.sql                        -- Seed: modules
+     40.  90_seed/913_seed_workspaces.sql                     -- Seed: workspaces + module linkage
+     41.  90_seed/920_seed_default_deny_policy.sql            -- Seed: default deny policy
+     42.  90_seed/930_seed_platform_admin_allow.sql           -- Seed: platform admin allow
+     43.  90_seed/940_refresh_compiled_policies.sql           -- Seed: refresh compiled policies
    ============================================================================ */
 
 BEGIN;
 -- ============================================================================
--- STEP 1 of 42: 00_bootstrap/001_create_schemas.sql
+-- STEP 1 of 43: 00_bootstrap/001_create_schemas.sql
 -- Schemas
 -- ============================================================================
 
@@ -75,7 +76,7 @@ create schema if not exists ui;
 
 -- END (Step 1)
 -- ============================================================================
--- STEP 2 of 42: 00_bootstrap/002_extensions.sql
+-- STEP 2 of 43: 00_bootstrap/002_extensions.sql
 -- Extensions
 -- ============================================================================
 
@@ -91,7 +92,7 @@ create extension if not exists pgcrypto; -- gen_random_uuid()
 
 -- END (Step 2)
 -- ============================================================================
--- STEP 3 of 42: 20_core/010_core_runtime_tables.sql
+-- STEP 3 of 43: 20_core/010_core_runtime_tables.sql
 -- core.tenant + runtime tables
 -- ============================================================================
 
@@ -386,7 +387,7 @@ comment on table core.contact_phone is 'Structured phone data linked to a contac
 
 -- END (Step 3)
 -- ============================================================================
--- STEP 4 of 42: 20_core/015_alter_tenant_for_iam.sql
+-- STEP 4 of 43: 20_core/015_alter_tenant_for_iam.sql
 -- Alter core.tenant for multi-realm IAM
 -- ============================================================================
 
@@ -428,7 +429,7 @@ comment on column core.tenant.display_name is 'User-friendly display name.';
 
 -- END (Step 4)
 -- ============================================================================
--- STEP 5 of 42: 30_ref/010_ref_master_tables.sql
+-- STEP 5 of 43: 30_ref/010_ref_master_tables.sql
 -- Reference data DDL (all ref tables)
 -- ============================================================================
 
@@ -818,7 +819,7 @@ $$;
 
 -- END (Step 5)
 -- ============================================================================
--- STEP 6 of 42: 30_ref/020_ref_seed_countries.sql
+-- STEP 6 of 43: 30_ref/020_ref_seed_countries.sql
 -- Seed: ISO 3166-1 countries
 -- ============================================================================
 
@@ -1151,7 +1152,7 @@ on conflict (code2) do nothing;
 
 -- END (Step 6)
 -- ============================================================================
--- STEP 7 of 42: 30_ref/021_ref_seed_subdivisions.sql
+-- STEP 7 of 43: 30_ref/021_ref_seed_subdivisions.sql
 -- Seed: ISO 3166-2 subdivisions
 -- ============================================================================
 
@@ -1562,7 +1563,7 @@ on conflict (code) do nothing;
 
 -- END (Step 7)
 -- ============================================================================
--- STEP 8 of 42: 30_ref/030_ref_seed_currencies.sql
+-- STEP 8 of 43: 30_ref/030_ref_seed_currencies.sql
 -- Seed: ISO 4217 currencies
 -- ============================================================================
 
@@ -1790,7 +1791,7 @@ on conflict (code) do nothing;
 
 -- END (Step 8)
 -- ============================================================================
--- STEP 9 of 42: 30_ref/040_ref_seed_languages.sql
+-- STEP 9 of 43: 30_ref/040_ref_seed_languages.sql
 -- Seed: ISO 639-1 languages
 -- ============================================================================
 
@@ -1991,7 +1992,7 @@ on conflict (code) do nothing;
 
 -- END (Step 9)
 -- ============================================================================
--- STEP 10 of 42: 30_ref/050_ref_seed_locales.sql
+-- STEP 10 of 43: 30_ref/050_ref_seed_locales.sql
 -- Seed: BCP 47 locales
 -- ============================================================================
 
@@ -2287,7 +2288,7 @@ on conflict (code) do nothing;
 
 -- END (Step 10)
 -- ============================================================================
--- STEP 11 of 42: 30_ref/060_ref_seed_timezones.sql
+-- STEP 11 of 43: 30_ref/060_ref_seed_timezones.sql
 -- Seed: IANA timezones
 -- ============================================================================
 
@@ -2771,7 +2772,7 @@ on conflict (tzid) do nothing;
 
 -- END (Step 11)
 -- ============================================================================
--- STEP 12 of 42: 30_ref/070_ref_seed_uom.sql
+-- STEP 12 of 43: 30_ref/070_ref_seed_uom.sql
 -- Seed: UN/ECE Rec 20 units of measure
 -- ============================================================================
 
@@ -3008,7 +3009,7 @@ on conflict (code) do nothing;
 
 -- END (Step 12)
 -- ============================================================================
--- STEP 13 of 42: 30_ref/080_ref_seed_commodity.sql
+-- STEP 13 of 43: 30_ref/080_ref_seed_commodity.sql
 -- Seed: Commodity codes (UNSPSC + HS)
 -- ============================================================================
 
@@ -3197,7 +3198,7 @@ on conflict (domain_code, code) do nothing;
 
 -- END (Step 13)
 -- ============================================================================
--- STEP 14 of 42: 30_ref/090_ref_seed_industry.sql
+-- STEP 14 of 43: 30_ref/090_ref_seed_industry.sql
 -- Seed: Industry codes (ISIC + NAICS)
 -- ============================================================================
 
@@ -3476,7 +3477,7 @@ on conflict (domain_code, code) do nothing;
 
 -- END (Step 14)
 -- ============================================================================
--- STEP 15 of 42: 30_ref/095_ref_seed_labels_ar.sql
+-- STEP 15 of 43: 30_ref/095_ref_seed_labels_ar.sql
 -- Seed: Arabic (ar) translations
 -- ============================================================================
 
@@ -3794,7 +3795,7 @@ on conflict (entity, code, locale_code) do nothing;
 
 -- END (Step 15)
 -- ============================================================================
--- STEP 16 of 42: 30_ref/096_ref_seed_labels_ms.sql
+-- STEP 16 of 43: 30_ref/096_ref_seed_labels_ms.sql
 -- Seed: Malay (ms) translations
 -- ============================================================================
 
@@ -4045,7 +4046,7 @@ on conflict (entity, code, locale_code) do nothing;
 
 -- END (Step 16)
 -- ============================================================================
--- STEP 17 of 42: 30_ref/097_ref_seed_labels_ta.sql
+-- STEP 17 of 43: 30_ref/097_ref_seed_labels_ta.sql
 -- Seed: Tamil (ta) translations
 -- ============================================================================
 
@@ -4297,7 +4298,7 @@ on conflict (entity, code, locale_code) do nothing;
 
 -- END (Step 17)
 -- ============================================================================
--- STEP 18 of 42: 30_ref/098_ref_seed_labels_hi.sql
+-- STEP 18 of 43: 30_ref/098_ref_seed_labels_hi.sql
 -- Seed: Hindi (hi) translations
 -- ============================================================================
 
@@ -4553,7 +4554,7 @@ on conflict (entity, code, locale_code) do nothing;
 
 -- END (Step 18)
 -- ============================================================================
--- STEP 19 of 42: 30_ref/099_ref_seed_labels_fr.sql
+-- STEP 19 of 43: 30_ref/099_ref_seed_labels_fr.sql
 -- Seed: French (fr) translations
 -- ============================================================================
 
@@ -4821,7 +4822,7 @@ on conflict (entity, code, locale_code) do nothing;
 
 -- END (Step 19)
 -- ============================================================================
--- STEP 20 of 42: 30_ref/100_ref_seed_labels_de.sql
+-- STEP 20 of 43: 30_ref/100_ref_seed_labels_de.sql
 -- Seed: German (de) translations
 -- ============================================================================
 
@@ -5090,7 +5091,7 @@ on conflict (entity, code, locale_code) do nothing;
 
 -- END (Step 20)
 -- ============================================================================
--- STEP 21 of 42: 20_core/042_permission_action_model.sql
+-- STEP 21 of 43: 20_core/042_permission_action_model.sql
 -- Permission action model (operation, persona, module)
 -- ============================================================================
 
@@ -5337,7 +5338,7 @@ create index if not exists idx_entity_module_module
 
 -- END (Step 21)
 -- ============================================================================
--- STEP 22 of 42: 10_meta/010_meta_core_tables.sql
+-- STEP 22 of 43: 10_meta/010_meta_core_tables.sql
 -- Meta entity registry
 -- ============================================================================
 
@@ -5560,7 +5561,7 @@ comment on table meta.entity_compiled is
 
 -- END (Step 22)
 -- ============================================================================
--- STEP 23 of 42: 10_meta/020_meta_policy_tables.sql
+-- STEP 23 of 43: 10_meta/020_meta_policy_tables.sql
 -- Meta policy tables
 -- ============================================================================
 
@@ -5704,7 +5705,7 @@ comment on table meta.permission_policy_compiled is
 
 -- END (Step 23)
 -- ============================================================================
--- STEP 24 of 42: 10_meta/030_meta_workflow_tables.sql
+-- STEP 24 of 43: 10_meta/030_meta_workflow_tables.sql
 -- Meta workflow tables
 -- ============================================================================
 
@@ -5947,7 +5948,40 @@ comment on table meta.entity_lifecycle_route_compiled is
 
 -- END (Step 24)
 -- ============================================================================
--- STEP 25 of 42: 10_meta/040_meta_overlay_tables.sql
+-- STEP 25 of 43: 10_meta/035_meta_numbering_sequence.sql
+-- Meta numbering sequence (Approvable Core Engine)
+-- ============================================================================
+
+/* ============================================================================
+   Athyper — META: Numbering Sequence (Approvable Core Engine)
+   Atomic counter table for gap-free document number generation.
+   PostgreSQL 16+ (pgcrypto)
+   ============================================================================ */
+
+-- ----------------------------------------------------------------------------
+-- META: Numbering Sequence Counters
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS meta.numbering_sequence (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id     UUID NOT NULL REFERENCES core.tenant(id) ON DELETE CASCADE,
+
+  entity_name   TEXT NOT NULL,
+  period_key    TEXT NOT NULL DEFAULT '__global__',
+  current_value BIGINT NOT NULL DEFAULT 0,
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  CONSTRAINT numbering_seq_uniq UNIQUE (tenant_id, entity_name, period_key)
+);
+
+COMMENT ON TABLE meta.numbering_sequence IS
+'Atomic numbering counters per entity+period for gap-free document number generation.';
+
+CREATE INDEX IF NOT EXISTS idx_numbering_sequence_lookup
+  ON meta.numbering_sequence (tenant_id, entity_name);
+
+-- END (Step 25)
+-- ============================================================================
+-- STEP 26 of 43: 10_meta/040_meta_overlay_tables.sql
 -- Meta overlay tables
 -- ============================================================================
 
@@ -6047,9 +6081,9 @@ comment on table meta.entity_compiled_overlay is
 create index if not exists idx_entity_compiled_overlay_lookup
   on meta.entity_compiled_overlay (tenant_id, entity_version_id, compiled_hash);
 
--- END (Step 25)
+-- END (Step 26)
 -- ============================================================================
--- STEP 26 of 42: 20_core/020_core_iam_tables.sql
+-- STEP 27 of 43: 20_core/020_core_iam_tables.sql
 -- IAM (principal, group, role, address, etc.)
 -- ============================================================================
 
@@ -6436,9 +6470,9 @@ create index if not exists idx_entitlement_snapshot_tenant on core.entitlement_s
 create index if not exists idx_entitlement_snapshot_principal on core.entitlement_snapshot (principal_id);
 create index if not exists idx_entitlement_snapshot_expires on core.entitlement_snapshot (expires_at);
 
--- END (Step 26)
+-- END (Step 27)
 -- ============================================================================
--- STEP 27 of 42: 20_core/030_core_workflow_runtime.sql
+-- STEP 28 of 43: 20_core/030_core_workflow_runtime.sql
 -- Workflow runtime
 -- ============================================================================
 
@@ -6684,9 +6718,9 @@ comment on table core.approval_event is 'Append-only event log for approval work
 create index if not exists idx_approval_event_tenant_time
   on core.approval_event (tenant_id, occurred_at desc);
 
--- END (Step 27)
+-- END (Step 28)
 -- ============================================================================
--- STEP 28 of 42: 20_core/041_field_security.sql
+-- STEP 29 of 43: 20_core/041_field_security.sql
 -- Field security
 -- ============================================================================
 
@@ -6835,9 +6869,9 @@ create index if not exists idx_field_access_log_request
 -- partitioning hint for large deployments:
 -- alter table core.field_access_log partition by range (created_at);
 
--- END (Step 28)
+-- END (Step 29)
 -- ============================================================================
--- STEP 29 of 42: 20_core/043_mfa_tables.sql
+-- STEP 30 of 43: 20_core/043_mfa_tables.sql
 -- MFA tables
 -- ============================================================================
 
@@ -7179,9 +7213,9 @@ $$ language plpgsql;
 comment on function core.cleanup_expired_trusted_devices() is
 'Cleanup expired or revoked trusted devices. Run periodically via scheduler.';
 
--- END (Step 29)
+-- END (Step 30)
 -- ============================================================================
--- STEP 30 of 42: 20_core/044_tenant_iam_profile.sql
+-- STEP 31 of 43: 20_core/044_tenant_iam_profile.sql
 -- Tenant IAM profile
 -- ============================================================================
 
@@ -7215,9 +7249,9 @@ CREATE INDEX IF NOT EXISTS idx_tenant_profile_mfa_required
     ON core.tenant_profile USING btree ((iam_profile->>'mfaRequired'))
     WHERE iam_profile->>'mfaRequired' = 'true';
 
--- END (Step 30)
+-- END (Step 31)
 -- ============================================================================
--- STEP 31 of 42: 20_core/045_tenant_profile_update.sql
+-- STEP 32 of 43: 20_core/045_tenant_profile_update.sql
 -- Workspace + feature catalog + tenant feature subscriptions
 -- ============================================================================
 
@@ -7403,9 +7437,9 @@ create index if not exists idx_entity_feature_feature
   on core.entity_feature (feature_id);
 */
 
--- END (Step 31)
+-- END (Step 32)
 -- ============================================================================
--- STEP 32 of 42: 20_core/046_address_link.sql
+-- STEP 33 of 43: 20_core/046_address_link.sql
 -- Address link (polymorphic)
 -- ============================================================================
 
@@ -7528,9 +7562,9 @@ create index if not exists address_link_primary_lookup_idx
   )
   where is_primary;
 
--- END (Step 32)
+-- END (Step 33)
 -- ============================================================================
--- STEP 33 of 42: 20_core/047_tenant_locale_policy.sql
+-- STEP 34 of 43: 20_core/047_tenant_locale_policy.sql
 -- Tenant locale policy
 -- ============================================================================
 
@@ -7587,9 +7621,9 @@ create index if not exists idx_tenant_locale_supported
 create index if not exists idx_tenant_locale_by_locale
   on core.tenant_locale_policy (locale_code);
 
--- END (Step 33)
+-- END (Step 34)
 -- ============================================================================
--- STEP 34 of 42: 40_mdm/010_mdm_master_tables.sql
+-- STEP 35 of 43: 40_mdm/010_mdm_master_tables.sql
 -- MDM master tables
 -- ============================================================================
 
@@ -7607,8 +7641,8 @@ create table if not exists mdm.company_code (
 
   code          text not null,
   name          text not null,
-  base_currency text references ref.currency(code),
-  country_code  text references ref.country(code),
+  base_currency char(3) references ref.currency(code),
+  country_code  char(2) references ref.country(code2),
 
   ou_node_id    uuid references core.ou_node(id),
   config        jsonb,
@@ -7712,9 +7746,9 @@ comment on table mdm.wbs_element is 'Work Breakdown Structure elements within pr
 create index if not exists idx_wbs_project
   on mdm.wbs_element (tenant_id, project_id);
 
--- END (Step 34)
+-- END (Step 35)
 -- ============================================================================
--- STEP 35 of 42: 50_ui/010_ui_dashboard_tables.sql
+-- STEP 36 of 43: 50_ui/010_ui_dashboard_tables.sql
 -- UI dashboard tables
 -- ============================================================================
 
@@ -7828,9 +7862,9 @@ create index if not exists idx_dacl_dashboard
 create index if not exists idx_dacl_principal
   on ui.dashboard_acl (tenant_id, principal_type, principal_key);
 
--- END (Step 35)
+-- END (Step 36)
 -- ============================================================================
--- STEP 36 of 42: 90_seed/910_seed_operations.sql
+-- STEP 37 of 43: 90_seed/910_seed_operations.sql
 -- Seed: operations
 -- ============================================================================
 
@@ -7938,9 +7972,9 @@ cross join (values
 where c.code = 'collaboration'
 on conflict (category_id, code) do nothing;
 
--- END (Step 36)
+-- END (Step 37)
 -- ============================================================================
--- STEP 37 of 42: 90_seed/911_seed_personas.sql
+-- STEP 38 of 43: 90_seed/911_seed_personas.sql
 -- Seed: personas + capability matrix
 -- ============================================================================
 
@@ -8128,9 +8162,9 @@ select core._seed_grant_capability('tenantAdmin', 'tag');
 -- ----------------------------------------------------------------------------
 drop function if exists core._seed_grant_capability(text, text, text);
 
--- END (Step 37)
+-- END (Step 38)
 -- ============================================================================
--- STEP 38 of 42: 90_seed/912_seed_modules.sql
+-- STEP 39 of 43: 90_seed/912_seed_modules.sql
 -- Seed: modules
 -- ============================================================================
 
@@ -8197,9 +8231,9 @@ insert into core.module (code, name, description, config) values
   ('ITSM',      'Support & Service Management',     'Tickets, SLAs, service workflows',                                                             '{"tier":"Base","dependencies":["CORE","WFL","ASSET","NTF","AUD"]}'::jsonb)
 on conflict (code) do nothing;
 
--- END (Step 38)
+-- END (Step 39)
 -- ============================================================================
--- STEP 39 of 42: 90_seed/913_seed_workspaces.sql
+-- STEP 40 of 43: 90_seed/913_seed_workspaces.sql
 -- Seed: workspaces + module linkage
 -- ============================================================================
 
@@ -8262,9 +8296,9 @@ update core.module set workspace_id = (select id from core.workspace where code 
 where code in ('ASSET', 'ASSETREMS', 'ASSETFM')
   and workspace_id is null;
 
--- END (Step 39)
+-- END (Step 40)
 -- ============================================================================
--- STEP 40 of 42: 90_seed/920_seed_default_deny_policy.sql
+-- STEP 41 of 43: 90_seed/920_seed_default_deny_policy.sql
 -- Seed: default deny policy
 -- ============================================================================
 
@@ -8279,9 +8313,9 @@ where code in ('ASSET', 'ASSETREMS', 'ASSETFM')
 -- the permission policy compiler is finalized.
 -- see meta.permission_policy + meta.permission_policy_compiled
 
--- END (Step 40)
+-- END (Step 41)
 -- ============================================================================
--- STEP 41 of 42: 90_seed/930_seed_platform_admin_allow.sql
+-- STEP 42 of 43: 90_seed/930_seed_platform_admin_allow.sql
 -- Seed: platform admin allow
 -- ============================================================================
 
@@ -8295,9 +8329,9 @@ where code in ('ASSET', 'ASSETREMS', 'ASSETFM')
 -- the permission policy compiler is finalized.
 -- see meta.permission_policy + meta.permission_policy_compiled
 
--- END (Step 41)
+-- END (Step 42)
 -- ============================================================================
--- STEP 42 of 42: 90_seed/940_refresh_compiled_policies.sql
+-- STEP 43 of 43: 90_seed/940_refresh_compiled_policies.sql
 -- Seed: refresh compiled policies
 -- ============================================================================
 
@@ -8311,9 +8345,9 @@ where code in ('ASSET', 'ASSETREMS', 'ASSETFM')
 -- the permission policy compiler is finalized.
 -- see meta.permission_policy_compiled
 
--- END (Step 42)
+-- END (Step 43)
 COMMIT;
 
 -- ============================================================================
--- Deployment complete (42 steps executed)
+-- Deployment complete (43 steps executed)
 -- ============================================================================

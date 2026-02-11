@@ -21,6 +21,7 @@ import type {
   LifecycleManager,
   LifecycleRouteCompiler,
   PolicyGate,
+  ApprovalService,
   EntityLifecycleInstance,
   EntityLifecycleEvent,
   LifecycleState,
@@ -37,11 +38,21 @@ import type {
 
 
 export class LifecycleManagerService implements LifecycleManager {
+  private approvalService?: ApprovalService;
+
   constructor(
     private readonly db: LifecycleDB_Type,
     private readonly routeCompiler: LifecycleRouteCompiler,
     private readonly policyGate: PolicyGate,
   ) {}
+
+  /**
+   * Set approval service for circular dependency resolution.
+   * Called by factory after both services are constructed.
+   */
+  setApprovalService(svc: ApprovalService): void {
+    this.approvalService = svc;
+  }
 
   // ============================================================================
   // Instance Management
@@ -226,11 +237,12 @@ export class LifecycleManagerService implements LifecycleManager {
         };
       }
 
-      // Validate gates
+      // Validate gates (pass entity context for approval bridge)
       const gateResult = await this.validateGates(
         transition.id,
         ctx,
-        request.payload
+        request.payload,
+        { entityName, entityId }
       );
 
       if (!gateResult.allowed) {
@@ -354,11 +366,12 @@ export class LifecycleManagerService implements LifecycleManager {
         };
       }
 
-      // Validate gates
+      // Validate gates (pass entity context for approval bridge)
       const gateResult = await this.validateGates(
         transition.id,
         ctx,
-        request.payload
+        request.payload,
+        { entityName, entityId }
       );
 
       if (!gateResult.allowed) {
@@ -456,8 +469,12 @@ export class LifecycleManagerService implements LifecycleManager {
   async validateGates(
     transitionId: string,
     ctx: RequestContext,
-    record?: unknown
+    record?: unknown,
+    entityContext?: { entityName: string; entityId: string }
   ): Promise<{ allowed: boolean; reason?: string }> {
+    // Bypass check: if _approvalBypass is set, skip all approval gate checks (loop protection)
+    const bypassApproval = (ctx.metadata as Record<string, unknown> | undefined)?._approvalBypass === true;
+
     // Load gates for transition
     const gates = await this.getGatesForTransition(transitionId, ctx.tenantId);
 
@@ -473,7 +490,7 @@ export class LifecycleManagerService implements LifecycleManager {
         for (const operation of gate.requiredOperations) {
           const decision = await this.policyGate.authorize(
             operation,
-            "unknown", // TODO: Pass entity name through validateGates
+            entityContext?.entityName ?? "unknown",
             ctx,
             record
           );
@@ -487,15 +504,66 @@ export class LifecycleManagerService implements LifecycleManager {
         }
       }
 
-      // Check approval template (Phase 12.3)
-      if (gate.approvalTemplateId) {
-        // TODO: Check if approval exists and is completed
-        // For now, just log that approval is required
-        console.log(JSON.stringify({
-          msg: "lifecycle_gate_approval_required",
-          transitionId,
-          approvalTemplateId: gate.approvalTemplateId,
-        }));
+      // Check approval template (Approvable Core Engine)
+      if (gate.approvalTemplateId && !bypassApproval) {
+        if (!this.approvalService || !entityContext) {
+          // No approval service wired or no entity context — log and skip
+          console.log(JSON.stringify({
+            msg: "lifecycle_gate_approval_required_but_no_service",
+            transitionId,
+            approvalTemplateId: gate.approvalTemplateId,
+          }));
+          continue;
+        }
+
+        // Check if an approval instance already exists for this entity
+        const existing = await this.approvalService.getInstanceForEntity(
+          entityContext.entityName,
+          entityContext.entityId,
+          ctx.tenantId
+        );
+
+        if (!existing) {
+          // No approval instance — create one and block the transition
+          const createResult = await this.approvalService.createApprovalInstance({
+            entityName: entityContext.entityName,
+            entityId: entityContext.entityId,
+            transitionId,
+            approvalTemplateId: gate.approvalTemplateId,
+            ctx,
+          });
+
+          if (createResult.success) {
+            return {
+              allowed: false,
+              reason: "Approval workflow initiated",
+            };
+          } else {
+            return {
+              allowed: false,
+              reason: `Failed to create approval: ${createResult.error}`,
+            };
+          }
+        }
+
+        // Instance exists — check its status
+        if (existing.status === "open") {
+          return {
+            allowed: false,
+            reason: "Approval pending",
+          };
+        }
+
+        if (existing.status === "rejected" || existing.status === "canceled") {
+          return {
+            allowed: false,
+            reason: existing.status === "rejected"
+              ? "Approval was rejected"
+              : "Approval was canceled",
+          };
+        }
+
+        // status === "completed" → allow (continue gate evaluation)
       }
 
       // TODO: Evaluate threshold rules

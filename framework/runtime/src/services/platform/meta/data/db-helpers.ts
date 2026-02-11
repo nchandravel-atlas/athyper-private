@@ -147,6 +147,146 @@ export type LifecycleDB = DB & {
     reason: string | null;
     correlation_id: string | null;
   };
+
+  // ===== Entity Registry (Approvable Core Engine) =====
+
+  "meta.entity": {
+    id: string;
+    tenant_id: string;
+    module_id: string;
+    name: string;
+    kind: string; // 'ref' | 'mdm' | 'doc' | 'ent'
+    table_schema: string;
+    table_name: string;
+    naming_policy: unknown | null; // jsonb (NumberingRule)
+    feature_flags: unknown | null; // jsonb (EntityFeatureFlags)
+    is_active: boolean;
+    created_at: Date;
+    created_by: string;
+    updated_at: Date | null;
+    updated_by: string | null;
+  };
+
+  // ===== Numbering Sequence (Approvable Core Engine) =====
+
+  "meta.numbering_sequence": {
+    id: string;
+    tenant_id: string;
+    entity_name: string;
+    period_key: string;
+    current_value: number;
+    updated_at: Date;
+  };
+
+  // ===== Approval Templates (Approvable Core Engine) =====
+
+  "meta.approval_template": {
+    id: string;
+    tenant_id: string;
+    code: string;
+    name: string;
+    behaviors: unknown | null; // jsonb
+    escalation_style: string | null;
+    created_at: Date;
+    created_by: string;
+  };
+
+  "meta.approval_template_stage": {
+    id: string;
+    tenant_id: string;
+    approval_template_id: string;
+    stage_no: number;
+    name: string | null;
+    mode: string; // 'serial' | 'parallel'
+    quorum: unknown | null; // jsonb
+    created_at: Date;
+    created_by: string;
+  };
+
+  "meta.approval_template_rule": {
+    id: string;
+    tenant_id: string;
+    approval_template_id: string;
+    priority: number;
+    conditions: unknown; // jsonb
+    assign_to: unknown; // jsonb
+    created_at: Date;
+    created_by: string;
+  };
+
+  // ===== Approval Runtime (Approvable Core Engine) =====
+
+  "core.approval_instance": {
+    id: string;
+    tenant_id: string;
+    entity_name: string;
+    entity_id: string;
+    transition_id: string | null;
+    approval_template_id: string | null;
+    status: string; // DB: 'open' | 'completed' | 'canceled'
+    context: unknown | null; // jsonb
+    created_at: Date;
+    created_by: string;
+  };
+
+  "core.approval_stage": {
+    id: string;
+    tenant_id: string;
+    approval_instance_id: string;
+    stage_no: number;
+    mode: string; // 'serial' | 'parallel'
+    status: string; // 'open' | 'completed' | 'canceled'
+    created_at: Date;
+  };
+
+  "core.approval_task": {
+    id: string;
+    tenant_id: string;
+    approval_instance_id: string;
+    approval_stage_id: string;
+    assignee_principal_id: string | null;
+    assignee_group_id: string | null;
+    task_type: string; // 'approver' | 'reviewer' | 'watcher'
+    status: string; // 'pending' | 'approved' | 'rejected' | 'canceled' | 'expired'
+    due_at: Date | null;
+    metadata: unknown | null; // jsonb
+    decided_at: Date | null;
+    decided_by: string | null;
+    decision_note: string | null;
+    created_at: Date;
+  };
+
+  "core.approval_assignment_snapshot": {
+    id: string;
+    tenant_id: string;
+    approval_task_id: string;
+    resolved_assignment: unknown; // jsonb
+    resolved_from_rule_id: string | null;
+    resolved_from_version_id: string | null;
+    created_at: Date;
+    created_by: string;
+  };
+
+  "core.approval_escalation": {
+    id: string;
+    tenant_id: string;
+    approval_instance_id: string;
+    kind: string; // 'reminder' | 'escalation' | 'reassign'
+    payload: unknown | null; // jsonb
+    occurred_at: Date;
+  };
+
+  "core.approval_event": {
+    id: string;
+    tenant_id: string;
+    approval_instance_id: string | null;
+    approval_task_id: string | null;
+    event_type: string;
+    payload: unknown | null; // jsonb
+    occurred_at: Date;
+    actor_id: string | null;
+    correlation_id: string | null;
+  };
 };
 
 /**

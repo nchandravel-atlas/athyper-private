@@ -17,6 +17,8 @@ import type {
   PolicyGate,
   AuditLogger,
   LifecycleManager,
+  EntityClassificationService,
+  NumberingEngine,
   RequestContext,
   ListOptions,
   PaginatedResponse,
@@ -39,7 +41,9 @@ export class GenericDataAPIService implements GenericDataAPI {
     private readonly compiler: MetaCompiler,
     private readonly policyGate: PolicyGate,
     private readonly auditLogger: AuditLogger,
-    private readonly lifecycleManager?: LifecycleManager
+    private readonly lifecycleManager?: LifecycleManager,
+    private readonly classificationService?: EntityClassificationService,
+    private readonly numberingEngine?: NumberingEngine,
   ) {
     // Initialize query validator with default limits
     this.queryValidator = new QueryValidatorService(DEFAULT_QUERY_LIMITS);
@@ -83,6 +87,19 @@ export class GenericDataAPIService implements GenericDataAPI {
       // Filter out soft-deleted records unless explicitly requested
       const includeDeleted = options.includeDeleted ?? false;
 
+      // Resolve effective dating filter (flag-driven, per plan)
+      let effectiveDateFilter = sql.raw("");
+      if (this.classificationService) {
+        const { featureFlags } = await this.classificationService.getClassification(
+          entityName,
+          ctx.tenantId
+        );
+        if (featureFlags.effective_dating_enabled) {
+          const asOfDate = (options as { asOfDate?: Date }).asOfDate ?? new Date();
+          effectiveDateFilter = sql`AND effective_from <= ${asOfDate} AND (effective_to IS NULL OR effective_to > ${asOfDate})`;
+        }
+      }
+
       // Execute count and data queries using sql tagged template
       // IMPORTANT: Use safeTableName from compiled model, never from client input
       const [countResult, dataResult] = await Promise.all([
@@ -92,6 +109,7 @@ export class GenericDataAPIService implements GenericDataAPI {
           WHERE tenant_id = ${ctx.tenantId}
             AND realm_id = ${ctx.realmId}
             ${includeDeleted ? sql.raw("") : sql.raw("AND deleted_at IS NULL")}
+            ${effectiveDateFilter}
         `.execute(this.db),
         sql`
           SELECT *
@@ -99,6 +117,7 @@ export class GenericDataAPIService implements GenericDataAPI {
           WHERE tenant_id = ${ctx.tenantId}
             AND realm_id = ${ctx.realmId}
             ${includeDeleted ? sql.raw("") : sql.raw("AND deleted_at IS NULL")}
+            ${effectiveDateFilter}
           ORDER BY ${sql.ref(orderBy)} ${sql.raw(orderDir)}
           LIMIT ${pageSize}
           OFFSET ${offset}
@@ -296,7 +315,7 @@ export class GenericDataAPIService implements GenericDataAPI {
       const id = crypto.randomUUID();
       const now = new Date();
 
-      const record = {
+      const record: Record<string, unknown> = {
         id,
         ...(data as Record<string, unknown>),
         tenant_id: ctx.tenantId,
@@ -307,6 +326,61 @@ export class GenericDataAPIService implements GenericDataAPI {
         created_by: ctx.userId,
         updated_by: ctx.userId,
       };
+
+      // Approvable Core Engine: inject system headers + numbering + effective dating
+      if (this.classificationService) {
+        const { entityClass, featureFlags } =
+          await this.classificationService.getClassification(
+            entityName,
+            ctx.tenantId
+          );
+
+        if (entityClass) {
+          // Inject common system headers (all classified entities)
+          record.entity_type_code = record.entity_type_code ?? entityName;
+          record.status = record.status ?? "DRAFT";
+          record.source_system = record.source_system ?? "internal";
+          record.metadata = record.metadata ?? {};
+
+          // DOCUMENT class: generate document number if enabled and not provided
+          if (
+            entityClass === "DOCUMENT" &&
+            featureFlags.numbering_enabled &&
+            !record.document_number &&
+            this.numberingEngine
+          ) {
+            try {
+              record.document_number =
+                await this.numberingEngine.generateNumber(
+                  entityName,
+                  ctx.tenantId,
+                  now
+                );
+            } catch (numErr) {
+              console.error(
+                JSON.stringify({
+                  msg: "numbering_generation_failed",
+                  entityName,
+                  error: String(numErr),
+                })
+              );
+              // Don't fail create if numbering fails
+            }
+          }
+
+          // DOCUMENT class: set posting_date if not provided
+          if (entityClass === "DOCUMENT" && !record.posting_date) {
+            record.posting_date = now;
+          }
+
+          // Effective dating (flag-driven for all classes)
+          if (featureFlags.effective_dating_enabled) {
+            record.effective_from = record.effective_from ?? now;
+            // effective_to is always null on create
+            record.effective_to = record.effective_to ?? null;
+          }
+        }
+      }
 
       // Build INSERT query
       const columns = Object.keys(record);
@@ -1345,7 +1419,7 @@ export class GenericDataAPIService implements GenericDataAPI {
     for (const [fieldName, value] of Object.entries(dataObj)) {
       const field = fieldMap.get(fieldName);
 
-      // Skip system fields (they're auto-generated)
+      // Skip system fields (they're auto-generated or injected by the platform)
       if (
         [
           "id",
@@ -1355,6 +1429,15 @@ export class GenericDataAPIService implements GenericDataAPI {
           "updated_at",
           "created_by",
           "updated_by",
+          "version",
+          "entity_type_code",
+          "status",
+          "source_system",
+          "metadata",
+          "document_number",
+          "posting_date",
+          "effective_from",
+          "effective_to",
         ].includes(fieldName)
       ) {
         continue;
@@ -1393,7 +1476,7 @@ export class GenericDataAPIService implements GenericDataAPI {
     // Check for missing required fields (create mode only)
     if (mode === "create") {
       for (const field of model.fields) {
-        // Skip system fields
+        // Skip system fields (auto-generated or platform-injected)
         if (
           [
             "id",
@@ -1403,6 +1486,15 @@ export class GenericDataAPIService implements GenericDataAPI {
             "updated_at",
             "created_by",
             "updated_by",
+            "version",
+            "entity_type_code",
+            "status",
+            "source_system",
+            "metadata",
+            "document_number",
+            "posting_date",
+            "effective_from",
+            "effective_to",
           ].includes(field.name)
         ) {
           continue;

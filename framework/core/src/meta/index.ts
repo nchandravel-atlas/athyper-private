@@ -120,6 +120,16 @@ export type {
   ApprovalDecisionResult,
   ApprovalCreationRequest,
   ApprovalCreationResult,
+
+  // Approvable Core Engine (Phase 1)
+  EntityClass,
+  EntityFeatureFlags,
+  ApprovalInstanceStatus,
+  ApprovalTaskStatus,
+  NumberingResetPolicy,
+  NumberingRule,
+  NumberingSequence,
+  EffectiveDatedListOptions,
 } from "./types.js";
 
 export type {
@@ -148,6 +158,10 @@ export type {
   // Approval services (Phase 13)
   ApprovalService,
 
+  // Approvable Core Engine services
+  EntityClassificationService,
+  NumberingEngine,
+
   // DDL generation (Phase 14)
   DdlGenerator,
 
@@ -169,6 +183,8 @@ export {
   // Tokens
   META_TOKENS,
 } from "./tokens.js";
+
+export { DEFAULT_ENTITY_FEATURE_FLAGS } from "./types.js";
 
 export type {
   // Token types

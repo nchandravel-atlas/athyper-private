@@ -18,6 +18,9 @@ import type {
   AuditLogger,
   GenericDataAPI,
   MetaStore,
+  EntityClassificationService,
+  NumberingEngine,
+  ApprovalService,
 } from "./contracts.js";
 
 // ============================================================================
@@ -67,6 +70,17 @@ export const META_TOKENS = {
 
   /** META Engine health check registry */
   healthRegistry: "meta.health",
+
+  // ===== Approvable Core Engine =====
+
+  /** Entity Classification Service - resolves entity class and feature flags */
+  classificationService: "meta.classificationService",
+
+  /** Numbering Engine - atomic document number generation */
+  numberingEngine: "meta.numberingEngine",
+
+  /** Approval Service - approval workflow management */
+  approvalService: "meta.approvalService",
 } as const;
 
 // ============================================================================
@@ -117,6 +131,11 @@ export interface MetaTokenTypes {
 
   // Health
   [META_TOKENS.healthRegistry]: unknown; // Health registry interface
+
+  // Approvable Core Engine
+  [META_TOKENS.classificationService]: EntityClassificationService;
+  [META_TOKENS.numberingEngine]: NumberingEngine;
+  [META_TOKENS.approvalService]: ApprovalService;
 }
 
 /**

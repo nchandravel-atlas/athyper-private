@@ -16,6 +16,8 @@ import type {
   DdlGenerator,
   DdlGenerationOptions as CoreDdlGenerationOptions,
   DdlGenerationResult as CoreDdlGenerationResult,
+  EntityClass,
+  EntityFeatureFlags,
 } from "@athyper/core/meta";
 
 /**
@@ -77,8 +79,11 @@ export class DdlGeneratorService implements DdlGenerator {
     // Table header
     lines.push(`CREATE TABLE ${ifNotExists}${qualifiedTableName} (`);
 
-    // System columns (always first)
-    const systemColumns = this.getSystemColumns();
+    // System columns (always first, class-aware when entityClass is defined)
+    const systemColumns = this.getSystemColumns(
+      model.entityClass,
+      model.featureFlags
+    );
     lines.push(...systemColumns.map((col) => `  ${col},`));
 
     // Entity-specific columns
@@ -101,9 +106,19 @@ export class DdlGeneratorService implements DdlGenerator {
 
   /**
    * Get system column definitions
+   *
+   * When entityClass is defined, adds class-specific columns:
+   * - Common (all classes): entity_type_code, status, source_system, metadata
+   * - DOCUMENT: document_number, posting_date (always)
+   * - Flag-driven: effective_from, effective_to (when effective_dating_enabled)
+   *
+   * All new columns are nullable or have safe defaults — no NOT NULL without DEFAULT.
    */
-  private getSystemColumns(): string[] {
-    return [
+  private getSystemColumns(
+    entityClass?: EntityClass,
+    featureFlags?: EntityFeatureFlags
+  ): string[] {
+    const columns = [
       "id UUID NOT NULL",
       "tenant_id UUID NOT NULL",
       "realm_id TEXT NOT NULL",
@@ -115,6 +130,35 @@ export class DdlGeneratorService implements DdlGenerator {
       "deleted_by TEXT",
       "version INT NOT NULL DEFAULT 1",
     ];
+
+    // Class-specific columns only when entity is classified
+    if (entityClass) {
+      // Common columns for all classified entities
+      columns.push(
+        "entity_type_code TEXT DEFAULT ''",
+        "status TEXT NOT NULL DEFAULT 'DRAFT'",
+        "source_system TEXT NOT NULL DEFAULT 'internal'",
+        "metadata JSONB DEFAULT '{}'::jsonb"
+      );
+
+      // DOCUMENT class always gets document_number and posting_date
+      if (entityClass === "DOCUMENT") {
+        columns.push(
+          "document_number TEXT",
+          "posting_date TIMESTAMPTZ"
+        );
+      }
+
+      // Effective dating columns (flag-driven for all classes)
+      if (featureFlags?.effective_dating_enabled) {
+        columns.push(
+          "effective_from TIMESTAMPTZ",
+          "effective_to TIMESTAMPTZ"
+        );
+      }
+    }
+
+    return columns;
   }
 
   /**
@@ -223,6 +267,28 @@ export class DdlGeneratorService implements DdlGenerator {
     indexes.push(
       `CREATE INDEX IF NOT EXISTS idx_${tableName}_version ON ${qualifiedTableName} (version);`
     );
+
+    // Class-specific indexes
+    if (model.entityClass) {
+      // Status index for all classified entities
+      indexes.push(
+        `CREATE INDEX IF NOT EXISTS idx_${tableName}_status ON ${qualifiedTableName} (tenant_id, status);`
+      );
+
+      // DOCUMENT: document_number index
+      if (model.entityClass === "DOCUMENT") {
+        indexes.push(
+          `CREATE UNIQUE INDEX IF NOT EXISTS idx_${tableName}_document_number ON ${qualifiedTableName} (tenant_id, document_number) WHERE document_number IS NOT NULL;`
+        );
+      }
+
+      // Effective dating indexes (flag-driven)
+      if (model.featureFlags?.effective_dating_enabled) {
+        indexes.push(
+          `CREATE INDEX IF NOT EXISTS idx_${tableName}_effective_range ON ${qualifiedTableName} (tenant_id, effective_from, effective_to);`
+        );
+      }
+    }
 
     return indexes;
   }

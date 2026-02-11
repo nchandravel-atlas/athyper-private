@@ -367,6 +367,14 @@ export type CompiledModel = {
 
   /** Compilation diagnostics */
   diagnostics?: CompileDiagnostic[];
+
+  // ===== Entity Classification (Approvable Core Engine) =====
+
+  /** Entity classification (MASTER/CONTROL/DOCUMENT) */
+  entityClass?: EntityClass;
+
+  /** Entity feature flags */
+  featureFlags?: EntityFeatureFlags;
 };
 
 // ============================================================================
@@ -1542,8 +1550,8 @@ export type ApprovalInstance = {
   /** Approval template ID */
   approvalTemplateId?: string;
 
-  /** Overall status */
-  status: "open" | "completed" | "canceled";
+  /** Overall status (uses spec-locked union; "rejected" maps from DB "canceled" + reason) */
+  status: ApprovalInstanceStatus;
 
   /** Audit fields */
   createdAt: Date;
@@ -1751,8 +1759,8 @@ export type ApprovalDecisionResult = {
   /** Stage status (if stage completed) */
   stageStatus?: string;
 
-  /** Instance status (if instance completed) */
-  instanceStatus?: string;
+  /** Instance status (if instance completed) — uses finalized spec union */
+  instanceStatus?: ApprovalInstanceStatus;
 
   /** Whether lifecycle transition was triggered */
   transitionTriggered?: boolean;
@@ -1809,6 +1817,129 @@ export type ApprovalCreationResult = {
 
   /** Error message (if failed) */
   error?: string;
+};
+
+// ============================================================================
+// Approvable Core Engine — Entity Classification
+// ============================================================================
+
+/**
+ * Entity classification determines system header columns and behaviors.
+ * Maps to meta.entity.kind in DB: ref/mdm -> MASTER, ent -> CONTROL, doc -> DOCUMENT
+ */
+export type EntityClass = "MASTER" | "CONTROL" | "DOCUMENT";
+
+/**
+ * Feature flags resolved per entity classification and metadata config.
+ * Stored in meta.entity.feature_flags JSONB column.
+ */
+export type EntityFeatureFlags = {
+  /** Entity class (resolved from meta.entity.kind) */
+  entity_class?: EntityClass;
+
+  /** Whether approval workflow is required for lifecycle transitions */
+  approval_required?: boolean;
+
+  /** Whether automatic numbering is enabled (DOCUMENT class) */
+  numbering_enabled?: boolean;
+
+  /** Whether effective dating columns are active (flag-driven for all classes) */
+  effective_dating_enabled?: boolean;
+
+  /** Versioning mode */
+  versioning_mode?: "none" | "sequential" | "major_minor";
+};
+
+/**
+ * Default feature flags when none are configured.
+ */
+export const DEFAULT_ENTITY_FEATURE_FLAGS: Required<EntityFeatureFlags> = {
+  entity_class: undefined as unknown as EntityClass,
+  approval_required: false,
+  numbering_enabled: false,
+  effective_dating_enabled: false,
+  versioning_mode: "none",
+};
+
+// ============================================================================
+// Approvable Core Engine — Approval Status Types (Spec-Locked)
+// ============================================================================
+
+/**
+ * Approval instance status (spec-locked).
+ * Canonical spelling: "canceled" (US, matches DB CHECK constraint).
+ * "rejected" maps to DB "canceled" + context.reason = "rejected".
+ */
+export type ApprovalInstanceStatus =
+  | "open"
+  | "completed"
+  | "rejected"
+  | "canceled";
+
+/**
+ * Approval task status (spec-locked).
+ */
+export type ApprovalTaskStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "skipped";
+
+// ============================================================================
+// Approvable Core Engine — Numbering Engine
+// ============================================================================
+
+/**
+ * Reset policy for numbering sequences.
+ */
+export type NumberingResetPolicy = "none" | "yearly" | "monthly" | "daily";
+
+/**
+ * Numbering rule definition stored in meta.entity.naming_policy JSONB.
+ * Defines pattern, reset behavior, and sequence parameters.
+ */
+export type NumberingRule = {
+  /** Unique rule code */
+  code: string;
+
+  /** Pattern with placeholders: {YYYY}, {MM}, {DD}, {SEQ:N} (N = zero-pad width) */
+  pattern: string;
+
+  /** When to reset the sequence counter */
+  reset_policy: NumberingResetPolicy;
+
+  /** Starting sequence number */
+  seq_start: number;
+
+  /** Sequence increment */
+  seq_increment: number;
+
+  /** Whether this rule is active */
+  is_active: boolean;
+};
+
+/**
+ * Numbering sequence counter (DB row in meta.numbering_sequence).
+ */
+export type NumberingSequence = {
+  id: string;
+  tenant_id: string;
+  entity_name: string;
+  period_key: string;  // "__global__" | "YYYY" | "YYYY-MM" | "YYYY-MM-DD"
+  current_value: number;
+  updated_at: Date;
+};
+
+// ============================================================================
+// Approvable Core Engine — Effective Dating
+// ============================================================================
+
+/**
+ * Extended list options with effective dating support.
+ */
+export type EffectiveDatedListOptions = ListOptions & {
+  /** Point-in-time date for effective dating filter */
+  asOfDate?: Date;
 };
 
 // Note: All types are already exported inline above

@@ -13,6 +13,9 @@ import { MetaRegistryService } from "./core/registry.service.js";
 import { GenericDataAPIService } from "./data/generic-data-api.service.js";
 import { LifecycleManagerService } from "./lifecycle/lifecycle-manager.service.js";
 import { LifecycleRouteCompilerService } from "./lifecycle/lifecycle-route-compiler.service.js";
+import { EntityClassificationServiceImpl } from "./classification/entity-classification.service.js";
+import { NumberingEngineService } from "./numbering/numbering-engine.service.js";
+import { ApprovalServiceImpl } from "./approval/approval.service.js";
 import { DdlGeneratorService } from "./schema/ddl-generator.service.js";
 import { MigrationRunnerService } from "./schema/migration-runner.service.js";
 import { PublishService } from "./schema/publish.service.js";
@@ -29,6 +32,9 @@ import type {
   GenericDataAPI,
   LifecycleRouteCompiler,
   LifecycleManager,
+  EntityClassificationService,
+  NumberingEngine,
+  ApprovalService,
   DdlGenerator,
 } from "@athyper/core/meta";
 import type { Redis } from "ioredis";
@@ -64,6 +70,9 @@ export type MetaServices = {
   metaStore: MetaStore;
   lifecycleRouteCompiler: LifecycleRouteCompiler;
   lifecycleManager: LifecycleManager;
+  classificationService: EntityClassificationService;
+  numberingEngine: NumberingEngine;
+  approvalService: ApprovalService;
   ddlGenerator: DdlGenerator;
   migrationRunner: MigrationRunnerService;
   publishService: PublishService;
@@ -110,23 +119,44 @@ export function createMetaServices(
   // 4. Policy Gate (depends on compiler, optionally db for decision logging)
   const policyGate = new PolicyGateService(compiler, config.db as unknown as LifecycleDB_Type);
 
-  // 5. Lifecycle Route Compiler (depends on db)
+  // 5. Entity Classification Service (depends on db)
+  const classificationService = new EntityClassificationServiceImpl(
+    config.db as unknown as LifecycleDB_Type
+  );
+
+  // 6. Numbering Engine (depends on db)
+  const numberingEngine = new NumberingEngineService(
+    config.db as unknown as LifecycleDB_Type
+  );
+
+  // 7. Lifecycle Route Compiler (depends on db)
   const lifecycleRouteCompiler = new LifecycleRouteCompilerService(config.db as unknown as LifecycleDB_Type);
 
-  // 6. Lifecycle Manager (depends on db, lifecycleRouteCompiler, policyGate)
+  // 8. Lifecycle Manager (depends on db, lifecycleRouteCompiler, policyGate)
   const lifecycleManager = new LifecycleManagerService(
     config.db as unknown as LifecycleDB_Type,
     lifecycleRouteCompiler,
     policyGate
   );
 
-  // 7. Generic Data API (depends on compiler, policyGate, auditLogger, lifecycleManager)
+  // 9. Approval Service (depends on db)
+  const approvalService = new ApprovalServiceImpl(
+    config.db as unknown as LifecycleDB_Type
+  );
+
+  // 10. Wire circular dependencies
+  lifecycleManager.setApprovalService(approvalService);
+  approvalService.setLifecycleManager(lifecycleManager);
+
+  // 11. Generic Data API (depends on compiler, policyGate, auditLogger, lifecycleManager, classificationService, numberingEngine)
   const dataAPI = new GenericDataAPIService(
     config.db,
     compiler,
     policyGate,
     auditLogger,
-    lifecycleManager
+    lifecycleManager,
+    classificationService,
+    numberingEngine,
   );
 
   // 8. MetaStore (depends on registry, compiler, auditLogger)
@@ -166,6 +196,9 @@ export function createMetaServices(
     metaStore,
     lifecycleRouteCompiler,
     lifecycleManager,
+    classificationService,
+    numberingEngine,
+    approvalService,
     ddlGenerator,
     migrationRunner,
     publishService,

@@ -297,7 +297,7 @@ importers:
         specifier: ^13.0.0
         version: 13.0.0
       zod:
-        specifier: ^3.24.1
+        specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
       '@types/express':
@@ -353,7 +353,7 @@ importers:
   packages/contracts:
     dependencies:
       zod:
-        specifier: ^3.24.1
+        specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
       '@athyper/tsconfig':
@@ -372,7 +372,7 @@ importers:
   packages/dashboard:
     dependencies:
       zod:
-        specifier: ^3.23.0
+        specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
       '@athyper/tsconfig':

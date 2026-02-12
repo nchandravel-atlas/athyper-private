@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "kernel.config.schema.json",
   "title": "athyper Kernel Runtime Configuration",
-  "description": "Schema for kernel.config.*.parameter.json files. Mirrors the Zod RuntimeConfigSchema in framework/runtime/src/kernel/config.schema.ts",
+  "description": "Schema for kernel.config.*.parameter.json files. Mirrors the Zod RuntimeConfigSchema in framework/runtime/src/kernel/config.schema.ts. Fields marked LOCKED are stripped from file config at load time and must be set via environment variables.",
   "type": "object",
   "required": ["db", "redis", "s3", "iam"],
   "properties": {
@@ -63,22 +63,27 @@
     "db": {
       "type": "object",
       "required": ["url"],
+      "description": "Database config. LOCKED fields (url, adminUrl): stripped from file, set via DATABASE_URL / DATABASE_ADMIN_URL env vars.",
       "properties": {
+        "$comment": {
+          "type": "string",
+          "description": "Human-readable comment (ignored by loader)"
+        },
         "url": {
           "type": "string",
           "minLength": 1,
-          "description": "PostgreSQL connection URL via PgBouncer (port 6432)"
+          "description": "LOCKED — PostgreSQL connection URL via PgBouncer (port 6432). Set via DATABASE_URL env var."
         },
         "adminUrl": {
           "type": "string",
           "minLength": 1,
-          "description": "Direct PostgreSQL connection URL for admin/migrations (port 5432)"
+          "description": "LOCKED — Direct PostgreSQL connection URL for admin/migrations (port 5432). Set via DATABASE_ADMIN_URL env var."
         },
         "poolMax": {
           "type": "integer",
           "minimum": 1,
           "default": 10,
-          "description": "Maximum connection pool size"
+          "description": "Maximum connection pool size (NOT locked — read from file)"
         }
       },
       "additionalProperties": false
@@ -86,37 +91,42 @@
     "iam": {
       "type": "object",
       "required": ["realms"],
+      "description": "IAM config. LOCKED fields (strategy, defaultRealmKey, defaultTenantKey, defaultOrgKey): set via env vars. Realm definitions (realms map) are read from file.",
       "properties": {
+        "$comment": {
+          "type": "string",
+          "description": "Human-readable comment (ignored by loader)"
+        },
         "strategy": {
           "type": "string",
           "enum": ["single_realm", "multi_realm"],
           "default": "single_realm",
-          "description": "Realm routing strategy"
+          "description": "LOCKED — Realm routing strategy. Set via IAM_STRATEGY env var."
         },
         "defaultRealmKey": {
           "type": "string",
           "minLength": 1,
           "default": "main",
-          "description": "Default realm key (must exist in realms map)"
+          "description": "LOCKED — Default realm key (must exist in realms map). Set via IAM_DEFAULT_REALM env var."
         },
         "defaultTenantKey": {
           "type": ["string", "null"],
           "minLength": 1,
-          "description": "Default tenant key for jobs/scheduler bootstrap"
+          "description": "LOCKED — Default tenant key for jobs/scheduler bootstrap. Set via IAM_DEFAULT_TENANT env var."
         },
         "defaultOrgKey": {
           "type": ["string", "null"],
           "minLength": 1,
-          "description": "Default org key for jobs/scheduler bootstrap"
+          "description": "LOCKED — Default org key for jobs/scheduler bootstrap. Set via IAM_DEFAULT_ORG env var."
         },
         "requireTenantClaimsInProd": {
           "type": "boolean",
           "default": true,
-          "description": "Require tenant claims in JWT for production environments"
+          "description": "Require tenant claims in JWT for production environments (NOT locked — read from file)"
         },
         "realms": {
           "type": "object",
-          "description": "Map of realm keys to realm configurations",
+          "description": "Map of realm keys to realm configurations (NOT locked — read from file)",
           "additionalProperties": {
             "$ref": "#/definitions/RealmConfig"
           },
@@ -128,11 +138,16 @@
     "redis": {
       "type": "object",
       "required": ["url"],
+      "description": "Redis config. LOCKED field (url): stripped from file, set via REDIS_URL env var.",
       "properties": {
+        "$comment": {
+          "type": "string",
+          "description": "Human-readable comment (ignored by loader)"
+        },
         "url": {
           "type": "string",
           "minLength": 1,
-          "description": "Redis connection URL (e.g. redis://:password@host:6379/0)"
+          "description": "LOCKED — Redis connection URL (e.g. redis://:password@host:6379/0). Set via REDIS_URL env var."
         }
       },
       "additionalProperties": false
@@ -140,62 +155,72 @@
     "s3": {
       "type": "object",
       "required": ["endpoint", "accessKey", "secretKey"],
+      "description": "S3/MinIO config. ALL fields are LOCKED — stripped from file, set via S3_* or ATHYPER_SUPER__S3_* env vars.",
       "properties": {
+        "$comment": {
+          "type": "string",
+          "description": "Human-readable comment (ignored by loader)"
+        },
         "endpoint": {
           "type": "string",
           "minLength": 1,
-          "description": "S3/MinIO endpoint URL"
+          "description": "LOCKED — S3/MinIO endpoint URL. Set via S3_ENDPOINT env var."
         },
         "accessKey": {
           "type": "string",
           "minLength": 1,
-          "description": "S3 access key (also MinIO root user)"
+          "description": "LOCKED — S3 access key (also MinIO root user). Set via S3_ACCESS_KEY env var."
         },
         "secretKey": {
           "type": "string",
           "minLength": 1,
-          "description": "S3 secret key (also MinIO root password)"
+          "description": "LOCKED — S3 secret key (also MinIO root password). Set via S3_SECRET_KEY env var."
         },
         "region": {
           "type": "string",
           "minLength": 1,
           "default": "us-east-1",
-          "description": "S3 region"
+          "description": "LOCKED — S3 region. Set via S3_REGION env var."
         },
         "bucket": {
           "type": "string",
           "minLength": 1,
           "default": "athyper",
-          "description": "S3 bucket name"
+          "description": "LOCKED — S3 bucket name. Set via S3_BUCKET env var."
         },
         "useSSL": {
           "type": "boolean",
           "default": false,
-          "description": "Use SSL/TLS for S3 connections"
+          "description": "LOCKED — Use SSL/TLS for S3 connections. Set via S3_USE_SSL env var."
         }
       },
       "additionalProperties": false
     },
     "telemetry": {
       "type": "object",
+      "description": "Telemetry config. LOCKED fields (otlpEndpoint, enabled): set via env vars. serviceName and serviceVersion are read from file.",
       "properties": {
+        "$comment": {
+          "type": "string",
+          "description": "Human-readable comment (ignored by loader)"
+        },
         "otlpEndpoint": {
           "type": "string",
           "minLength": 1,
-          "description": "OpenTelemetry collector endpoint (e.g. http://logshipper:4318)"
+          "description": "LOCKED — OpenTelemetry collector endpoint. Set via OTLP_ENDPOINT env var."
         },
         "enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable telemetry export"
+          "description": "LOCKED — Enable telemetry export. Set via TELEMETRY_ENABLED env var."
         },
         "serviceName": {
           "type": "string",
-          "description": "Service name for telemetry spans"
+          "description": "Service name for telemetry spans (NOT locked — read from file)"
         },
         "serviceVersion": {
           "type": "string",
-          "description": "Service version for telemetry spans"
+          "description": "Service version for telemetry spans (NOT locked — read from file)"
         }
       },
       "additionalProperties": false

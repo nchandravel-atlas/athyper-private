@@ -6,6 +6,7 @@ Multi-tenant SaaS platform built with TypeScript, Node.js, PostgreSQL, Redis, an
 
 See [docs/](docs/README.md) for full documentation:
 
+- [Contributing Guide](CONTRIBUTING.md) -- new developer onboarding, conventions, architecture rules
 - [Getting Started](docs/deployment/QUICKSTART.md) -- install, infrastructure, first run
 - [Architecture](docs/architecture/README.md) -- system design, multi-tenancy, DDD, events
 - [Framework](docs/framework/CORE.md) -- core modules, runtime kernel, adapters

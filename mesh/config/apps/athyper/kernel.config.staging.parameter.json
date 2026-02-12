@@ -1,6 +1,6 @@
 {
   "$schema": "./kernel.config.schema.json",
-  "$comment": "Staging Environment - pre-production testing",
+  "$comment": "Staging Environment (Ubuntu) — pre-production testing. Infrastructure wiring (db, redis, s3, telemetry endpoints) is LOCKED from this file and must be set via SUPERSTAR env vars or staging .env.",
 
   "env": "staging",
   "mode": "api",
@@ -14,21 +14,24 @@
   "publicWebUrl": "https://neon-stg.athyper.com",
 
   "db": {
-    "url": "${DATABASE_URL}",
-    "adminUrl": "${DATABASE_ADMIN_URL}",
+    "$comment": "LOCKED — stripped at load time. Set DATABASE_URL / DATABASE_ADMIN_URL via staging .env or SUPERSTAR env vars.",
+    "url": "LOCKED_USE_ENV_VAR",
+    "adminUrl": "LOCKED_USE_ENV_VAR",
     "poolMax": 20
   },
 
   "redis": {
-    "url": "${REDIS_URL}"
+    "$comment": "LOCKED — stripped at load time. Set REDIS_URL via staging .env or SUPERSTAR env vars.",
+    "url": "LOCKED_USE_ENV_VAR"
   },
 
   "s3": {
-    "endpoint": "${S3_ENDPOINT}",
-    "accessKey": "${S3_ACCESS_KEY}",
-    "secretKey": "${S3_SECRET_KEY}",
-    "region": "${S3_REGION}",
-    "bucket": "${S3_BUCKET}",
+    "$comment": "LOCKED — stripped at load time. Set S3_* via staging .env or SUPERSTAR env vars.",
+    "endpoint": "LOCKED_USE_ENV_VAR",
+    "accessKey": "LOCKED_USE_ENV_VAR",
+    "secretKey": "LOCKED_USE_ENV_VAR",
+    "region": "us-east-1",
+    "bucket": "athyper-staging",
     "useSSL": true
   },
 
@@ -41,8 +44,8 @@
     "realms": {
       "athyper": {
         "iam": {
-          "issuerUrl": "${IAM_ISSUER_URL}",
-          "clientId": "${IAM_CLIENT_ID}",
+          "issuerUrl": "https://iam.mesh-stg.athyper.com/realms/athyper",
+          "clientId": "athyper-api",
           "clientSecretRef": "IAM_ATHYPER_CLIENT_SECRET"
         },
         "defaults": {
@@ -60,9 +63,10 @@
   },
 
   "telemetry": {
+    "$comment": "LOCKED — otlpEndpoint and enabled are stripped at load time. Set via staging .env or SUPERSTAR env vars.",
     "enabled": true,
-    "otlpEndpoint": "${OTLP_ENDPOINT}",
+    "otlpEndpoint": "LOCKED_USE_ENV_VAR",
     "serviceName": "athyper-runtime",
-    "serviceVersion": "${SERVICE_VERSION}"
+    "serviceVersion": "1.0.0"
   }
 }

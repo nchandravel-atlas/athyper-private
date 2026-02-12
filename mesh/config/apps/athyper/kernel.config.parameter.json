@@ -1,34 +1,37 @@
 {
   "$schema": "./kernel.config.schema.json",
-  "$comment": "Default/Base Environment - mirrors local development settings",
+  "$comment": "Base/Default template. Not used directly — each environment has its own file (local, staging, production). This serves as a reference showing all available fields.",
 
   "env": "local",
   "mode": "api",
   "serviceName": "athyper-runtime",
   "port": 3000,
 
-  "logLevel": "debug",
+  "logLevel": "info",
   "shutdownTimeoutMs": 15000,
 
   "publicBaseUrl": "https://api.athyper.local",
   "publicWebUrl": "https://neon.athyper.local",
 
   "db": {
-    "url": "postgresql://athyper_user:athyperadmin@mesh.dbpool.atlasdigitaltech.com:6432/athyper_dev1",
-    "adminUrl": "postgresql://athyper_user:athyperadmin@mesh.dbpool.atlasdigitaltech.com:5432/athyper_dev1",
-    "poolMax": 5
+    "$comment": "LOCKED — values here are ignored. Set DATABASE_URL and DATABASE_ADMIN_URL in .env instead.",
+    "url": "LOCKED_USE_ENV_VAR",
+    "adminUrl": "LOCKED_USE_ENV_VAR",
+    "poolMax": 10
   },
 
   "redis": {
-    "url": "redis://:athyperadmin@memorycache:6379/0"
+    "$comment": "LOCKED — value here is ignored. Set REDIS_URL in .env instead.",
+    "url": "LOCKED_USE_ENV_VAR"
   },
 
   "s3": {
-    "endpoint": "http://objectstorage:9000",
-    "accessKey": "athyperadmin",
-    "secretKey": "athyperadmin",
+    "$comment": "LOCKED — all s3 values here are ignored. Set S3_* env vars in .env instead.",
+    "endpoint": "LOCKED_USE_ENV_VAR",
+    "accessKey": "LOCKED_USE_ENV_VAR",
+    "secretKey": "LOCKED_USE_ENV_VAR",
     "region": "us-east-1",
-    "bucket": "athyper-local",
+    "bucket": "athyper",
     "useSSL": false
   },
 
@@ -69,8 +72,9 @@
   },
 
   "telemetry": {
+    "$comment": "LOCKED — otlpEndpoint and enabled are ignored from file. Set via env vars.",
     "enabled": true,
-    "otlpEndpoint": "http://logshipper:4318",
+    "otlpEndpoint": "LOCKED_USE_ENV_VAR",
     "serviceName": "athyper-runtime",
     "serviceVersion": "1.0.0"
   }

@@ -5,6 +5,19 @@ module.exports = {
     forbidden: [
         /**
          * ─────────────────────────────────────────────
+         * NO CIRCULAR DEPENDENCIES
+         * ─────────────────────────────────────────────
+         */
+        {
+            name: "no-circular",
+            severity: "error",
+            comment: "Circular dependencies lead to hard-to-debug issues and tight coupling",
+            from: {},
+            to: { circular: true }
+        },
+
+        /**
+         * ─────────────────────────────────────────────
          * CORE IS PURE (BUT MAY USE CONTRACTS)
          * ─────────────────────────────────────────────
          */
@@ -31,7 +44,14 @@ module.exports = {
         {
             name: "runtime-no-direct-infra",
             severity: "error",
-            from: { path: "^framework/runtime" },
+            comment: "Runtime orchestrates via adapters. Exceptions: kernel logger (pino) and CLI migrate (pg, ioredis).",
+            from: {
+                path: "^framework/runtime",
+                pathNot: [
+                    "^framework/runtime/src/kernel/logger\\.ts$",
+                    "^framework/runtime/src/cli/migrate\\.ts$"
+                ]
+            },
             to: {
                 path: "node_modules/(pg|ioredis|@aws-sdk|pino|redis|minio)"
             }
@@ -112,7 +132,7 @@ module.exports = {
 
     options: {
         doNotFollow: { path: "node_modules" },
-        exclude: { path: ["generated", "\\.prisma"] },
+        exclude: { path: ["generated", "\\.prisma", "/dist/"] },
         tsConfig: { fileName: "tsconfig.json" },
         enhancedResolveOptions: {
             exportsFields: ["exports"],

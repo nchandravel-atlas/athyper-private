@@ -10,6 +10,7 @@ Get the Athyper platform running locally in under 10 minutes.
   - [Step 1: Start MESH Infrastructure](#step-1-start-mesh-infrastructure)
   - [Step 2: Initialize Data](#step-2-initialize-data)
   - [Step 3: Start Kernel](#step-3-start-kernel)
+  - [Step 4: Start Neon Web App](#step-4-start-neon-web-app)
 - [Verifying Installation](#verifying-installation)
 - [Running Tests](#running-tests)
 - [Daily Development Workflow](#daily-development-workflow)
@@ -19,41 +20,53 @@ Get the Athyper platform running locally in under 10 minutes.
 
 ### Required Software
 
-- **Node.js** >= 20.11.0 < 21
-- **pnpm** 10.28.2 (exact version required)
-- **Docker** & **Docker Compose** (for local infrastructure)
-- **Git**
+| Tool | Version | Notes |
+| ------ | --------- | ------- |
+| **Node.js** | 20.20.0 (pinned in `.nvmrc`) | Engine constraint: `>=20.11.0 <21` |
+| **pnpm** | 10.28.2 (pinned in `package.json`) | Managed via corepack |
+| **Docker** & **Docker Compose** | Latest stable | For local MESH infrastructure |
+| **Git** | >= 2.30 | |
 
 ### System Requirements
 
-- **RAM**: 8GB minimum (16GB recommended)
+- **RAM**: 8GB minimum (16GB recommended — Docker services use ~4GB)
 - **Disk**: 10GB free space
 - **OS**: Windows, macOS, or Linux
 
-### Installation
+### Install Node.js
 
-**Node.js**:
 ```bash
 # Using nvm (recommended)
-nvm install 20.11.0
-nvm use 20.11.0
+nvm install    # Reads .nvmrc automatically → installs 20.20.0
+nvm use        # Activates the correct version
 
 # Verify
-node --version  # Should output v20.11.0
+node --version  # Should output v20.20.0
 ```
 
-**pnpm**:
-```bash
-# Install specific version
-npm install -g pnpm@10.28.2
+> **Tip**: If `nvm install` doesn't read `.nvmrc` automatically, run `nvm install 20.20.0` explicitly.
 
-# Verify
+### Install pnpm via Corepack
+
+The project uses the `packageManager` field in `package.json` to pin pnpm 10.28.2. Corepack (bundled with Node.js) handles this automatically:
+
+```bash
+# Enable corepack (one-time)
+corepack enable
+
+# Verify — pnpm is now available at the correct version
 pnpm --version  # Should output 10.28.2
 ```
 
-**Docker**:
-- Download from [docker.com](https://www.docker.com/products/docker-desktop)
-- Ensure Docker daemon is running
+> **Why corepack?** It reads `"packageManager": "pnpm@10.28.2"` from `package.json` and ensures every developer uses the exact same version. No manual `npm install -g pnpm` needed.
+
+### Install Docker
+
+- **Windows**: [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop) (requires WSL2)
+- **macOS**: [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop)
+- **Linux**: `sudo apt install docker.io docker-compose-plugin` (or equivalent)
+
+Ensure the Docker daemon is running before proceeding.
 
 ## Installation
 
@@ -77,7 +90,8 @@ pnpm install
 ```
 
 **Expected output**:
-```
+
+```text
 Lockfile is up to date, resolution step is skipped
 Packages: +XXX
 ++++++++++++++++++++++++++++++++++++++++++++++++
@@ -88,174 +102,74 @@ Progress: resolved XXX, reused XXX, downloaded 0, added XXX, done
 
 ```bash
 # Build all packages in dependency order
-pnpm turbo run build
+pnpm build
 
 # Or build specific packages
 pnpm --filter @athyper/core build
 pnpm --filter @athyper/runtime build
 ```
 
-**Expected output**:
-```
-• Packages in scope: 15
-• Running build in 15 packages
-• Remote caching enabled
+### 4. Configure Environment (Required)
 
-@athyper/core:build: cache hit, replaying logs [0.1s]
-@athyper/runtime:build: cache hit, replaying logs [0.2s]
-...
-
-Tasks:    15 successful, 15 total
-Cached:   15 cached, 15 total
-Time:     1.5s >>> FULL TURBO
-```
-
-### 4. Configure Environment
+> **This step is mandatory.** The runtime requires database, Redis, and S3 connection
+> details that can only be provided via environment variables (they are locked from
+> the JSON config file for security). Skipping this step causes a
+> `CONFIG_VALIDATION_ERROR` at startup.
 
 ```bash
 # Copy example environment file
-cp .env.example .env
+# Windows (PowerShell):
+Copy-Item .env.example .env
 
-# Edit with your settings (optional for local development)
-# The defaults work out of the box
+# macOS/Linux:
+cp .env.example .env
 ```
 
-**Minimal `.env` for local development**:
+Review the `.env` and ensure these values are set. The defaults in `.env.example` work with the local MESH stack on **both Windows and Linux/macOS** — no OS-specific edits needed:
+
 ```env
 ENVIRONMENT=local
 MODE=api
 PORT=3000
 LOG_LEVEL=debug
 
-# These will be set automatically by mesh:up
-DATABASE_URL=postgres://athyper:athyper@localhost:6432/athyper
-REDIS_URL=redis://localhost:6379
-
+# ── Kernel config file (IAM realms, feature flags, etc.) ──
 ATHYPER_KERNEL_CONFIG_PATH=mesh/config/apps/athyper/kernel.config.local.parameter.json
+
+# ── Database (PgBouncer exposed on localhost:6432 by MESH) ──
+DATABASE_URL=postgresql://athyper_user:athyperadmin@localhost:6432/athyper_dev1
+
+# ── Redis (exposed on localhost:6379 by MESH) ──
+REDIS_URL=redis://:athyperadmin@localhost:6379/0
+
+# ── S3 / MinIO (accessed via Traefik gateway) ──
+S3_ENDPOINT=https://objectstorage.mesh.athyper.local
+S3_ACCESS_KEY=athyperadmin
+S3_SECRET_KEY=athyperadmin
+S3_REGION=us-east-1
+S3_BUCKET=athyper-local
+S3_USE_SSL=true
+
+# ── IAM client secret (Keycloak) ──
+ATHYPER_SUPER__IAM_SECRET__IAM_ATHYPER_CLIENT_SECRET=athyperadmin
+
+# ── Local TLS (MESH uses self-signed certs) ──
+NODE_TLS_REJECT_UNAUTHORIZED=0
 ```
 
-## Starting the Platform
+> **Why env vars instead of the JSON config?** Infrastructure wiring (`db.url`,
+> `redis.url`, `s3.*`) is *locked* from JSON config files to prevent secrets from
+> being committed to version control. These values must come from environment
+> variables or SUPERSTAR (`ATHYPER_SUPER__*`) overrides.
+>
+> **Path note:** `ATHYPER_KERNEL_CONFIG_PATH` uses forward slashes, which work on
+> all operating systems. The path resolves relative to the repo root (`process.cwd()`).
 
-The platform uses a two-phase startup: **MESH** (infrastructure) first, then **Kernel** (application).
+### 5. Configure Hosts File
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                    STARTUP SEQUENCE                              │
-├─────────────────────────────────────────────────────────────────┤
-│  Phase 1: MESH Infrastructure                                    │
-│  ├── Gateway (Traefik)                                          │
-│  ├── IAM (Keycloak)                                             │
-│  ├── MemoryCache (Redis)                                        │
-│  ├── ObjectStorage (MinIO)                                      │
-│  └── Telemetry (Grafana, Loki, Tempo, Prometheus)              │
-│                           ↓                                      │
-│  Phase 2: Kernel (Application)                                   │
-│  └── Runtime API Server                                          │
-└─────────────────────────────────────────────────────────────────┘
-```
+Add these entries to your hosts file for local domain resolution:
 
-### Step 1: Start MESH Infrastructure
-
-Navigate to the mesh scripts directory and run the startup script:
-
-```bash
-cd mesh/scripts
-./up.sh
-```
-
-**First-time setup**: The script will prompt you to select an environment:
-
-```
-WARNING: .env not found: /path/to/mesh/env/.env
-
-Select env template [local | staging | production] (blank=local): local
-
-ENV_DIR       = /path/to/mesh/env
-ENV TEMPLATE  = local
-TEMPLATE_FILE = /path/to/mesh/env/local.env.example
-TARGET_ENV    = /path/to/mesh/env/.env
-
-Creating .env from template...
-✅ Created: /path/to/mesh/env/.env
-```
-
-The script automatically:
-1. Creates `.env` from the selected template
-2. Reads `ENVIRONMENT` variable to determine which override file to use
-3. Starts all Docker services with the correct configuration
-
-**Expected output**:
-
-```text
-==========================
-COMPOSE_DIR  = /path/to/mesh/compose
-ENV_FILE     = /path/to/mesh/env/.env
-ENVIRONMENT  = local
-RUN_PROFILE  = mesh
-OVERRIDE     = /path/to/mesh/compose/mesh.override.local.yml
-==========================
-
-✅ Mesh is UP (profile=mesh, env=local)
-```
-
-**Wait for services to be healthy** (30-60 seconds):
-```bash
-# Check status
-./logs.sh   # View service logs
-```
-
-### Step 2: Initialize Data
-
-Run the initialization script to set up database and IAM:
-
-```bash
-./init-data.sh
-```
-
-This runs:
-- Database migrations
-- IAM realm configuration
-- Initial seed data
-
-### Step 3: Start Kernel
-
-Open a **new terminal** and start the kernel:
-
-```bash
-# Return to repository root
-cd ../..
-
-# Development mode (with hot reload)
-pnpm runtime:start:dev
-
-# Or with file watching
-pnpm runtime:start:watch
-```
-
-**Expected output**:
-```json
-{"level":"info","msg":"runtime_starting","mode":"api","port":3000}
-{"level":"info","msg":"database_connected"}
-{"level":"info","msg":"redis_connected"}
-{"level":"info","msg":"http_server_listening","port":3000}
-```
-
-### Configure Hosts File
-
-Add these entries to your hosts file for local development:
-
-**Linux/macOS** (`/etc/hosts`):
-```bash
-sudo nano /etc/hosts
-```
-
-**Windows** (`C:\Windows\System32\drivers\etc\hosts`):
-
-```bash
-notepad C:\Windows\System32\drivers\etc\hosts
-```
-
-Add:
+**Windows** (`C:\Windows\System32\drivers\etc\hosts` — run Notepad as Administrator):
 
 ```text
 127.0.0.1 gateway.mesh.athyper.local
@@ -269,6 +183,133 @@ Add:
 127.0.0.1 neon.athyper.local
 127.0.0.1 api.athyper.local
 ```
+
+**Linux/macOS** (`/etc/hosts`):
+
+```bash
+sudo nano /etc/hosts
+# Add the same entries as above
+```
+
+## Starting the Platform
+
+The platform uses a two-phase startup: **MESH** (infrastructure) first, then **Application** (kernel + web).
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                    STARTUP SEQUENCE                              │
+├─────────────────────────────────────────────────────────────────┤
+│  Phase 1: MESH Infrastructure (Docker Compose)                  │
+│  ├── Database (PostgreSQL 16 + PgBouncer)                       │
+│  ├── MemoryCache (Redis 7)                                      │
+│  ├── IAM (Keycloak)                                             │
+│  ├── Gateway (Traefik)                                          │
+│  ├── ObjectStorage (MinIO)                                      │
+│  └── Telemetry (Grafana, Loki, Tempo, Prometheus)              │
+│                           ↓                                      │
+│  Phase 2: Application                                            │
+│  ├── Runtime Kernel (Express API on port 3000)                  │
+│  └── Neon Web App (Next.js on port 3001)                        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Step 1: Start MESH Infrastructure
+
+```bash
+# From repo root — use pnpm script
+pnpm mesh:up
+
+# Or use the shell script directly (macOS/Linux/WSL)
+cd mesh/scripts
+./up.sh
+```
+
+**First-time setup**: The script will prompt you to select an environment:
+
+```text
+WARNING: .env not found: /path/to/mesh/env/.env
+
+Select env template [local | staging | production] (blank=local): local
+
+ENV_DIR       = /path/to/mesh/env
+ENV TEMPLATE  = local
+TEMPLATE_FILE = /path/to/mesh/env/local.env.example
+TARGET_ENV    = /path/to/mesh/env/.env
+
+Creating .env from template...
+✅ Created: /path/to/mesh/env/.env
+```
+
+**Wait for services to be healthy** (30-60 seconds):
+
+```bash
+# Check status
+pnpm mesh:ps      # Show running containers
+pnpm mesh:logs    # Tail service logs
+```
+
+### Step 2: Initialize Data
+
+Run the initialization script to set up database and IAM (first time only):
+
+```bash
+cd mesh/scripts
+./init-data.sh
+```
+
+This runs:
+
+- Database migrations (creates tables)
+- IAM realm configuration (Keycloak setup)
+- Initial seed data
+
+### Step 3: Start Kernel
+
+> **Prerequisites:** MESH must be running (Step 1), data initialized (Step 2), and
+> `.env` configured (Installation Step 4). If you skip the `.env` setup, the kernel
+> will fail with `CONFIG_VALIDATION_ERROR` for missing `db.url`, `redis.url`, and
+> `s3.*` values.
+
+Open a **new terminal** and start the runtime kernel:
+
+```bash
+# Development mode (with hot reload)
+pnpm runtime:start:dev
+
+# Or with file watching (auto-restart on changes)
+pnpm runtime:start:watch
+```
+
+**Expected output**:
+
+```json
+{"level":"info","msg":"runtime_starting","mode":"api","port":3000}
+{"level":"info","msg":"database_connected"}
+{"level":"info","msg":"redis_connected"}
+{"level":"info","msg":"http_server_listening","port":3000}
+```
+
+### Step 4: Start Neon Web App
+
+Open a **third terminal** and start the Next.js frontend:
+
+```bash
+# Start the Neon web app (port 3001)
+pnpm --filter @neon/web dev
+```
+
+**Expected output**:
+
+```text
+▲ Next.js 16.x.x
+- Local:    http://localhost:3001
+- Network:  http://xxx.xxx.xxx.xxx:3001
+
+✓ Starting...
+✓ Ready in Xs
+```
+
+Access the web app at: `http://neon.athyper.local` (via Traefik gateway) or `http://localhost:3001` (direct).
 
 ## Verifying Installation
 
@@ -302,42 +343,27 @@ curl http://localhost:3000/readyz
 ```bash
 # Check Prometheus metrics
 curl http://localhost:3000/metrics
-
-# Expected: Prometheus text format
-# http_requests_total{method="GET",path="/health",status="200"} 1
-# ...
 ```
 
 ### 4. Access Web Interfaces
 
-**Keycloak** (IAM):
-
-- URL: <http://iam.mesh.athyper.local>
-- Admin: `admin` / `admin`
-
-**MinIO** (Object Storage):
-
-- Console: <http://objectstorage.console.mesh.athyper.local>
-- Admin: `admin` / `password`
-
-**Grafana** (Observability):
-
-- URL: <http://telemetry.mesh.athyper.local>
-- Admin: `admin` / `admin`
+| Service | URL | Credentials |
+| --------- | ------- | --------------- |
+| **Neon Web App** | `http://neon.athyper.local` or `http://localhost:3001` | — |
+| **Keycloak** (IAM) | `http://iam.mesh.athyper.local` | admin / admin |
+| **MinIO** (Storage) | `http://objectstorage.console.mesh.athyper.local` | admin / password |
+| **Grafana** (Observability) | `http://telemetry.mesh.athyper.local` | admin / admin |
 
 ## Running Tests
 
 ### All Tests
 
 ```bash
-# Run all tests
+# Run all tests via Turbo
 pnpm test
 
-# With coverage
-pnpm test:coverage
-
-# With UI
-pnpm test:ui
+# Run all with continuation on failure
+pnpm test:all
 ```
 
 ### Specific Package Tests
@@ -360,53 +386,64 @@ pnpm --filter @athyper/adapter-db test
 pnpm --filter @athyper/core test -- --watch
 ```
 
-**Expected output**:
+### Full Quality Check
 
-```text
-✓ framework/core/src/resilience/retry.test.ts (14)
-✓ framework/core/src/resilience/circuit-breaker.test.ts (12)
-✓ framework/core/src/observability/health.test.ts (13)
-✓ framework/core/src/security/rate-limiter.test.ts (20)
-✓ framework/core/src/security/validator.test.ts (32)
-✓ framework/core/src/security/sanitizer.test.ts (67)
+```bash
+# Lint + typecheck + test + dependency boundary validation
+pnpm check
 
-Test Files  6 passed (6)
-     Tests  158 passed (158)
-  Start at  10:30:00
-  Duration  2.5s (transform 150ms, setup 0ms, collect 800ms, tests 1.2s, environment 0ms, prepare 300ms)
+# CI-mode (also checks formatting)
+pnpm check:ci
 ```
 
 ## Daily Development Workflow
 
-Once initial setup is complete, use this workflow for daily development:
+Once initial setup is complete, this is the typical daily workflow:
 
 ```bash
 # ═══════════════════════════════════════════════════════════
 # Terminal 1: Start/verify MESH infrastructure
 # ═══════════════════════════════════════════════════════════
-cd mesh/scripts
-./up.sh                    # Starts if not running, no-op if already up
+pnpm mesh:up                   # Starts if not running, no-op if already up
 
 # ═══════════════════════════════════════════════════════════
-# Terminal 2: Start kernel with hot-reload
+# Terminal 2: Start runtime kernel with hot-reload
 # ═══════════════════════════════════════════════════════════
-pnpm runtime:start:watch   # Auto-restarts on file changes
+pnpm runtime:start:watch       # Auto-restarts on file changes
 
 # ═══════════════════════════════════════════════════════════
-# When done: Shutdown
+# Terminal 3: Start Neon web app
+# ═══════════════════════════════════════════════════════════
+pnpm --filter @neon/web dev    # Next.js dev server on port 3001
+
+# ═══════════════════════════════════════════════════════════
+# Terminal 4 (optional): Run dev across all packages
+# ═══════════════════════════════════════════════════════════
+pnpm dev                       # Turbo runs all dev scripts in parallel
+
+# ═══════════════════════════════════════════════════════════
+# When done
 # ═══════════════════════════════════════════════════════════
 # Stop kernel: Ctrl+C in Terminal 2
-
-# Stop MESH infrastructure (optional - can leave running)
-cd mesh/scripts
-./down.sh
+# Stop web app: Ctrl+C in Terminal 3
+# Stop MESH (optional — can leave running):
+pnpm mesh:down
 ```
 
 ### Available MESH Scripts
 
 | Script | Description |
 | ------ | ----------- |
-| `./up.sh` | Start all MESH services |
+| `pnpm mesh:up` | Start all MESH services |
+| `pnpm mesh:down` | Stop all MESH services |
+| `pnpm mesh:logs` | Tail MESH service logs |
+| `pnpm mesh:ps` | Show running MESH containers |
+
+For advanced MESH control (shell scripts in `mesh/scripts/`):
+
+| Script | Description |
+| ------ | ----------- |
+| `./up.sh` | Start with default profile (mesh) |
 | `./up.sh mesh` | Start only core mesh profile |
 | `./up.sh telemetry` | Start only telemetry profile |
 | `./up.sh all` | Start all profiles |
@@ -414,109 +451,67 @@ cd mesh/scripts
 | `./logs.sh` | View service logs |
 | `./init-data.sh` | Initialize database and IAM |
 
-### Available Kernel Scripts
-
-| Script | Description |
-| ------ | ----------- |
-| `pnpm runtime:start` | Start kernel (production build) |
-| `pnpm runtime:start:dev` | Start kernel (development mode) |
-| `pnpm runtime:start:watch` | Start kernel with file watching |
-
 ## Next Steps
 
-### 1. Explore the API
+After getting the platform running:
 
-**Create a Test Request**:
-```bash
-# Example: List users (requires auth token)
-curl -H "Authorization: Bearer <token>" \
-  http://localhost:3000/api/users
-
-# Example: Create user
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
-  -d '{"email":"test@example.com","name":"Test User"}' \
-  http://localhost:3000/api/users
-```
-
-### 2. View Logs
-
-```bash
-# View mesh service logs
-cd mesh/scripts
-./logs.sh
-
-# View specific service logs
-./logs.sh iam
-./logs.sh gateway
-
-# View runtime logs (if running in background)
-tail -f runtime.log
-```
-
-### 3. Stop Services
-
-```bash
-# Stop runtime (Ctrl+C if running in foreground)
-
-# Stop mesh services
-cd mesh/scripts
-./down.sh
-```
-
-### 4. Read Documentation
-
-- [System Architecture](../architecture/OVERVIEW.md)
-- [Multi-Tenancy](../architecture/MULTI_TENANCY.md)
-- [Core Framework](../framework/CORE.md)
-- [Configuration](./CONFIGURATION.md)
-
-### 5. Development Workflow
-
-```bash
-# 1. Make code changes
-# 2. Run tests
-pnpm test
-
-# 3. Type check
-pnpm turbo run typecheck
-
-# 4. Lint
-pnpm turbo run lint
-
-# 5. Build
-pnpm turbo run build
-
-# 6. Test locally
-pnpm dev
-```
+1. **Read the architecture docs** — [System Architecture](../architecture/OVERVIEW.md), [Multi-Tenancy](../architecture/MULTI_TENANCY.md)
+2. **Understand the codebase** — [Contributing Guide](../../CONTRIBUTING.md) covers conventions, boundaries, and workflow
+3. **Explore the API** — Health check at `http://localhost:3000/health`, Prisma Studio via `pnpm db:studio`
+4. **Run the quality checks** — `pnpm check` runs lint + typecheck + test + depcheck
+5. **Check dependency boundaries** — `pnpm depcheck` validates architecture rules
 
 ## Troubleshooting
 
+### CONFIG_VALIDATION_ERROR at Startup
+
+If the kernel exits immediately with an error like:
+
+```text
+KernelConfigError: Invalid runtime config:
+db.url: Required
+redis.url: Required
+s3.endpoint: Required
+s3.accessKey: Required
+s3.secretKey: Required
+```
+
+This means the `.env` file at the repo root is missing or incomplete. Fix:
+
+1. Ensure `.env` exists: `cp .env.example .env`
+2. Verify it contains `DATABASE_URL`, `REDIS_URL`, and all `S3_*` variables (see [Installation Step 4](#4-configure-environment-required))
+3. Ensure MESH is running: `pnpm mesh:ps` — the database and Redis must be up before the kernel can connect
+
+> **Note:** These values cannot come from the JSON config file — `db.url`, `redis.url`,
+> and `s3.*` are locked from file sources and must be set via environment variables.
+
 ### Port Conflicts
 
-If ports are already in use:
-
 ```bash
-# Check what's using the port
-lsof -i :3000  # macOS/Linux
-netstat -ano | findstr :3000  # Windows
+# Check what's using a port
+# Windows
+netstat -ano | findstr :3000
+netstat -ano | findstr :3001
 
-# Stop conflicting service or change port
-PORT=3001 pnpm dev
+# macOS/Linux
+lsof -i :3000
+lsof -i :3001
+
+# Change port if needed
+PORT=3002 pnpm runtime:start:dev
 ```
 
 ### Docker Issues
 
 ```bash
-# Restart Docker daemon
-# macOS: Docker Desktop > Restart
-# Linux: sudo systemctl restart docker
+# Check Docker is running
+docker version
 
-# Clean up containers
-docker compose -f mesh/compose/docker-compose.yml down -v
+# Restart from scratch
+pnpm mesh:down
+docker volume prune -f
 pnpm mesh:up
+cd mesh/scripts && ./init-data.sh
 ```
 
 ### Database Connection Failed
@@ -526,12 +521,12 @@ pnpm mesh:up
 docker ps | grep pgbouncer
 
 # Check connection
-psql postgres://athyper:athyper@localhost:6432/athyper -c "SELECT 1"
+psql postgres://athyperadmin:athyperadmin@localhost:6432/athyper_dev1 -c "SELECT 1"
 
 # Reset database
 pnpm mesh:down
 pnpm mesh:up
-pnpm db:migrate
+cd mesh/scripts && ./init-data.sh
 ```
 
 ### Redis Connection Failed
@@ -548,13 +543,11 @@ redis-cli -h localhost -p 6379 ping
 ### Build Errors
 
 ```bash
-# Clear Turbo cache
-pnpm turbo run build --force
+# Clear Turbo cache and rebuild
+pnpm build --force
 
-# Clear node_modules and reinstall
-rm -rf node_modules
-pnpm install
-pnpm turbo run build
+# Nuclear option: clear everything and start fresh
+pnpm clean:reset
 ```
 
 ### Tests Failing
@@ -563,15 +556,35 @@ pnpm turbo run build
 # Run tests with verbose output
 pnpm test -- --reporter=verbose
 
-# Run specific test file
-pnpm test framework/core/src/security/validator.test.ts
+# Run a specific test file
+pnpm --filter @athyper/core test -- src/security/validator.test.ts
+```
+
+### Windows-Specific Issues
+
+**Shell scripts**: MESH scripts (`up.sh`, `down.sh`, etc.) require a bash-compatible shell. Options:
+
+- **WSL2** (recommended): Run from a WSL terminal
+- **Git Bash**: Included with Git for Windows
+- **Use pnpm scripts instead**: `pnpm mesh:up`, `pnpm mesh:down`, `pnpm mesh:logs`
+
+**Line endings**: Ensure Git is configured for the project:
+
+```bash
+git config core.autocrlf input
+```
+
+**Long paths**: Enable long path support if you encounter path length errors:
+
+```bash
+git config core.longpaths true
 ```
 
 ## Getting Help
 
 - **Documentation**: [docs/](../README.md)
+- **Contributing**: [CONTRIBUTING.md](../../CONTRIBUTING.md)
 - **Architecture**: [docs/architecture/](../architecture/README.md)
-- **GitHub Issues**: [GitHub Issues](https://github.com/your-org/athyper/issues)
 
 ---
 

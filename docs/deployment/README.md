@@ -11,8 +11,8 @@ Environment setup, configuration, and deployment for the Athyper platform.
 
 ## Prerequisites
 
-- **Node.js** >= 20.11.0
-- **pnpm** 10.28.2
+- **Node.js** 20.20.0 (pinned in `.nvmrc`, engine: `>=20.11.0 <21`)
+- **pnpm** 10.28.2 (pinned in `package.json`, use `corepack enable`)
 - **Docker** + **Docker Compose**
 
 ## Two-Phase Startup

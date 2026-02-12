@@ -2,6 +2,13 @@
 
 Central index for all platform documentation.
 
+## Getting Started
+
+| Document | Description |
+| ---------- | ------------- |
+| [Contributing Guide](../CONTRIBUTING.md) | New developer onboarding — setup, conventions, architecture rules, workflow |
+| [Quick Start](./deployment/QUICKSTART.md) | Get running locally in under 10 minutes |
+
 ## Documentation Map
 
 ### Technical Reference

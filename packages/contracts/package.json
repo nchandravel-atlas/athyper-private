@@ -27,7 +27,7 @@
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
-    "zod": "^3.24.1"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@athyper/tsconfig": "workspace:*",

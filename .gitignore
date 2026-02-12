@@ -36,14 +36,7 @@ pids/
 **/build/
 **/out/
 **/.next/
-**/.nuxt/
-**/.svelte-kit/
-**/.vuepress/dist/
-**/.docusaurus/
 **/storybook-static/
-
-# Next.js cache should NOT be tracked
-**/.next/cache/
 
 # =========================
 # Turbo
@@ -54,9 +47,6 @@ pids/
 # Dependency directories
 # =========================
 **/node_modules/
-jspm_packages/
-bower_components/
-web_modules/
 
 # pnpm store (sometimes appears in CI/WSL)
 .pnpm-store/
@@ -71,8 +61,6 @@ web_modules/
 **/.cache/
 **/.parcel-cache/
 **/.vite/
-**/.fusebox/
-**/.grunt/
 
 # Next.js
 .next-env.d.ts
@@ -90,30 +78,12 @@ web_modules/
 !.env.example
 
 # =========================
-# Serverless / Emulators
-# =========================
-.serverless/
-.dynamodb/
-.firebase/
-
-# =========================
 # Vite / VitePress
 # =========================
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 **/.vitepress/dist/
 **/.vitepress/cache/
-
-# =========================
-# Yarn v3 / PnP
-# =========================
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
 
 # =========================
 # OS / Editor
@@ -166,10 +136,7 @@ tools/SAMPLE TEMPLATES
 # =========================
 # Misc
 # =========================
-.lock-wscript
-.tern-port
-lib-cov/
-
+nul
 
 # Generated (output dirs only — do NOT ignore source packages)
 **/generated/

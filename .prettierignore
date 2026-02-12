@@ -3,18 +3,16 @@ node_modules
 .pnpm-store
 
 # Turbo
-.turbo
 **/.turbo
 
 # Builds
-dist
-build
-out
-coverage
+**/dist/**
+**/build/**
+**/out/**
+**/coverage/**
 
 # Next.js
 .next
-.next-cache
 
 # Docker / Mesh
 mesh/data
@@ -31,6 +29,7 @@ mesh/tmp
 # Prisma
 **/prisma/migrations
 **/prisma/generated
+**/.prisma/**
 
 # IDE
 .vscode
@@ -43,7 +42,8 @@ Thumbs.db
 # Git
 .git
 
-**/dist/**
-**/build/**
-**/out/**
+# Lock files
+pnpm-lock.yaml
+
+# TypeScript build info
 **/*.tsbuildinfo

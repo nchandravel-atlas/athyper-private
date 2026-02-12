@@ -93,7 +93,7 @@ export function createMfaMiddleware(
     skipPaths = [],
     skipMethods = ["OPTIONS"],
     allowTrustedDevices = true,
-    _gracePeriodDays = 7,
+    gracePeriodDays: _gracePeriodDays = 7,
     onMfaRequired,
     onMfaNotVerified,
   } = options;

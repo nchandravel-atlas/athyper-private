@@ -61,14 +61,14 @@ export type approval_definition = {
 export type approval_instance = {
     id: Generated<string>;
     tenant_id: string;
-    approval_definition_id: string;
-    entity_type: string;
+    approval_definition_id: Generated<string>;
+    entity_type: Generated<string>;
     entity_id: string;
     entity_version_id: string | null;
     entity_snapshot: unknown | null;
     status: Generated<string>;
     decision: string | null;
-    requested_by: string;
+    requested_by: Generated<string>;
     requested_at: Generated<Timestamp>;
     decided_by: string | null;
     decided_at: Timestamp | null;
@@ -93,8 +93,8 @@ export type approval_task = {
     id: Generated<string>;
     tenant_id: string;
     approval_instance_id: string;
-    approver_id: string;
-    order_index: number;
+    approver_id: Generated<string>;
+    order_index: Generated<number>;
     status: Generated<string>;
     assigned_at: Generated<Timestamp>;
     started_at: Timestamp | null;
@@ -103,7 +103,7 @@ export type approval_task = {
     reason: string | null;
     metadata: unknown | null;
     created_at: Generated<Timestamp>;
-    created_by: string;
+    created_by: Generated<string>;
     updated_at: Timestamp | null;
     updated_by: string | null;
 };
@@ -496,14 +496,21 @@ export type GroupMember = {
     tenant_id: string;
     group_id: string;
     principal_id: string;
+    valid_from: Timestamp | null;
+    valid_until: Timestamp | null;
     joined_at: Generated<Timestamp>;
+    created_by: string;
 };
 export type IdpIdentity = {
     id: Generated<string>;
     tenant_id: string;
     principal_id: string;
-    idp_name: string;
-    idp_subject: string;
+    realm: string;
+    provider: string;
+    subject: string;
+    username: string | null;
+    idp_name: Generated<string>;
+    idp_subject: Generated<string>;
     access_token: string | null;
     access_token_expires_at: Timestamp | null;
     refresh_token: string | null;
@@ -965,7 +972,8 @@ export type Principal = {
     tenant_id: string;
     realm_key: Generated<string>;
     principal_type: string;
-    principal_code: string;
+    principal_code: Generated<string>;
+    status: Generated<string>;
     display_name: string | null;
     email: string | null;
     phone: string | null;
@@ -1063,7 +1071,9 @@ export type PrincipalProfile = {
     first_name: string | null;
     last_name: string | null;
     locale: string | null;
+    language: string | null;
     timezone: string | null;
+    avatar_url: string | null;
     keycloak_id: string | null;
     keycloak_created_at_millis: string | null;
     keycloak_federation_link: string | null;
@@ -1106,6 +1116,8 @@ export type Role = {
     tenant_id: string;
     code: string;
     name: string;
+    scope_mode: string;
+    is_active: Generated<boolean>;
     description: string | null;
     category: string | null;
     metadata: unknown | null;
@@ -1254,6 +1266,7 @@ export type TenantProfile = {
     locale: string | null;
     timezone: string | null;
     fiscal_year_start_month: number | null;
+    security_defaults: unknown | null;
     metadata: unknown | null;
     created_at: Generated<Timestamp>;
     created_by: string;
@@ -1489,6 +1502,138 @@ export type whatsapp_consent = {
     created_at: Generated<Timestamp>;
     updated_at: Timestamp | null;
 };
+// ─── Identity-Access Tables ─────────────────────────────────────────────────
+export type core_group = {
+    id: Generated<string>;
+    tenant_id: string;
+    code: string;
+    name: string;
+    source_type: string;
+    source_ref: string | null;
+    is_active: Generated<boolean>;
+    created_at: Generated<Timestamp>;
+    created_by: string;
+    updated_at: Timestamp | null;
+    updated_by: string | null;
+};
+export type role_binding = {
+    id: Generated<string>;
+    tenant_id: string;
+    role_id: string;
+    principal_id: string | null;
+    group_id: string | null;
+    scope_kind: Generated<string>;
+    scope_key: string | null;
+    priority: Generated<number>;
+    valid_from: Timestamp | null;
+    valid_until: Timestamp | null;
+    created_at: Generated<Timestamp>;
+    created_by: string;
+};
+export type entitlement_snapshot = {
+    id: Generated<string>;
+    tenant_id: string;
+    principal_id: string;
+    snapshot: unknown;
+    expires_at: Timestamp;
+    created_at: Generated<Timestamp>;
+};
+export type ou_node = {
+    id: Generated<string>;
+    tenant_id: string;
+    parent_id: string | null;
+    code: string;
+    name: string;
+    path: string;
+    depth: number;
+    is_active: Generated<boolean>;
+    created_at: Generated<Timestamp>;
+    created_by: string;
+    updated_at: Timestamp | null;
+    updated_by: string | null;
+};
+export type principal_attribute = {
+    id: Generated<string>;
+    tenant_id: string;
+    principal_id: string;
+    attr_key: string;
+    attr_value: string;
+    valid_from: Timestamp | null;
+    valid_until: Timestamp | null;
+    created_at: Generated<Timestamp>;
+    created_by: string;
+};
+// ─── META Engine Tables ─────────────────────────────────────────────────────
+export type meta_audit = {
+    id: Generated<string>;
+    event_id: string;
+    event_type: string;
+    timestamp: Generated<Timestamp>;
+    user_id: string | null;
+    tenant_id: string;
+    realm_id: string | null;
+    action: string;
+    resource: string;
+    details: unknown | null;
+    result: string;
+    error_message: string | null;
+    created_at: Generated<Timestamp>;
+};
+export type meta_entities = {
+    id: Generated<string>;
+    name: string;
+    description: string | null;
+    active_version: string | null;
+    created_at: Generated<Timestamp>;
+    created_by: string;
+    updated_at: Timestamp | null;
+    updated_by: string | null;
+};
+export type meta_versions = {
+    id: Generated<string>;
+    entity_id: Generated<string>;
+    entity_name: string;
+    version: string;
+    version_no: Generated<number>;
+    schema: unknown;
+    status: Generated<string>;
+    is_active: Generated<boolean>;
+    label: string | null;
+    created_at: Generated<Timestamp>;
+    created_by: string;
+    published_at: Timestamp | null;
+    published_by: string | null;
+};
+export type numbering_sequence = {
+    id: Generated<string>;
+    tenant_id: string;
+    entity_name: string;
+    prefix: string | null;
+    suffix: string | null;
+    current_value: Generated<number>;
+    pad_length: Generated<number>;
+    step: Generated<number>;
+    created_at: Generated<Timestamp>;
+    created_by: string;
+    updated_at: Timestamp | null;
+};
+export type meta_operation = {
+    id: Generated<string>;
+    namespace: string;
+    code: string;
+    name: string;
+    description: string | null;
+    category: string | null;
+    entity_scope: string | null;
+    sort_order: Generated<number>;
+    source_type: Generated<string>;
+    requires_record: Generated<boolean>;
+    is_active: Generated<boolean>;
+    created_at: Generated<Timestamp>;
+    created_by: string;
+    updated_at: Timestamp | null;
+    updated_by: string | null;
+};
 export type DB = {
     "core.address": address;
     "core.address_link": address_link;
@@ -1506,6 +1651,7 @@ export type DB = {
     "core.entity_tag": entity_tag;
     "core.feature_flag": feature_flag;
     "core.field_access_log": field_access_log;
+    "core.group": core_group;
     "core.group_member": GroupMember;
     "core.idp_identity": IdpIdentity;
     "core.job": job;
@@ -1531,6 +1677,10 @@ export type DB = {
     "core.principal_role": principal_role;
     "core.principal_workspace_access": principal_workspace_access;
     "core.role": Role;
+    "core.role_binding": role_binding;
+    "core.entitlement_snapshot": entitlement_snapshot;
+    "core.ou_node": ou_node;
+    "core.principal_attribute": principal_attribute;
     "core.security_event": security_event;
     "core.sms_otp_instance": sms_otp_instance;
     "core.system_config": system_config;
@@ -1572,6 +1722,11 @@ export type DB = {
     "meta.permission_policy_version": PermissionPolicyVersion;
     "meta.permission_rule": PermissionRule;
     "meta.permission_rule_operation": PermissionRuleOperation;
+    "meta.meta_audit": meta_audit;
+    "meta.meta_entities": meta_entities;
+    "meta.meta_versions": meta_versions;
+    "meta.numbering_sequence": numbering_sequence;
+    "meta.operation": meta_operation;
     "meta.relation": relation;
     "ref.commodity_code": commodity_code;
     "ref.commodity_domain": commodity_domain;

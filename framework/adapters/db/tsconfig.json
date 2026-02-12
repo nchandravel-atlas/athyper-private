@@ -11,8 +11,6 @@
     "types": [
       "node"
     ],
-    "incremental": false,
-    "composite": false
   },
   "include": [
     "src/**/*.ts",

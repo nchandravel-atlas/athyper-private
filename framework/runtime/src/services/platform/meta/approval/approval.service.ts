@@ -16,6 +16,7 @@ import { sql } from "kysely";
 import type {
   ApprovalService,
   ApprovalInstance,
+  ApprovalInstanceStatus,
   ApprovalStage,
   ApprovalTask,
   ApprovalAssignmentSnapshot,
@@ -404,16 +405,20 @@ export class ApprovalServiceImpl implements ApprovalService {
       .execute();
 
     const hasMore = rows.length > limit;
-    const items = rows
+    const data = rows
       .slice(0, limit)
       .map((r) => mapTaskFromDb(r as unknown as Record<string, unknown>));
 
     return {
-      items,
-      total: -1, // not computing total for performance
-      hasMore,
-      limit,
-      offset,
+      data,
+      meta: {
+        page: Math.floor(offset / limit) + 1,
+        pageSize: limit,
+        total: -1,
+        totalPages: -1,
+        hasNext: hasMore,
+        hasPrev: offset > 0,
+      },
     };
   }
 
@@ -486,7 +491,7 @@ export class ApprovalServiceImpl implements ApprovalService {
       );
 
       let stageStatus: string | undefined;
-      let instanceStatus: string | undefined;
+      let instanceStatus: ApprovalInstanceStatus | undefined;
       let transitionTriggered = false;
 
       if (stageComplete) {
@@ -680,11 +685,21 @@ export class ApprovalServiceImpl implements ApprovalService {
       .execute();
 
     const hasMore = rows.length > limit;
-    const items = rows
+    const data = rows
       .slice(0, limit)
       .map((r) => mapEventFromDb(r as unknown as Record<string, unknown>));
 
-    return { items, total: -1, hasMore, limit, offset };
+    return {
+      data,
+      meta: {
+        page: Math.floor(offset / limit) + 1,
+        pageSize: limit,
+        total: -1,
+        totalPages: -1,
+        hasNext: hasMore,
+        hasPrev: offset > 0,
+      },
+    };
   }
 
   async getEscalations(
@@ -704,11 +719,21 @@ export class ApprovalServiceImpl implements ApprovalService {
       .execute();
 
     const hasMore = rows.length > limit;
-    const items = rows
+    const data = rows
       .slice(0, limit)
       .map((r) => mapEscalationFromDb(r as unknown as Record<string, unknown>));
 
-    return { items, total: -1, hasMore, limit, offset };
+    return {
+      data,
+      meta: {
+        page: Math.floor(offset / limit) + 1,
+        pageSize: limit,
+        total: -1,
+        totalPages: -1,
+        hasNext: hasMore,
+        hasPrev: offset > 0,
+      },
+    };
   }
 
   async healthCheck(): Promise<HealthCheckResult> {

@@ -576,6 +576,12 @@ export type ListOptions = {
 
   /** Include soft-deleted records */
   includeDeleted?: boolean;
+
+  /** Limit (cursor-based pagination) */
+  limit?: number;
+
+  /** Offset (cursor-based pagination) */
+  offset?: number;
 };
 
 /**
@@ -708,8 +714,14 @@ export type HealthCheckResult = {
   /** Whether service is healthy */
   healthy: boolean;
 
+  /** Service name */
+  name?: string;
+
   /** Status message */
   message?: string;
+
+  /** Error message */
+  error?: string;
 
   /** Additional details */
   details?: Record<string, unknown>;

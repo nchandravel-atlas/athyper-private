@@ -17,8 +17,9 @@
     "declarationMap": true,
     "sourceMap": true,
 
-    "composite": true,
+    "composite": false,
     "incremental": true,
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
 
     "noEmitOnError": true,
     "types": ["node"]

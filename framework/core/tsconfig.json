@@ -11,8 +11,6 @@
     "types": [
       "node"
     ],
-    "incremental": false,
-    "composite": false,
     "module": "ESNext",
     "moduleResolution": "Bundler"
   },

@@ -11,8 +11,6 @@
         ],
         "jsx": "react-jsx",
         "verbatimModuleSyntax": true,
-        "composite": false,
-        "incremental": false
     },
     "include": [
         "src"

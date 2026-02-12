@@ -70,7 +70,6 @@
     },
 
     "lint": {
-      "dependsOn": ["^lint"],
       "inputs": [
         "$TURBO_DEFAULT$",
 

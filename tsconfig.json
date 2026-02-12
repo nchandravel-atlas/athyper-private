@@ -33,6 +33,12 @@
             "path": "packages/auth"
         },
         {
+            "path": "packages/dashboard"
+        },
+        {
+            "path": "packages/i18n"
+        },
+        {
             "path": "packages/theme"
         },
         {

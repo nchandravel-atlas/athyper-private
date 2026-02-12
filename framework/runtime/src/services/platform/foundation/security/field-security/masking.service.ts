@@ -6,7 +6,7 @@
 
 import { createHash } from "crypto";
 
-import type { MaskStrategy, MaskConfig } from "./types.js";
+import type { MaskConfig, MaskStrategy } from "./types.js";
 
 // ============================================================================
 // Constants

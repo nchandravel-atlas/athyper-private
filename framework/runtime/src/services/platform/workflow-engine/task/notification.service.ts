@@ -10,17 +10,17 @@
 
 import type {
   ApprovalTask,
+  INotificationSender,
+  INotificationService,
   NotificationChannel,
-  NotificationType,
+  NotificationPreferences,
   NotificationRecord,
   NotificationRecipient,
-  NotificationPreferences,
   NotificationTemplate,
-  INotificationService,
-  INotificationSender,
+  NotificationType,
 } from "./types.js";
 import type { ApprovalInstance } from "../instance/types.js";
-import type { JobQueue, JobData } from "@athyper/core";
+import type { JobData, JobQueue } from "@athyper/core";
 import type { Logger } from "../../../../kernel/logger.js";
 
 /**

@@ -7,32 +7,32 @@
  */
 
 import type {
-  IApprovalInstanceService,
-  IApprovalInstanceRepository,
-  IEntityStateHandler,
+  ApprovalActionRecord,
   ApprovalInstance,
+  ApprovalInstanceQueryOptions,
   ApprovalInstanceStatus,
   ApprovalStepInstance,
-  StepInstanceStatus,
   AssignedApprover,
-  ApprovalActionRecord,
-  EntityLock,
-  EntityApprovalState,
   CreateApprovalInstanceInput,
   CreateApprovalInstanceResult,
-  ApprovalInstanceQueryOptions,
+  EntityApprovalState,
+  EntityLock,
+  IApprovalInstanceRepository,
+  IApprovalInstanceService,
+  IEntityStateHandler,
+  StepInstanceStatus,
 } from "./types.js";
 import type {
-  IApprovalWorkflowService,
-  ApprovalWorkflowTemplate,
-  ApprovalStep,
+  ApprovalCondition,
   ApprovalEntityType,
+  ApprovalStep,
   ApprovalTriggerEvent,
-  ResolvedApprover,
+  ApprovalWorkflowTemplate,
   ApproverResolutionContext,
+  IApprovalWorkflowService,
+  ResolvedApprover,
   SlaConfiguration,
   SlaDuration,
-  ApprovalCondition,
 } from "../types.js";
 
 // ============================================================================

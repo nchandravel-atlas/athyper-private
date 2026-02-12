@@ -5,7 +5,7 @@
 
 import * as jose from "jose";
 
-import { JwksManager, type JwksHealthStatus } from "./jwks-manager.js";
+import { type JwksHealthStatus, JwksManager } from "./jwks-manager.js";
 
 // ─── Public Interfaces ───────────────────────────────────────────
 

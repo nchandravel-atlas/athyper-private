@@ -6,11 +6,11 @@
  */
 
 import type {
-  WorkflowError,
+  IRecoveryErrorRepository,
+  IRetryService,
   RetryAttempt,
   RetryConfig,
-  IRetryService,
-  IRecoveryErrorRepository,
+  WorkflowError,
 } from "./types.js";
 
 /**

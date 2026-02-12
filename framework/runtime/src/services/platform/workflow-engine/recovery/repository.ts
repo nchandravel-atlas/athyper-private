@@ -6,11 +6,11 @@
  */
 
 import type {
-  WorkflowError,
-  WorkflowPause,
-  RetryAttempt,
   AdminOverrideRequest,
   IRecoveryErrorRepository,
+  RetryAttempt,
+  WorkflowError,
+  WorkflowPause,
 } from "./types.js";
 
 /**

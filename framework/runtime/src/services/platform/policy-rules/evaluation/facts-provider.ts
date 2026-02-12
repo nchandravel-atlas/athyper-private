@@ -9,7 +9,7 @@
  * - Environment attributes (ip, device, channel)
  */
 
-import type { PolicySubject, PolicyResource, PolicyContext } from "./types.js";
+import type { PolicyContext, PolicyResource, PolicySubject } from "./types.js";
 import type { DB } from "@athyper/adapter-db";
 import type { Kysely } from "kysely";
 

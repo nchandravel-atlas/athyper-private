@@ -7,11 +7,11 @@
 
 import type { IFieldSecurityRepository } from "./field-security.repository.js";
 import type {
-  FieldSecurityPolicy,
-  SubjectSnapshot,
-  FieldAccessContext,
   AbacCondition,
+  FieldAccessContext,
+  FieldSecurityPolicy,
   PolicyScope,
+  SubjectSnapshot,
 } from "./types.js";
 import type { Logger } from "../../../../../kernel/logger.js";
 

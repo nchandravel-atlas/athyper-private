@@ -28,18 +28,18 @@ import { RuleEvaluatorService } from "./rule-evaluator.service.js";
 import { SubjectResolverService } from "./subject-resolver.service.js";
 
 import type {
-  AuthorizationRequest,
   AuthorizationDecision,
-  ResourceDescriptor,
-  OperationCode,
-  SubjectSnapshot,
+  AuthorizationRequest,
   IPolicyGate,
+  OperationCode,
+  ResourceDescriptor,
+  SubjectSnapshot,
 } from "./types.js";
 import type {
-  PersonaCode,
-  CapabilityContext,
-  CapabilityCheckResult,
   AuthorizationDecision as PersonaAuthDecision,
+  CapabilityCheckResult,
+  CapabilityContext,
+  PersonaCode,
 } from "../foundation/iam/persona-model/types.js";
 import type { DB } from "@athyper/adapter-db";
 import type { Kysely } from "kysely";

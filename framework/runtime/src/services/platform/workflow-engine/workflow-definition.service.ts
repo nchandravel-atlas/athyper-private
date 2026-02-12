@@ -8,20 +8,20 @@
 import { validateApprovalWorkflowTemplate } from "./validation.js";
 
 import type {
-  IApprovalWorkflowService,
-  IApprovalWorkflowRepository,
-  StoredApprovalWorkflowTemplate,
-  CreateApprovalWorkflowInput,
-  UpdateApprovalWorkflowInput,
-  ApprovalWorkflowQueryOptions,
-  ApprovalEntityType,
-  ApprovalTriggerEvent,
-  ApprovalStep,
-  ApproverRule,
-  ResolvedApprover,
-  ApproverResolutionContext,
-  TemplateValidationResult,
   ApprovalCondition,
+  ApprovalEntityType,
+  ApprovalStep,
+  ApprovalTriggerEvent,
+  ApprovalWorkflowQueryOptions,
+  ApproverResolutionContext,
+  ApproverRule,
+  CreateApprovalWorkflowInput,
+  IApprovalWorkflowRepository,
+  IApprovalWorkflowService,
+  ResolvedApprover,
+  StoredApprovalWorkflowTemplate,
+  TemplateValidationResult,
+  UpdateApprovalWorkflowInput,
 } from "./types.js";
 
 // ============================================================================

@@ -12,8 +12,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
 import type {
-  EntityPageStaticDescriptor,
   EntityPageDynamicDescriptor,
+  EntityPageStaticDescriptor,
   ViewMode,
 } from "./types";
 

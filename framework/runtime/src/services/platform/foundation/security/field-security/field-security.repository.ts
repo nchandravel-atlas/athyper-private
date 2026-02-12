@@ -5,12 +5,12 @@
  */
 
 import type {
-  FieldSecurityPolicy,
-  FieldAccessAuditEntry,
   CreateFieldSecurityPolicyInput,
-  UpdateFieldSecurityPolicyInput,
-  ListFieldSecurityPoliciesOptions,
+  FieldAccessAuditEntry,
+  FieldSecurityPolicy,
   GetAccessLogOptions,
+  ListFieldSecurityPoliciesOptions,
+  UpdateFieldSecurityPolicyInput,
 } from "./types.js";
 import type { DB } from "@athyper/adapter-db";
 import type { Kysely } from "kysely";

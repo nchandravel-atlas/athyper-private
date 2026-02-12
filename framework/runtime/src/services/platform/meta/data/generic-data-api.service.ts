@@ -12,21 +12,21 @@ import { QueryValidatorService, DEFAULT_QUERY_LIMITS } from "./query-validator.s
 
 import type { DB } from "@athyper/adapter-db";
 import type {
-  GenericDataAPI,
-  MetaCompiler,
-  PolicyGate,
   AuditLogger,
-  LifecycleManager,
-  EntityClassificationService,
-  NumberingEngine,
-  RequestContext,
-  ListOptions,
-  PaginatedResponse,
-  HealthCheckResult,
+  BulkOperationResult,
   CompiledField,
   CompiledModel,
-  BulkOperationResult,
+  EntityClassificationService,
+  GenericDataAPI,
+  HealthCheckResult,
+  LifecycleManager,
   LifecycleTransitionResult,
+  ListOptions,
+  MetaCompiler,
+  NumberingEngine,
+  PaginatedResponse,
+  PolicyGate,
+  RequestContext,
 } from "@athyper/core/meta";
 
 /**

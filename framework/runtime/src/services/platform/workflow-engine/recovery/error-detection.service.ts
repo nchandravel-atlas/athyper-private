@@ -6,13 +6,13 @@
  */
 
 import type {
+  IErrorDetectionService,
+  IRecoveryErrorRepository,
+  RecoveryAction,
   WorkflowError,
   WorkflowErrorType,
   WorkflowHealthCheck,
   WorkflowHealthIssue,
-  RecoveryAction,
-  IErrorDetectionService,
-  IRecoveryErrorRepository,
 } from "./types.js";
 import type {
   ApprovalInstance,

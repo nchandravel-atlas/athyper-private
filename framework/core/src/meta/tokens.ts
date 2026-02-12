@@ -12,18 +12,18 @@
  */
 
 import type {
-  MetaRegistry,
-  MetaCompiler,
-  PolicyGate,
-  AuditLogger,
-  GenericDataAPI,
-  MetaStore,
-  EntityClassificationService,
-  NumberingEngine,
-  ApprovalService,
-  EntityPageDescriptorService,
   ActionDispatcher,
+  ApprovalService,
+  AuditLogger,
+  EntityClassificationService,
+  EntityPageDescriptorService,
+  GenericDataAPI,
+  MetaCompiler,
   MetaEventBus,
+  MetaRegistry,
+  MetaStore,
+  NumberingEngine,
+  PolicyGate,
 } from "./contracts.js";
 
 // ============================================================================

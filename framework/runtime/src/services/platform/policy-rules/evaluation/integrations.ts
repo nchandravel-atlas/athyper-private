@@ -10,11 +10,11 @@
 
 import type { PolicyObservability } from "./observability.js";
 import type {
-  PolicyInput,
+  IPolicyEvaluator,
   PolicyDecision,
   PolicyEvaluationOptions,
+  PolicyInput,
   PolicySubject,
-  IPolicyEvaluator,
 } from "./types.js";
 
 // ============================================================================

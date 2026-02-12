@@ -4,64 +4,64 @@
 
 // Types
 export type {
-    Dashboard,
-    DashboardVersion,
-    DashboardAcl,
-    DashboardLayout,
-    LayoutItem,
-    GridPosition,
-    DashboardListItem,
-    DashboardGroup,
-    DashboardExport,
-    TemplateItem,
-    DashboardVersionSummary,
-    Workbench,
-    DashboardVisibility,
-    DashboardVersionStatus,
-    AclPrincipalType,
     AclPermission,
+    AclPrincipalType,
+    Dashboard,
+    DashboardAcl,
+    DashboardExport,
+    DashboardGroup,
+    DashboardLayout,
+    DashboardListItem,
+    DashboardVersion,
+    DashboardVersionStatus,
+    DashboardVersionSummary,
+    DashboardVisibility,
+    GridPosition,
+    LayoutItem,
+    TemplateItem,
+    Workbench,
 } from "./types/dashboard.types.js";
 
 export type {
-    WidgetType,
-    WidgetDefinition,
+    ChartParams,
     HeadingParams,
-    SpacerParams,
-    ShortcutParams,
     KpiParams,
     ListParams,
-    ChartParams,
+    ShortcutParams,
+    SpacerParams,
+    WidgetDefinition,
+    WidgetType,
 } from "./types/widget.types.js";
 export { WIDGET_TYPES } from "./types/widget.types.js";
 
 export type {
     DashboardContribution,
-    DashboardContributionEntry,
     DashboardContributionAcl,
+    DashboardContributionEntry,
 } from "./types/contribution.types.js";
 
 export type {
-    ResolutionTier,
     ResolvedDashboard,
     ResolutionContext,
+    ResolutionTier,
 } from "./types/resolution.types.js";
 
 // Schemas
 export {
+    chartParamsSchema,
     headingParamsSchema,
-    spacerParamsSchema,
-    shortcutParamsSchema,
     kpiParamsSchema,
     listParamsSchema,
-    chartParamsSchema,
+    shortcutParamsSchema,
+    spacerParamsSchema,
     widgetParamsSchemaMap,
 } from "./schemas/widget-params.schema.js";
 
 export {
+    dashboardExportSchema,
+    dashboardLayoutSchema,
     gridPositionSchema,
     layoutItemSchema,
-    dashboardLayoutSchema,
-    dashboardExportSchema,
 } from "./schemas/layout.schema.js";
 
 export {

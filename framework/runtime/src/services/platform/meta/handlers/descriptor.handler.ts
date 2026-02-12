@@ -12,8 +12,8 @@ import { TOKENS } from "../../../../kernel/tokens.js";
 
 import type { RouteHandler, HttpHandlerContext } from "../../foundation/http/types.js";
 import type {
-  EntityPageDescriptorService,
   ActionDispatcher,
+  EntityPageDescriptorService,
   RequestContext,
   ViewMode,
 } from "@athyper/core/meta";

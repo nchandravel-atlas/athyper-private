@@ -11,13 +11,13 @@
 //   3. AuthProvider reads bootstrap data, builds AuthContextValue
 //   4. Components call useAuth() to access authorization helpers
 
-import { createContext, useContext, useEffect, useState, useMemo } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 import {
-    type Workbench,
-    type NeonRole,
     isWorkbench,
+    type NeonRole,
     parseNeonRole,
+    type Workbench,
 } from "./types";
 
 import type { SessionBootstrap } from "../session-bootstrap";

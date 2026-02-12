@@ -4,7 +4,7 @@
 //
 // Tier 1 — Essential diagnostic actions that every user should have.
 
-import { RefreshCw, Database, Shield, Trash2, Wrench } from "lucide-react";
+import { Database, RefreshCw, Shield, Trash2, Wrench } from "lucide-react";
 import { useState } from "react";
 
 import { useMessages } from "@/lib/i18n/messages-context";

@@ -15,9 +15,9 @@
 //     - otherwise → "user" workbench only
 
 import {
-    WORKBENCHES,
-    type Workbench,
     parseNeonRole,
+    type Workbench,
+    WORKBENCHES,
 } from "./types";
 
 import type { ParsedTokenClaims } from "./parse-keycloak-token";

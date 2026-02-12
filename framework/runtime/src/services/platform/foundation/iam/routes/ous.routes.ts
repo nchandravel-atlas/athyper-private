@@ -7,7 +7,7 @@
 import { z } from "zod";
 
 import type { Logger } from "../../../../../kernel/logger.js";
-import type { Router, Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response, Router } from "express";
 import type { Kysely } from "kysely";
 
 // ============================================================================

@@ -5,7 +5,7 @@
 // Language dropdown in the header bar.
 // Sets the neon_locale cookie and reloads the page on selection.
 
-import { Globe, Check } from "lucide-react";
+import { Check, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
 
 

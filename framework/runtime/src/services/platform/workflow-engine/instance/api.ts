@@ -7,14 +7,14 @@
 import { ApprovalInstanceError } from "./service.js";
 
 import type {
-  IApprovalInstanceService,
-  ApprovalInstance,
-  ApprovalStepInstance,
   ApprovalActionRecord,
-  EntityLock,
-  CreateApprovalInstanceInput,
+  ApprovalInstance,
   ApprovalInstanceQueryOptions,
   ApprovalInstanceStatus,
+  ApprovalStepInstance,
+  CreateApprovalInstanceInput,
+  EntityLock,
+  IApprovalInstanceService,
 } from "./types.js";
 import type { Request, Response } from "express";
 

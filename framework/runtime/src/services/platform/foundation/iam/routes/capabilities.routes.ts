@@ -11,7 +11,7 @@ import { PERSONA_CODES } from "../persona-model/types.js";
 import type { Logger } from "../../../../../kernel/logger.js";
 import type { IPersonaCapabilityService } from "../persona-model/persona-capability.service.js";
 import type { PersonaCode } from "../persona-model/types.js";
-import type { Router, Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response, Router } from "express";
 
 // ============================================================================
 // Validation Schemas

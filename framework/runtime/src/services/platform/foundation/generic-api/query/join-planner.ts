@@ -5,7 +5,7 @@
  * Prevents arbitrary joins and enforces query guardrails.
  */
 
-import { DEFAULT_GUARDRAILS, parseQualifiedField, extractAliases } from "./query-dsl.js";
+import { DEFAULT_GUARDRAILS, parseQualifiedField } from "./query-dsl.js";
 
 import type {
   QueryRequest,
@@ -269,7 +269,6 @@ export class JoinPlanner {
     }
 
     // Validate aliases
-    const _aliases = extractAliases(query);
     const aliasSet = new Set<string>();
     const baseAlias = query.as ?? query.from.charAt(0).toLowerCase();
 

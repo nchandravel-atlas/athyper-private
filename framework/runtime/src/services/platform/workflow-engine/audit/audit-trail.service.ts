@@ -5,17 +5,17 @@
  */
 
 import type {
-  AuditEvent,
-  AuditEventType,
-  AuditEventSeverity,
   AuditActor,
   AuditAttachment,
+  AuditEvent,
   AuditEventQueryOptions,
-  InstanceAuditTrail,
-  StepAuditSummary,
+  AuditEventSeverity,
+  AuditEventType,
   IAuditRepository,
   IAuditTrailService,
+  InstanceAuditTrail,
   SimpleAuditEventInput,
+  StepAuditSummary,
 } from "./types.js";
 import type {
   ApprovalInstance,

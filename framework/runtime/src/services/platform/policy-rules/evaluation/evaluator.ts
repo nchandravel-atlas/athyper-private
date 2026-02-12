@@ -11,35 +11,35 @@
  */
 
 import {
+  compareRules,
   DEFAULT_EVALUATION_OPTIONS,
   PolicyErrorCodes,
   PolicyEvaluationError,
-  compareRules,
 } from "./types.js";
 
 import type {
   CompiledPolicy,
   CompiledRule,
-  ConditionGroup,
   Condition,
-  ScopeType,
-  SubjectType,
+  ConditionGroup,
   Effect,
   OperationCode,
+  ScopeType,
+  SubjectType,
 } from "../types.js";
 import type { IFactsProvider } from "./facts-provider.js";
 import type {
-  PolicyInput,
+  ConflictResolution,
+  IPolicyEvaluator,
+  MatchedRule,
+  PolicyContext,
   PolicyDecision,
   PolicyEvaluationOptions,
-  MatchedRule,
+  PolicyInput,
   PolicyObligation,
-  TraceStep,
-  IPolicyEvaluator,
-  PolicySubject,
   PolicyResource,
-  PolicyContext,
-  ConflictResolution,
+  PolicySubject,
+  TraceStep,
 } from "./types.js";
 import type { OperationCatalogService } from "../operation-catalog.service.js";
 import type { PolicyCompilerService } from "../policy-compiler.service.js";

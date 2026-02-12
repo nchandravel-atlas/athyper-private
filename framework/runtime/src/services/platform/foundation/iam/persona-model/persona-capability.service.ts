@@ -8,15 +8,15 @@ import { PERSONA_CODES } from "./types.js";
 
 import type { IPersonaCapabilityRepository } from "./persona-capability.repository.js";
 import type {
-  PersonaCode,
-  CapabilityContext,
+  AuthorizationDecision,
   CapabilityCheckResult,
-  PersonaCapability,
-  ConstraintType,
-  Persona,
+  CapabilityContext,
   CapabilityMatrix,
   CapabilityMatrixRow,
-  AuthorizationDecision,
+  ConstraintType,
+  Persona,
+  PersonaCapability,
+  PersonaCode,
   SubjectWithPersona,
 } from "./types.js";
 import type { Logger } from "../../../../../kernel/logger.js";

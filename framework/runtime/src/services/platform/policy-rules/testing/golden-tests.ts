@@ -14,7 +14,7 @@
 import type {
   PolicyTestCase,
 } from "./types.js";
-import type { PolicySubject, PolicyResource, PolicyAction, PolicyContext } from "../evaluation/types.js";
+import type { PolicyAction, PolicyContext, PolicyResource, PolicySubject } from "../evaluation/types.js";
 
 // ============================================================================
 // Test Subject Fixtures

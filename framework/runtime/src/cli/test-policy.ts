@@ -31,11 +31,11 @@ import { writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 import {
-  PolicyTestRunner,
-  PolicySimulatorService,
-  formatReportAsText,
   formatReportAsJson,
   formatReportAsJUnit,
+  formatReportAsText,
+  PolicySimulatorService,
+  PolicyTestRunner,
   type TestRunnerConfig,
   type TestRunReport,
 } from "../services/platform/policy-rules/testing/index.js";

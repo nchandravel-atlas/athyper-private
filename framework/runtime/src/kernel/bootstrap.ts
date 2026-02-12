@@ -5,7 +5,7 @@ import { makeAuditEvent, type AuditWriter } from "./audit";
 import { loadConfig, KernelConfigError } from "./config";
 import { createKernelContainer } from "./container";
 import { registerAdapters } from "./container.adapters";
-import { registerKernelDefaults, installSignalHandlers } from "./container.defaults";
+import { installSignalHandlers, registerKernelDefaults } from "./container.defaults";
 import { registerMetaServices } from "./container.meta";
 import { TenantContextError } from "./tenantContext";
 import { TOKENS } from "./tokens";

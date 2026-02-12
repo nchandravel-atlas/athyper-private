@@ -8,23 +8,23 @@
 import { createHash } from "node:crypto";
 
 import type {
+  CompileDiagnostic,
+  CompiledField,
+  CompiledModel,
+  CompiledModelWithOverlays,
+  CompiledPolicy,
+  DiagnosticSeverity,
+  EntitySchema,
+  FieldDefinition,
+  HealthCheckResult,
   MetaCompiler,
   MetaRegistry,
-  EntitySchema,
-  CompiledModel,
-  CompiledField,
-  CompiledPolicy,
-  ValidationResult,
-  ValidationError,
-  HealthCheckResult,
-  FieldDefinition,
-  PolicyDefinition,
-  PolicyCondition,
-  CompileDiagnostic,
-  DiagnosticSeverity,
   OverlayChange,
   OverlaySet,
-  CompiledModelWithOverlays,
+  PolicyCondition,
+  PolicyDefinition,
+  ValidationError,
+  ValidationResult,
 } from "@athyper/core/meta";
 import type { Redis } from "ioredis";
 

@@ -7,7 +7,7 @@ import { module as metaModule } from "./platform/meta/module";
 import { module as dashboardModule } from "./platform/ui/module";
 import { module as notificationModule } from "./platform-services/notification/index";
 
-import type { AuditWriter, AuditEvent } from "../kernel/audit";
+import type { AuditEvent, AuditWriter } from "../kernel/audit";
 import type { Container } from "../kernel/container";
 import type { Logger } from "../kernel/logger";
 

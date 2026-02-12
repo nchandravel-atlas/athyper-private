@@ -5,7 +5,7 @@
  * and impact analysis for template changes.
  */
 
-import type { ApprovalWorkflowTemplate, ApprovalStep, ApprovalTrigger, SlaConfiguration, ApprovalActionType } from "../types.js";
+import type { ApprovalActionType, ApprovalStep, ApprovalTrigger, ApprovalWorkflowTemplate, SlaConfiguration } from "../types.js";
 
 // Definition type extracted from template (the runtime configuration part)
 type TemplateDefinition = {

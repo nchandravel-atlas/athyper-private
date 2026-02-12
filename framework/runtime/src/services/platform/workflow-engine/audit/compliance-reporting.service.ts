@@ -6,14 +6,14 @@
  */
 
 import type {
-  ReportOptions,
-  CycleDurationReport,
-  SlaBreachReport,
-  EscalationReport,
   ApproverWorkloadReport,
   ComplianceSummaryReport,
+  CycleDurationReport,
+  EscalationReport,
   IAuditRepository,
   IComplianceReportingService,
+  ReportOptions,
+  SlaBreachReport,
 } from "./types.js";
 import type { IApprovalInstanceRepository } from "../instance/types.js";
 

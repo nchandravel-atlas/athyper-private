@@ -6,11 +6,11 @@
 // Displays workspace > module > entity hierarchy with collapsible groups.
 
 import {
-    Building2, FileText, ClipboardList, Send, ScrollText,
-    Package, Box, Warehouse, ArrowRightLeft,
-    Calculator, Receipt, CreditCard, BookOpen,
-    Users, UserCircle, Building, CalendarOff,
-    ShoppingCart, Layers, CircleDot,
+    ArrowRightLeft, BookOpen, Box, Building, Building2,
+    Calculator, CalendarOff, CircleDot, ClipboardList, CreditCard,
+    FileText, Layers, Package, Receipt,
+    ScrollText, Send, ShoppingCart,
+    UserCircle, Users, Warehouse,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,14 +24,14 @@ import {
 } from "@/components/ui/collapsible";
 import {
     SidebarGroup,
-    SidebarGroupLabel,
     SidebarGroupContent,
+    SidebarGroupLabel,
     SidebarMenu,
-    SidebarMenuItem,
     SidebarMenuButton,
+    SidebarMenuItem,
     SidebarMenuSub,
-    SidebarMenuSubItem,
     SidebarMenuSubButton,
+    SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthOptional } from "@/lib/auth/auth-context";
@@ -39,7 +39,7 @@ import { useMessages } from "@/lib/i18n/messages-context";
 import { filterNavTree } from "@/lib/nav/filter-nav";
 import { useNavTree } from "@/lib/nav/use-nav-tree";
 
-import type { NavWorkspace, NavModule, NavEntity } from "@/lib/nav/nav-types";
+import type { NavEntity, NavModule, NavWorkspace } from "@/lib/nav/nav-types";
 import type { LucideIcon } from "lucide-react";
 
 // Icon map for resolving icon names to Lucide components

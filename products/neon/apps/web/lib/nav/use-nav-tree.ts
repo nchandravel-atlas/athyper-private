@@ -5,7 +5,7 @@
 // React hook for loading and caching the dynamic navigation tree.
 // Fetches from /api/nav/modules on mount and when workbench changes.
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { fetchNavTree } from "./nav-api";
 

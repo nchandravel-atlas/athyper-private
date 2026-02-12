@@ -1,16 +1,16 @@
 import {
-  PutObjectCommand,
-  GetObjectCommand,
+  CopyObjectCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
-  CopyObjectCommand,
+  PutObjectCommand,
   type S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-import type { ObjectStorageAdapter, ObjectStorageConfig, PutOptions, ObjectMetadata } from "../types.js";
+import type { ObjectMetadata, ObjectStorageAdapter, ObjectStorageConfig, PutOptions } from "../types.js";
 
 export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
   constructor(

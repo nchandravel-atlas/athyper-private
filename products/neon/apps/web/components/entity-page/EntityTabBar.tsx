@@ -1,13 +1,13 @@
 "use client";
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@neon/ui";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@neon/ui";
 
 import { getTabPlugin } from "@/lib/entity-page/plugin-registry";
 import { DetailsTab } from "./DetailsTab";
 
 import type { ReactNode } from "react";
 import type { TabPluginProps } from "@/lib/entity-page/plugin-registry";
-import type { TabDescriptor, SectionDescriptor } from "@/lib/entity-page/types";
+import type { SectionDescriptor, TabDescriptor } from "@/lib/entity-page/types";
 
 interface EntityTabBarProps extends TabPluginProps {
   tabs: TabDescriptor[];

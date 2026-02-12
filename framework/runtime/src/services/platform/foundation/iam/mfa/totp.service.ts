@@ -7,7 +7,7 @@
 
 import { createHmac, randomBytes } from "crypto";
 
-import type { ITotpService, TotpSetupData, TotpVerifyResult, TotpConfig } from "./types.js";
+import type { ITotpService, TotpConfig, TotpSetupData, TotpVerifyResult } from "./types.js";
 
 // ============================================================================
 // Constants

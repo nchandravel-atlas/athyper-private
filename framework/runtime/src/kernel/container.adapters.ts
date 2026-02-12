@@ -1,10 +1,10 @@
 // framework/runtime/src/kernel/container.adapters.ts
 import {
     AdapterCircuitBreakers,
-    protectDbAdapter,
-    protectCacheAdapter,
-    protectObjectStorageAdapter,
     protectAuthAdapter,
+    protectCacheAdapter,
+    protectDbAdapter,
+    protectObjectStorageAdapter,
 } from "../services/platform/foundation/resilience/adapter-protection.js";
 
 import { TOKENS } from "./tokens";

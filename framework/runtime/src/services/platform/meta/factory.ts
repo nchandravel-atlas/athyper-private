@@ -20,27 +20,27 @@ import { DdlGeneratorService } from "./schema/ddl-generator.service.js";
 import { MigrationRunnerService } from "./schema/migration-runner.service.js";
 import { PublishService } from "./schema/publish.service.js";
 import { SchemaChangeNotifier } from "./schema/schema-change-notifier.js";
-import { EntityPageDescriptorServiceImpl, ActionDispatcherServiceImpl } from "./descriptor/index.js";
+import { ActionDispatcherServiceImpl, EntityPageDescriptorServiceImpl } from "./descriptor/index.js";
 import { MetaEventBusService } from "./core/event-bus.service.js";
 
 import type { MetaStore } from "./core/meta-store.service.js";
 import type { LifecycleDB_Type } from "./data/db-helpers.js";
 import type { DB } from "@athyper/adapter-db";
 import type {
-  MetaRegistry,
-  MetaCompiler,
-  PolicyGate,
-  AuditLogger,
-  GenericDataAPI,
-  LifecycleRouteCompiler,
-  LifecycleManager,
-  EntityClassificationService,
-  NumberingEngine,
-  ApprovalService,
-  DdlGenerator,
-  EntityPageDescriptorService,
   ActionDispatcher,
+  ApprovalService,
+  AuditLogger,
+  DdlGenerator,
+  EntityClassificationService,
+  EntityPageDescriptorService,
+  GenericDataAPI,
+  LifecycleManager,
+  LifecycleRouteCompiler,
+  MetaCompiler,
   MetaEventBus,
+  MetaRegistry,
+  NumberingEngine,
+  PolicyGate,
 } from "@athyper/core/meta";
 import type { Redis } from "ioredis";
 import type { Kysely } from "kysely";

@@ -6,9 +6,9 @@
  */
 
 import type {
-  ApprovalWorkflowTemplate,
   ApprovalActionType,
   ApprovalCondition,
+  ApprovalWorkflowTemplate,
 } from "../types.js";
 
 // ============================================================================

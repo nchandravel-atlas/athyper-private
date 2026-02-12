@@ -8,5 +8,5 @@ export const moduleCode = "platform-automation-jobs";
 export const moduleName = "Automation Jobs";
 
 // Core job infrastructure
-export * from "./worker-pool.js";
 export * from "./redis-queue.js";
+export * from "./worker-pool.js";

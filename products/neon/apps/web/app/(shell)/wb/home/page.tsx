@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 
-import { WORKBENCH_PRIORITY, isWorkbench, type Workbench } from "@/lib/auth/types";
+import { isWorkbench, type Workbench, WORKBENCH_PRIORITY } from "@/lib/auth/types";
 import { getWorkbenchDefaultRoute } from "@/lib/auth/workbench-config";
 
 import type { SessionBootstrap } from "@/lib/session-bootstrap";

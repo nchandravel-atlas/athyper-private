@@ -5,9 +5,9 @@
  */
 
 import type {
-  IApprovalTaskRepository,
   ApprovalTask,
   ApprovalTaskStatus,
+  IApprovalTaskRepository,
   InboxFilterOptions,
   InboxSummary,
   TaskPriority,

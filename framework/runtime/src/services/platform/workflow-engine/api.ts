@@ -7,15 +7,15 @@
 import { ApprovalWorkflowError } from "./workflow-definition.service.js";
 
 import type {
-  IApprovalWorkflowService,
-  CreateApprovalWorkflowInput,
-  UpdateApprovalWorkflowInput,
-  ApprovalWorkflowQueryOptions,
-  StoredApprovalWorkflowTemplate,
   ApprovalEntityType,
   ApprovalTriggerEvent,
+  ApprovalWorkflowQueryOptions,
   ApproverResolutionContext,
+  CreateApprovalWorkflowInput,
+  IApprovalWorkflowService,
+  StoredApprovalWorkflowTemplate,
   TemplateValidationResult,
+  UpdateApprovalWorkflowInput,
 } from "./types.js";
 import type { Request, Response } from "express";
 

@@ -6,15 +6,15 @@
  */
 
 import type {
-  MetaRegistry,
-  MetaCompiler,
   AuditLogger,
-  RequestContext,
-  Entity,
-  EntityVersion,
-  EntitySchema,
   CompiledModel,
+  Entity,
+  EntitySchema,
+  EntityVersion,
   HealthCheckResult,
+  MetaCompiler,
+  MetaRegistry,
+  RequestContext,
 } from "@athyper/core/meta";
 
 /**

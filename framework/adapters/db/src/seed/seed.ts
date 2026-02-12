@@ -17,7 +17,7 @@
 //                         NOT PgBouncer. DDL needs a direct connection.
 
 import { readdirSync, readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import pg from "pg";

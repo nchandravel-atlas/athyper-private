@@ -6,10 +6,10 @@
  */
 
 import type {
-  WorkflowVersion,
+  IVersionRepository,
   VersionLifecycleEvent,
   VersionSearchCriteria,
-  IVersionRepository,
+  WorkflowVersion,
 } from "./types.js";
 
 /**

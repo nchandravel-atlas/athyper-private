@@ -6,13 +6,13 @@
  */
 
 import type {
-  IApprovalWorkflowRepository,
-  StoredApprovalWorkflowTemplate,
-  CreateApprovalWorkflowInput,
-  UpdateApprovalWorkflowInput,
-  ApprovalWorkflowQueryOptions,
   ApprovalEntityType,
   ApprovalTriggerEvent,
+  ApprovalWorkflowQueryOptions,
+  CreateApprovalWorkflowInput,
+  IApprovalWorkflowRepository,
+  StoredApprovalWorkflowTemplate,
+  UpdateApprovalWorkflowInput,
 } from "./types.js";
 import type { DB } from "@athyper/adapter-db";
 import type { Kysely } from "kysely";

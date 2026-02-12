@@ -12,11 +12,11 @@
 export const moduleCode = "platform-iam";
 export const moduleName = "Identity and Access Management";
 
+// MFA (Multi-Factor Authentication)
+export * from "./mfa/index.js";
+
 // Persona Model (Permission Action Model)
 export * from "./persona-model/index.js";
 
 // IAM Management Routes
 export * from "./routes/index.js";
-
-// MFA (Multi-Factor Authentication)
-export * from "./mfa/index.js";

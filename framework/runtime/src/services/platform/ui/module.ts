@@ -7,7 +7,7 @@
  * During contribute(), seeds system dashboards from contribution JSON files.
  */
 
-import { resolve , dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { TOKENS } from "../../../kernel/tokens.js";
@@ -16,19 +16,19 @@ import { DashboardContributionSeeder } from "./dashboard-seeder.js";
 import { DashboardRepository } from "./dashboard.repository.js";
 import { DashboardService } from "./dashboard.service.js";
 import {
-    ListDashboardsHandler,
+    AddAclHandler,
+    CreateDashboardHandler,
+    DeleteDashboardHandler,
+    DiscardDraftHandler,
+    DuplicateDashboardHandler,
     GetDashboardHandler,
     GetDraftHandler,
-    CreateDashboardHandler,
-    DuplicateDashboardHandler,
-    UpdateDashboardHandler,
-    SaveDraftLayoutHandler,
-    PublishDashboardHandler,
-    DiscardDraftHandler,
     ListAclHandler,
-    AddAclHandler,
+    ListDashboardsHandler,
+    PublishDashboardHandler,
     RemoveAclHandler,
-    DeleteDashboardHandler,
+    SaveDraftLayoutHandler,
+    UpdateDashboardHandler,
 } from "./handlers/dashboards.handler.js";
 
 import type { Container } from "../../../kernel/container.js";

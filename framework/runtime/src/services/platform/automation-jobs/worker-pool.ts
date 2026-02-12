@@ -4,7 +4,7 @@
  */
 
 import type { Logger } from "../../../kernel/logger.js";
-import type { JobQueue, JobHandler, JobEventHandlers } from "@athyper/core";
+import type { JobEventHandlers, JobHandler, JobQueue } from "@athyper/core";
 
 export interface WorkerConfig {
   jobType: string;

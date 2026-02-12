@@ -6,11 +6,11 @@
 // Only rendered when NODE_ENV === "development".
 // Applies inline styles directly to the sidebar-inset element for reliable width constraining.
 
-import { Monitor, Tablet, Smartphone } from "lucide-react";
+import { Monitor, Smartphone, Tablet } from "lucide-react";
 import { useCallback, useState } from "react";
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Viewport = "desktop" | "tablet" | "mobile";
 

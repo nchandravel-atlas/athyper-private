@@ -180,25 +180,18 @@ export {
 } from "./api.js";
 
 // =============================================================================
-// Run-Time (Instance Management)
-// =============================================================================
-
-// Re-export instance module
-export * from "./instance/index.js";
-
-// =============================================================================
-// Task Management
-// =============================================================================
-
-// Re-export task module
-export * from "./task/index.js";
-
-// =============================================================================
 // Action Execution
 // =============================================================================
 
 // Re-export action module
 export * from "./action/index.js";
+
+// =============================================================================
+// Admin & Governance Controls
+// =============================================================================
+
+// Re-export admin module (force actions, reassignments, workflow control)
+export * from "./admin/index.js";
 
 // =============================================================================
 // Audit & Governance
@@ -208,6 +201,13 @@ export * from "./action/index.js";
 export * from "./audit/index.js";
 
 // =============================================================================
+// Run-Time (Instance Management)
+// =============================================================================
+
+// Re-export instance module
+export * from "./instance/index.js";
+
+// =============================================================================
 // Error Handling & Recovery
 // =============================================================================
 
@@ -215,11 +215,11 @@ export * from "./audit/index.js";
 export * from "./recovery/index.js";
 
 // =============================================================================
-// Admin & Governance Controls
+// Task Management
 // =============================================================================
 
-// Re-export admin module (force actions, reassignments, workflow control)
-export * from "./admin/index.js";
+// Re-export task module
+export * from "./task/index.js";
 
 // =============================================================================
 // Version Control

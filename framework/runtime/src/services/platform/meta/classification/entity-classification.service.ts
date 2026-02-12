@@ -7,8 +7,8 @@
  */
 
 import type {
-  EntityClassificationService,
   EntityClass,
+  EntityClassificationService,
   EntityFeatureFlags,
 } from "@athyper/core/meta";
 import type { LifecycleDB_Type } from "../data/db-helpers.js";

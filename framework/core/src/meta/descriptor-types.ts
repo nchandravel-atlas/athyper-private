@@ -9,10 +9,10 @@
  */
 
 import type {
-  EntityClass,
-  EntityFeatureFlags,
   ApprovalInstanceStatus,
   ApprovalTask,
+  EntityClass,
+  EntityFeatureFlags,
 } from "./types.js";
 
 // ============================================================================

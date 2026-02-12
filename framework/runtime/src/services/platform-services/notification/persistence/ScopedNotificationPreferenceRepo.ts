@@ -6,7 +6,7 @@
 
 import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
-import type { ChannelCode, PreferenceScope, PreferenceFrequency, QuietHours } from "../domain/types.js";
+import type { ChannelCode, PreferenceFrequency, PreferenceScope, QuietHours } from "../domain/types.js";
 
 const TABLE = "core.notification_preference" as keyof DB & string;
 

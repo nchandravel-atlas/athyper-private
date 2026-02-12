@@ -8,13 +8,13 @@
 import type { IFieldSecurityRepository } from "./field-security.repository.js";
 import type { MaskingService } from "./masking.service.js";
 import type {
-  FieldSecurityPolicy,
-  FieldAccessDecision,
-  FieldFilterResult,
+  AbacCondition,
   FieldAccessAuditEntry,
   FieldAccessContext,
+  FieldAccessDecision,
+  FieldFilterResult,
+  FieldSecurityPolicy,
   SubjectSnapshot,
-  AbacCondition,
 } from "./types.js";
 import type { Logger } from "../../../../../kernel/logger.js";
 

@@ -21,7 +21,7 @@ import { createRoleBindingsRoutes } from "./role-bindings.routes.js";
 import { createRolesRoutes } from "./roles.routes.js";
 
 import type { Logger } from "../../../../../kernel/logger.js";
-import type { Router, Request } from "express";
+import type { Request, Router } from "express";
 import type { Kysely } from "kysely";
 
 export { createCapabilitiesRoutes } from "./capabilities.routes.js";

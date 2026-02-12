@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { isWorkbench, type Workbench } from "@/lib/auth/types";
-import { WORKBENCH_CONFIGS, getWorkbenchDefaultRoute } from "@/lib/auth/workbench-config";
+import { getWorkbenchDefaultRoute, WORKBENCH_CONFIGS } from "@/lib/auth/workbench-config";
 
 import type { SessionBootstrap } from "@/lib/session-bootstrap";
 

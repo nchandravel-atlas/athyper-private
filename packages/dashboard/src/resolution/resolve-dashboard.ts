@@ -10,7 +10,7 @@
  */
 
 import type { DashboardLayout } from "../types/dashboard.types.js";
-import type { ResolutionContext, ResolutionTier, ResolvedDashboard } from "../types/resolution.types.js";
+import type { ResolvedDashboard, ResolutionContext, ResolutionTier } from "../types/resolution.types.js";
 
 /**
  * Candidate from the database layer — each tier produces zero or one candidate.

@@ -16,7 +16,7 @@ import Redis from "ioredis";
 import { Kysely, PostgresDialect } from "kysely";
 import { Pool } from "pg";
 
-import { createMetaServices, MigrationRunnerService, DdlGeneratorService } from "../services/platform/meta/index.js";
+import { createMetaServices, DdlGeneratorService, MigrationRunnerService } from "../services/platform/meta/index.js";
 
 import type { DB } from "@athyper/adapter-db";
 

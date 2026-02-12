@@ -4,6 +4,6 @@
  * Supports: English (en), Malay (ms), Tamil (ta), Hindi (hi), Arabic (ar)
  */
 
-export { i18nConfig, isValidLocale, isRtlLocale } from "./config.js";
+export { i18nConfig, isRtlLocale, isValidLocale } from "./config.js";
 export type { Locale } from "./config.js";
-export { getIntl, clearIntlCache } from "./get-intl.js";
+export { clearIntlCache, getIntl } from "./get-intl.js";

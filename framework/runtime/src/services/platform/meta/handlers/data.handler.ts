@@ -9,7 +9,7 @@ import { META_TOKENS } from "@athyper/core/meta";
 import { TOKENS } from "../../../../kernel/tokens.js";
 
 import type { RouteHandler, HttpHandlerContext } from "../../foundation/http/types.js";
-import type { GenericDataAPI, RequestContext, ListOptions } from "@athyper/core/meta";
+import type { GenericDataAPI, ListOptions, RequestContext } from "@athyper/core/meta";
 import type { Request, Response } from "express";
 
 

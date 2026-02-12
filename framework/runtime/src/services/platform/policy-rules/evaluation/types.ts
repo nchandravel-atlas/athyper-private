@@ -5,7 +5,7 @@
  * Defines PolicyInput, PolicyDecision, PolicyEvaluationOptions, and determinism rules
  */
 
-import type { Effect, ScopeType, SubjectType, ConditionGroup } from "../types.js";
+import type { ConditionGroup, Effect, ScopeType, SubjectType } from "../types.js";
 
 // ============================================================================
 // Policy Input (What goes into evaluation)

@@ -11,17 +11,17 @@
  */
 
 import type {
-  SimulatorInput,
-  SimulatorResult,
-  SimulatorOptions,
-  PolicyValidationResult,
-  ValidationOptions,
+  IPolicySimulator,
+  ITestCaseRepository,
   PolicyTestCase,
+  PolicyValidationResult,
+  SimulatorInput,
+  SimulatorOptions,
+  SimulatorResult,
   StoredTestCase,
   TestCaseRunResult,
   TestSuiteResult,
-  IPolicySimulator,
-  ITestCaseRepository,
+  ValidationOptions,
 } from "./types.js";
 
 // ============================================================================

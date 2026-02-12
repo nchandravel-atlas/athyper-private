@@ -1,11 +1,11 @@
 "use client";
 
 import {
-    User,
-    Handshake,
-    Shield,
-    Settings,
     ChevronsUpDown,
+    Handshake,
+    Settings,
+    Shield,
+    User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 

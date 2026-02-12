@@ -20,30 +20,30 @@ export { createIAMServices, type IAMServices } from "./iam-factory.service.js";
 
 // Types re-exported from services
 export type {
-  PrincipalType,
-  PrincipalStatus,
   IdpIdentityInfo,
   PrincipalResult,
+  PrincipalStatus,
+  PrincipalType,
 } from "./identity-mapper.service.js";
 
 export type {
-  TenantStatus,
   SubscriptionTier,
   TenantInfo,
   TenantProfileInfo,
+  TenantStatus,
 } from "./tenant-resolver.service.js";
 
 export type {
-  GroupSourceType,
   GroupInfo,
   GroupMemberInfo,
+  GroupSourceType,
 } from "./group-sync.service.js";
 
 export type {
+  RoleBindingInfo,
+  RoleInfo,
   ScopeKind,
   ScopeMode,
-  RoleInfo,
-  RoleBindingInfo,
 } from "./role-binding.service.js";
 
 export type {

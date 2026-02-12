@@ -14,15 +14,15 @@ import type { PolicyCompilerService } from "./policy-compiler.service.js";
 import type { PolicyResolutionService } from "./policy-resolution.service.js";
 import type { SubjectResolverService } from "./subject-resolver.service.js";
 import type {
-  AuthorizationRequest,
   AuthorizationDecision,
-  SubjectSnapshot,
+  AuthorizationRequest,
   CompiledPolicy,
   CompiledRule,
   Condition,
   ConditionGroup,
   ScopeType,
   SubjectKey,
+  SubjectSnapshot,
 } from "./types.js";
 import type { DB } from "@athyper/adapter-db";
 import type { Kysely } from "kysely";

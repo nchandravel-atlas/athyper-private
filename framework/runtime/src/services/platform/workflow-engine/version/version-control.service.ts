@@ -7,17 +7,17 @@
 
 import type { IAuditTrailService } from "../audit/types.js";
 import type { IApprovalInstanceRepository } from "../instance/types.js";
-import type { ApprovalWorkflowTemplate, ApprovalStep, ApprovalTrigger, SlaConfiguration, ApprovalActionType } from "../types.js";
+import type { ApprovalActionType, ApprovalStep, ApprovalTrigger, ApprovalWorkflowTemplate, SlaConfiguration } from "../types.js";
 import type {
-  WorkflowVersion,
-  VersionChange,
-  VersionComparison,
   ImpactAnalysis,
   ImpactIssue,
-  MigrationStep,
-  VersionLifecycleEvent,
   IVersionControlService,
   IVersionRepository,
+  MigrationStep,
+  VersionChange,
+  VersionComparison,
+  VersionLifecycleEvent,
+  WorkflowVersion,
 } from "./types.js";
 
 // Definition type extracted from template (the runtime configuration part)

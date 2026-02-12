@@ -7,16 +7,16 @@
 import type {
   ApprovalTask,
   ApprovalTaskStatus,
-  TaskPriority,
-  TaskType,
+  IApprovalTaskService,
   InboxFilterOptions,
   InboxSummary,
-  WorkQueueItem,
-  WorkQueueConfig,
-  NotificationRecord,
-  NotificationPreferences,
-  IApprovalTaskService,
   INotificationService,
+  NotificationPreferences,
+  NotificationRecord,
+  TaskPriority,
+  TaskType,
+  WorkQueueConfig,
+  WorkQueueItem,
 } from "./types.js";
 import type { ApprovalActionType } from "../types.js";
 

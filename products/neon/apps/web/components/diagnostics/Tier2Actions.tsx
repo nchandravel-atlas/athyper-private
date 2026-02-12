@@ -4,8 +4,8 @@
 //
 // Tier 2 — Enterprise diagnostic actions for ops and power users.
 
-import { RotateCcw, UserCheck, Download, Activity } from "lucide-react";
-import { useState, useCallback } from "react";
+import { Activity, Download, RotateCcw, UserCheck } from "lucide-react";
+import { useCallback, useState } from "react";
 
 import { useMessages } from "@/lib/i18n/messages-context";
 

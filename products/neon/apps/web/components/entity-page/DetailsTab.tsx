@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, Label, Input, Separator } from "@neon/ui";
+import { Card, Input, Label, Separator } from "@neon/ui";
 
 import type { SectionDescriptor, ViewMode } from "@/lib/entity-page/types";
 

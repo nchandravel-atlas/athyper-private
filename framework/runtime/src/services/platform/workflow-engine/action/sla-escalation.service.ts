@@ -5,11 +5,11 @@
  */
 
 import type {
-  StepSlaStatus,
-  EscalationTarget,
   EscalationResult,
-  ISlaMonitoringService,
+  EscalationTarget,
   IEscalationService,
+  ISlaMonitoringService,
+  StepSlaStatus,
   WorkflowEvent,
 } from "./types.js";
 import type {

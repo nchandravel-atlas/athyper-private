@@ -6,8 +6,8 @@
 
 import type {
   ApprovalInstance,
-  ApprovalStepInstance,
   ApprovalInstanceStatus,
+  ApprovalStepInstance,
   EntityApprovalState,
 } from "../instance/types.js";
 import type { ApprovalActionType } from "../types.js";

@@ -14,9 +14,9 @@
 import type {
   CompiledPolicy,
   CompiledRule,
+  Effect,
   ScopeType,
   SubjectType,
-  Effect,
 } from "./types.js";
 import type { DB } from "@athyper/adapter-db";
 import type { Kysely } from "kysely";

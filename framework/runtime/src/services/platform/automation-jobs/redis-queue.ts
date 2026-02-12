@@ -3,17 +3,17 @@
  * Production-ready job queue with persistence and reliability
  */
 
-import { Queue, Worker, QueueEvents, type Job as BullJob } from "bullmq";
+import { type Job as BullJob, Queue, QueueEvents, Worker } from "bullmq";
 
 import type {
-  JobQueue,
   Job,
   JobData,
-  JobOptions,
-  JobStatus,
-  JobHandler,
-  QueueMetrics,
   JobEventHandlers,
+  JobHandler,
+  JobOptions,
+  JobQueue,
+  JobStatus,
+  QueueMetrics,
 } from "@athyper/core";
 import type { Redis } from "ioredis";
 

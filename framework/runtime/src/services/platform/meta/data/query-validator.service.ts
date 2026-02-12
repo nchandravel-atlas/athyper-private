@@ -10,7 +10,7 @@
  * Phase 15.1: Strict query safety
  */
 
-import type { CompiledModel, CompiledField, FieldType } from "@athyper/core/meta";
+import type { CompiledField, CompiledModel, FieldType } from "@athyper/core/meta";
 
 /**
  * Query safety limits

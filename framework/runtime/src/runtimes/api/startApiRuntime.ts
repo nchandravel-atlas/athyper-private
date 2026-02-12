@@ -2,7 +2,7 @@
 
 import { TOKENS } from "../../kernel/tokens";
 
-import type { AuditWriter, AuditEvent } from "../../kernel/audit";
+import type { AuditEvent, AuditWriter } from "../../kernel/audit";
 import type { RuntimeConfig } from "../../kernel/config.schema";
 import type { Container } from "../../kernel/container";
 import type { HttpServer } from "../../kernel/httpServer";

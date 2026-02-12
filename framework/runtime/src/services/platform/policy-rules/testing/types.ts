@@ -8,13 +8,13 @@
  */
 
 import type {
-  PolicyInput,
-  PolicyDecision,
-  PolicySubject,
-  PolicyResource,
   PolicyAction,
   PolicyContext,
+  PolicyDecision,
+  PolicyInput,
   PolicyObligation,
+  PolicyResource,
+  PolicySubject,
 } from "../evaluation/types.js";
 import type { Effect } from "../types.js";
 

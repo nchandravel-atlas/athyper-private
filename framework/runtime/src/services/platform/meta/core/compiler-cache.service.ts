@@ -13,8 +13,8 @@ import { createHash } from "node:crypto";
 
 import type {
   CompiledModel,
-  MetaCompiler,
   EntitySchema,
+  MetaCompiler,
   ValidationResult,
 } from "@athyper/core/meta";
 import type { Redis } from "ioredis";

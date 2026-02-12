@@ -6,13 +6,13 @@
  */
 
 import type {
-  WorkflowError,
-  WorkflowPause,
+  IRecoveryErrorRepository,
+  IRecoveryService,
+  PauseReason,
   RecoveryAction,
   RecoveryResult,
-  PauseReason,
-  IRecoveryService,
-  IRecoveryErrorRepository,
+  WorkflowError,
+  WorkflowPause,
 } from "./types.js";
 import type { IAuditTrailService } from "../audit/types.js";
 import type {

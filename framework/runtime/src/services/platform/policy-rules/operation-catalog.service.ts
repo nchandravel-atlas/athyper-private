@@ -8,9 +8,9 @@
  */
 
 import type {
-  OperationNamespace,
   OperationCode,
   OperationInfo,
+  OperationNamespace,
 } from "./types.js";
 import type { DB } from "@athyper/adapter-db";
 import type { Kysely } from "kysely";

@@ -6,11 +6,11 @@
  */
 
 import type {
-  AdminActionRequest,
   AdminActionLog,
-  StepReassignment,
+  AdminActionRequest,
   DeadlineModification,
   IAdminActionRepository,
+  StepReassignment,
 } from "./types.js";
 
 /**

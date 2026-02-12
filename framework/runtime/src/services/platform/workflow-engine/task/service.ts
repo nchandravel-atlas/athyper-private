@@ -8,16 +8,16 @@ import { DEFAULT_WORK_QUEUE_CONFIG } from "./types.js";
 
 import type {
   ApprovalTask,
-  TaskType,
-  TaskPriority,
-  InboxFilterOptions,
-  InboxSummary,
-  WorkQueueItem,
-  WorkQueueConfig,
-  ReminderSchedule,
   IApprovalTaskRepository,
   IApprovalTaskService,
+  InboxFilterOptions,
+  InboxSummary,
   INotificationService,
+  ReminderSchedule,
+  TaskPriority,
+  TaskType,
+  WorkQueueConfig,
+  WorkQueueItem,
 } from "./types.js";
 import type {
   ApprovalInstance,

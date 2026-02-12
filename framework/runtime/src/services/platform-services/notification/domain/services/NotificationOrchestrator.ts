@@ -13,7 +13,7 @@
  * - Explainability trace collection (stored in message metadata)
  */
 
-import type { DomainEvent, EventBus, JobQueue, JobData, JobOptions } from "@athyper/core";
+import type { DomainEvent, EventBus, JobData, JobOptions, JobQueue } from "@athyper/core";
 import type { Logger } from "../../../../../kernel/logger.js";
 import type Redis from "ioredis";
 
@@ -25,7 +25,7 @@ import type { DeduplicationService } from "./DeduplicationService.js";
 import type { DlqManager } from "./DlqManager.js";
 import type { DigestAggregator } from "./DigestAggregator.js";
 import { ExplainabilityService } from "./ExplainabilityService.js";
-import type { IChannelRegistry, ChannelCode, MessageId, DeliveryId, NotificationPriority, ExplainStep } from "../types.js";
+import type { ChannelCode, DeliveryId, ExplainStep, IChannelRegistry, MessageId, NotificationPriority } from "../types.js";
 
 import type { NotificationMessageRepo } from "../../persistence/NotificationMessageRepo.js";
 import type { NotificationDeliveryRepo } from "../../persistence/NotificationDeliveryRepo.js";

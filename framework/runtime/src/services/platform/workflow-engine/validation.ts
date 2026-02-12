@@ -6,17 +6,17 @@
  */
 
 import type {
-  ApprovalWorkflowTemplate,
-  CreateApprovalWorkflowInput,
-  ApprovalStep,
-  ApproverRule,
-  ApprovalCondition,
-  SlaConfiguration,
-  ApprovalTrigger,
-  TemplateValidationResult,
-  TemplateValidationError,
-  TemplateValidationWarning,
   ApprovalActionType,
+  ApprovalCondition,
+  ApprovalStep,
+  ApprovalTrigger,
+  ApprovalWorkflowTemplate,
+  ApproverRule,
+  CreateApprovalWorkflowInput,
+  SlaConfiguration,
+  TemplateValidationError,
+  TemplateValidationResult,
+  TemplateValidationWarning,
 } from "./types.js";
 
 // ============================================================================

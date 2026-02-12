@@ -6,10 +6,10 @@
  */
 
 import type {
+  ApprovalActionRecord,
   ApprovalInstance,
   ApprovalStepInstance,
   AssignedApprover,
-  ApprovalActionRecord,
   EntityApprovalState,
 } from "../instance/types.js";
 import type { ApprovalActionType } from "../types.js";

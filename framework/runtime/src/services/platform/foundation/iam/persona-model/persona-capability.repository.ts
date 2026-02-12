@@ -5,17 +5,17 @@
  */
 
 import type {
-  Persona,
-  PersonaCode,
+  CapabilityMatrix,
+  ConstraintType,
+  EntityModuleMapping,
+  Module,
   Operation,
   OperationCategory,
   OperationCategoryDef,
+  Persona,
   PersonaCapability,
-  ConstraintType,
-  Module,
+  PersonaCode,
   TenantModuleSubscription,
-  EntityModuleMapping,
-  CapabilityMatrix,
 } from "./types.js";
 import type { Kysely } from "kysely";
 

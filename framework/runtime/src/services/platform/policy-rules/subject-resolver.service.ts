@@ -12,7 +12,7 @@
  * - OU membership and ABAC attributes
  */
 
-import type { SubjectSnapshot, SubjectKey } from "./types.js";
+import type { SubjectKey, SubjectSnapshot } from "./types.js";
 import type { EntitlementSnapshotService } from "../identity-access/entitlement-snapshot.service.js";
 import type { GroupSyncService } from "../identity-access/group-sync.service.js";
 import type { OUMembershipService } from "../identity-access/ou-membership.service.js";

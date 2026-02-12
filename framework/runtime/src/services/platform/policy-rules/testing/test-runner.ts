@@ -10,17 +10,17 @@
  */
 
 import {
-  REGRESSION_TEST_PACK,
   getAllGoldenTestPacks,
   getGoldenTestPack,
+  REGRESSION_TEST_PACK,
   type GoldenTestPack,
 } from "./golden-tests.js";
 
 import type {
-  TestSuiteResult,
-  TestCaseRunResult,
   IPolicySimulator,
   ITestCaseRepository,
+  TestCaseRunResult,
+  TestSuiteResult,
 } from "./types.js";
 
 // ============================================================================

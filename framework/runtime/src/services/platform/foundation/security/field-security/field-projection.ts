@@ -6,7 +6,7 @@
  */
 
 import type { FieldAccessService } from "./field-access.service.js";
-import type { SubjectSnapshot, FieldAccessContext, MaskStrategy } from "./types.js";
+import type { FieldAccessContext, MaskStrategy, SubjectSnapshot } from "./types.js";
 import type { Logger } from "../../../../../kernel/logger.js";
 
 // ============================================================================

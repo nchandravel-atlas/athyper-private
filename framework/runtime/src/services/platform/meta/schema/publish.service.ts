@@ -18,11 +18,11 @@ import type { MigrationRunnerService } from "./migration-runner.service.js";
 import type { SchemaChangeNotifier } from "./schema-change-notifier.js";
 import type { DB } from "@athyper/adapter-db";
 import type {
-  MetaCompiler,
-  MetaRegistry,
-  EntitySchema,
   CompiledModel,
   DdlGenerator,
+  EntitySchema,
+  MetaCompiler,
+  MetaRegistry,
 } from "@athyper/core/meta";
 import type { Kysely } from "kysely";
 

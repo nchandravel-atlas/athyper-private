@@ -7,7 +7,7 @@
 
 import type { IAdminActionsService, RestartOptions } from "./admin/types.js";
 import type { IAuditTrailService, IComplianceReportingService } from "./audit/types.js";
-import type { IRecoveryService, IErrorDetectionService } from "./recovery/types.js";
+import type { IErrorDetectionService, IRecoveryService } from "./recovery/types.js";
 import type { IVersionControlService } from "./version/types.js";
 import type { Request, Response } from "express";
 

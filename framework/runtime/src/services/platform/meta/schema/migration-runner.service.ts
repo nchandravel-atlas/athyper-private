@@ -15,9 +15,9 @@ import { sql } from "kysely";
 
 import type { DB } from "@athyper/adapter-db";
 import type {
+  DdlGenerator,
   MetaCompiler,
   MetaRegistry,
-  DdlGenerator,
 } from "@athyper/core/meta";
 import type { Kysely} from "kysely";
 

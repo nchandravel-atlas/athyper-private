@@ -5,7 +5,7 @@
 // Tenant dropdown in the header bar.
 // Shows tenant initials/logo with dropdown for profile, subscription, and future multi-tenant switching.
 
-import { ChevronsUpDown, UserCircle, CreditCard, ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, ChevronsUpDown, CreditCard, UserCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 

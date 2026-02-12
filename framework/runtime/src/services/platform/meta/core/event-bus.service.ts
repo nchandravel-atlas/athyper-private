@@ -7,10 +7,10 @@
  */
 
 import type {
-  MetaEventBus,
   MetaEvent,
-  MetaEventType,
+  MetaEventBus,
   MetaEventHandler,
+  MetaEventType,
 } from "@athyper/core/meta";
 
 export class MetaEventBusService implements MetaEventBus {

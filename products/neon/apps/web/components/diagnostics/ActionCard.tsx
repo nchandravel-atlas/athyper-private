@@ -4,7 +4,7 @@
 //
 // Reusable card for a single diagnostic action.
 
-import { Loader2, Check, X } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 
 
 import { Badge } from "@/components/ui/badge";

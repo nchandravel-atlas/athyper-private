@@ -1,5 +1,5 @@
 // framework/adapters/db/src/kysely/query-helpers.ts
-import type { SelectQueryBuilder, ReferenceExpression } from "kysely";
+import type { ReferenceExpression, SelectQueryBuilder } from "kysely";
 
 /**
  * Supported filter operators for query building

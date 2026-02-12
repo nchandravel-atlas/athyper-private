@@ -7,8 +7,8 @@
 import type { ComponentType } from "react";
 
 import type {
-  EntityPageStaticDescriptor,
   EntityPageDynamicDescriptor,
+  EntityPageStaticDescriptor,
 } from "./types";
 
 // ============================================================================

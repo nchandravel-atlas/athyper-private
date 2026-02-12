@@ -7,7 +7,7 @@
 
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, rm, cp, stat, readdir, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 

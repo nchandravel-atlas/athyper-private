@@ -6,12 +6,12 @@
  */
 
 import {
+    chartParamsSchema,
     headingParamsSchema,
-    spacerParamsSchema,
-    shortcutParamsSchema,
     kpiParamsSchema,
     listParamsSchema,
-    chartParamsSchema,
+    shortcutParamsSchema,
+    spacerParamsSchema,
 } from "../schemas/widget-params.schema.js";
 
 import { WidgetRegistry } from "./widget-registry.js";

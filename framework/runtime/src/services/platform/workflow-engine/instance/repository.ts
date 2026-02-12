@@ -6,14 +6,14 @@
  */
 
 import type {
-  IApprovalInstanceRepository,
-  ApprovalInstance,
-  ApprovalInstanceStatus,
-  ApprovalInstanceQueryOptions,
-  ApprovalStepInstance,
   ApprovalActionRecord,
+  ApprovalInstance,
+  ApprovalInstanceQueryOptions,
+  ApprovalInstanceStatus,
+  ApprovalStepInstance,
   EntityLock,
   EntityStateTransition,
+  IApprovalInstanceRepository,
 } from "./types.js";
 import type { DB } from "@athyper/adapter-db";
 import type { Kysely } from "kysely";

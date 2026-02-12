@@ -4,7 +4,7 @@
 
 import { HttpError } from "./http-error.js";
 
-import type { DashboardRepository, DashboardAclRow } from "./dashboard.repository.js";
+import type { DashboardAclRow, DashboardRepository } from "./dashboard.repository.js";
 import type { Logger } from "../../../kernel/logger.js";
 
 // ─────────────────────────────────────────────

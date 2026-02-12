@@ -5,11 +5,11 @@
  * lifecycle transitions, and impact analysis.
  */
 
-// Types
-export * from "./types.js";
-
 // Repository
 export * from "./repository.js";
+
+// Types
+export * from "./types.js";
 
 // Services
 export * from "./version-control.service.js";

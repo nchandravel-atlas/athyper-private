@@ -6,18 +6,18 @@
  */
 
 import type {
-  WorkflowCompletionResult,
-  PostApprovalHook,
   HookExecutionResult,
-  WorkflowEvent,
   IWorkflowCompletionService,
   IWorkflowEventHandler,
+  PostApprovalHook,
+  WorkflowCompletionResult,
+  WorkflowEvent,
 } from "./types.js";
 import type {
   ApprovalInstance,
+  EntityApprovalState,
   IApprovalInstanceRepository,
   IEntityStateHandler,
-  EntityApprovalState,
 } from "../instance/types.js";
 import type { INotificationService } from "../task/types.js";
 

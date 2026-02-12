@@ -5,11 +5,11 @@
  * including force actions, reassignments, and workflow control.
  */
 
-// Types
-export * from "./types.js";
+// Services
+export * from "./admin-actions.service.js";
 
 // Repository
 export * from "./repository.js";
 
-// Services
-export * from "./admin-actions.service.js";
+// Types
+export * from "./types.js";

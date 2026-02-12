@@ -13,9 +13,9 @@
 
 import type {
   CompiledModel,
-  DdlGenerator,
   DdlGenerationOptions as CoreDdlGenerationOptions,
   DdlGenerationResult as CoreDdlGenerationResult,
+  DdlGenerator,
   EntityClass,
   EntityFeatureFlags,
 } from "@athyper/core/meta";

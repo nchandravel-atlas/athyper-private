@@ -10,7 +10,7 @@ import type { JobQueue, JobData, JobOptions } from "@athyper/core";
 import type { Logger } from "../../../../../kernel/logger.js";
 import type { DigestStagingRepo, StagingInput, DigestStagingEntry } from "../../persistence/DigestStagingRepo.js";
 import type { TemplateRenderer } from "./TemplateRenderer.js";
-import type { IChannelRegistry, ChannelCode, PreferenceFrequency, MessageId } from "../types.js";
+import type { ChannelCode, IChannelRegistry, PreferenceFrequency } from "../types.js";
 import type { NotificationMessageRepo } from "../../persistence/NotificationMessageRepo.js";
 import type { NotificationDeliveryRepo } from "../../persistence/NotificationDeliveryRepo.js";
 import type { CreateDeliveryInput } from "../models/NotificationDelivery.js";

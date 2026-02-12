@@ -10,8 +10,8 @@
 
 import type {
   ITestCaseRepository,
-  StoredTestCase,
   PolicyTestCase,
+  StoredTestCase,
   TestCaseRunResult,
 } from "./types.js";
 import type { DB } from "@athyper/adapter-db";

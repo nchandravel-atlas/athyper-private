@@ -6,10 +6,10 @@
  */
 
 import type {
-  StepCompletionEvaluation,
-  StepActivationDecision,
   ConditionEvaluationContext,
   IStepCompletionService,
+  StepActivationDecision,
+  StepCompletionEvaluation,
   WorkflowEvent,
 } from "./types.js";
 import type {

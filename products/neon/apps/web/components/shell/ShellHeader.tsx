@@ -16,7 +16,7 @@ import { SearchDialog } from "@/components/sidebar/search-dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMessages } from "@/lib/i18n/messages-context";
 import { cn } from "@/lib/utils";
 

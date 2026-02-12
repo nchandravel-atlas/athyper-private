@@ -1,6 +1,6 @@
 import {
-    resolveContextFromRequest,
     resolveContextFromJobPayload,
+    resolveContextFromRequest,
     type RequestLike,
     type TenantContext,
 } from "./tenantContext";

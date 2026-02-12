@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { emitBffAudit, AuthAuditEvent, hashSidForAudit } from "@neon/auth/audit";
+import { AuthAuditEvent, emitBffAudit, hashSidForAudit } from "@neon/auth/audit";
 import { decodeJwtPayload } from "@neon/auth/keycloak";
 import { getSessionId } from "@neon/auth/session";
 import { NextResponse } from "next/server";

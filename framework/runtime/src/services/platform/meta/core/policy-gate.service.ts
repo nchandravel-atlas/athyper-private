@@ -6,7 +6,9 @@
  */
 
 import { uuid } from "../data/db-helpers.js";
+import { META_SPANS, withSpan } from "../observability/tracing.js";
 
+import type { MetaMetrics } from "../observability/metrics.js";
 import type { LifecycleDB_Type } from "../data/db-helpers.js";
 import type {
   HealthCheckResult,
@@ -21,10 +23,17 @@ import type {
  * Evaluates policies for access control
  */
 export class PolicyGateService implements PolicyGate {
+  private metrics?: MetaMetrics;
+
   constructor(
     private readonly compiler: MetaCompiler,
     private readonly db?: LifecycleDB_Type
   ) {}
+
+  /** Set metrics collector for observability (late binding). */
+  setMetrics(metrics: MetaMetrics): void {
+    this.metrics = metrics;
+  }
 
   async can(
     action: string,
@@ -32,53 +41,70 @@ export class PolicyGateService implements PolicyGate {
     ctx: RequestContext,
     record?: unknown
   ): Promise<boolean> {
-    try {
-      // Get compiled model for resource
-      const compiledModel = await this.compiler.compile(resource, "v1"); // TODO: get active version
+    return withSpan(
+      META_SPANS.POLICY_EVALUATE,
+      { "meta.entity": resource, "meta.action": action, "meta.tenant_id": ctx.tenantId },
+      async (span) => {
+        const start = Date.now();
+        try {
+          // Get compiled model for resource
+          const compiledModel = await this.compiler.compile(resource, "v1"); // TODO: get active version
 
-      // Get applicable policies
-      const policies = compiledModel.policies.filter(
-        (p) => p.action === action || p.action === "*"
-      );
+          // Get applicable policies
+          const policies = compiledModel.policies.filter(
+            (p) => p.action === action || p.action === "*"
+          );
 
-      if (policies.length === 0) {
-        // No policies defined = deny by default
-        return false;
-      }
+          span.setAttribute("meta.policy_count", policies.length);
 
-      // Pass action and resource in context for evaluation
-      const evalCtx = { ...ctx, action, resource };
+          if (policies.length === 0) {
+            // No policies defined = deny by default
+            this.metrics?.policyDenied({ entity: resource, action });
+            this.metrics?.policyEvalLatency(Date.now() - start, { entity: resource, action });
+            return false;
+          }
 
-      // IMPORTANT: Check deny policies first (deny ALWAYS takes precedence over allow)
-      const denyPolicies = policies.filter((p) => p.effect === "deny");
-      for (const policy of denyPolicies) {
-        const result = policy.evaluate(evalCtx, record);
-        if (result) {
-          // Explicit deny takes precedence
+          // Pass action and resource in context for evaluation
+          const evalCtx = { ...ctx, action, resource };
+
+          // IMPORTANT: Check deny policies first (deny ALWAYS takes precedence over allow)
+          const denyPolicies = policies.filter((p) => p.effect === "deny");
+          for (const policy of denyPolicies) {
+            const result = policy.evaluate(evalCtx, record);
+            if (result) {
+              // Explicit deny takes precedence
+              this.metrics?.policyDenied({ entity: resource, action });
+              this.metrics?.policyEvalLatency(Date.now() - start, { entity: resource, action });
+              return false;
+            }
+          }
+
+          // Then check allow policies (sort by priority, higher first)
+          const allowPolicies = policies
+            .filter((p) => p.effect === "allow")
+            .sort((a, b) => b.priority - a.priority);
+
+          for (const policy of allowPolicies) {
+            const result = policy.evaluate(evalCtx, record);
+            if (result) {
+              // Allow if condition matches
+              this.metrics?.policyEvalLatency(Date.now() - start, { entity: resource, action });
+              return true;
+            }
+          }
+
+          // No matching allow policy = deny
+          this.metrics?.policyDenied({ entity: resource, action });
+          this.metrics?.policyEvalLatency(Date.now() - start, { entity: resource, action });
+          return false;
+        } catch (error) {
+          console.error(`Policy evaluation error for ${action}:${resource}:`, error);
+          this.metrics?.policyEvalLatency(Date.now() - start, { entity: resource, action });
+          // Fail secure: deny on error
           return false;
         }
-      }
-
-      // Then check allow policies (sort by priority, higher first)
-      const allowPolicies = policies
-        .filter((p) => p.effect === "allow")
-        .sort((a, b) => b.priority - a.priority);
-
-      for (const policy of allowPolicies) {
-        const result = policy.evaluate(evalCtx, record);
-        if (result) {
-          // Allow if condition matches
-          return true;
-        }
-      }
-
-      // No matching allow policy = deny
-      return false;
-    } catch (error) {
-      console.error(`Policy evaluation error for ${action}:${resource}:`, error);
-      // Fail secure: deny on error
-      return false;
-    }
+      },
+    );
   }
 
   async authorize(

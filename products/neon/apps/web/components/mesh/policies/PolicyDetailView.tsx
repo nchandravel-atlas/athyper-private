@@ -1,0 +1,643 @@
+"use client";
+
+import {
+    Archive, ChevronRight, Cog, Copy, Eye, MoreVertical,
+    Play, Plus, Shield, ShieldCheck, ShieldX, Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+    DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+    Table, TableBody, TableCell, TableHead,
+    TableHeader, TableRow,
+} from "@/components/ui/table";
+import { BackLink } from "@/components/mesh/shared/BackLink";
+import { StatusDot } from "@/components/mesh/shared/StatusDot";
+import { VersionBadge } from "@/components/mesh/shared/VersionBadge";
+import { cn } from "@/lib/utils";
+import { buildHeaders } from "@/lib/schema-manager/use-csrf";
+
+// ─── Types ───────────────────────────────────────────────────
+
+interface PolicyVersion {
+    id: string;
+    versionNo: number;
+    status: "draft" | "published" | "archived";
+    publishedAt: string | null;
+    createdAt: string;
+    createdBy: string;
+}
+
+interface PermissionRule {
+    id: string;
+    scopeType: string;
+    scopeKey: string | null;
+    subjectType: "kc_role" | "kc_group" | "user" | "service";
+    subjectKey: string;
+    effect: "allow" | "deny";
+    conditions: unknown;
+    priority: number;
+    isActive: boolean;
+    operations: string[];
+}
+
+interface PolicyDetail {
+    id: string;
+    name: string;
+    description: string | null;
+    scopeType: "global" | "module" | "entity" | "entity_version";
+    scopeKey: string | null;
+    isActive: boolean;
+    versions: PolicyVersion[];
+    currentVersion: PolicyVersion | null;
+    rules: PermissionRule[];
+    compiled: {
+        compiledHash: string;
+        generatedAt: string;
+        ruleIndex: Record<string, unknown>;
+    } | null;
+    createdAt: string;
+    updatedAt: string | null;
+}
+
+type TabId = "rules" | "versions" | "compiled";
+
+// ─── Scope Label ─────────────────────────────────────────────
+
+const SCOPE_LABELS: Record<string, string> = {
+    global: "Global",
+    module: "Module",
+    entity: "Entity",
+    entity_version: "Entity Version",
+};
+
+// ─── Subject Badge ───────────────────────────────────────────
+
+const SUBJECT_COLORS: Record<string, string> = {
+    kc_role: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+    kc_group: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
+    user: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
+    service: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+};
+
+const SUBJECT_LABELS: Record<string, string> = {
+    kc_role: "Role",
+    kc_group: "Group",
+    user: "User",
+    service: "Service",
+};
+
+function SubjectBadge({ type, subjectKey }: { type: string; subjectKey: string }) {
+    const label = SUBJECT_LABELS[type] ?? type;
+    const color = SUBJECT_COLORS[type] ?? "";
+    return (
+        <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium", color)}>
+            {label}: {subjectKey}
+        </span>
+    );
+}
+
+// ─── Effect Badge ────────────────────────────────────────────
+
+function EffectBadge({ effect }: { effect: "allow" | "deny" }) {
+    if (effect === "allow") {
+        return (
+            <Badge variant="outline" className="gap-1 border-green-300 text-green-700 dark:border-green-700 dark:text-green-400">
+                <ShieldCheck className="size-3" />
+                Allow
+            </Badge>
+        );
+    }
+    return (
+        <Badge variant="outline" className="gap-1 border-red-300 text-red-700 dark:border-red-700 dark:text-red-400">
+            <ShieldX className="size-3" />
+            Deny
+        </Badge>
+    );
+}
+
+// ─── Tabs ────────────────────────────────────────────────────
+
+const TABS: { id: TabId; label: string }[] = [
+    { id: "rules", label: "Rules" },
+    { id: "versions", label: "Versions" },
+    { id: "compiled", label: "Compiled" },
+];
+
+// ─── Rules Tab ───────────────────────────────────────────────
+
+function RulesTab({ rules, isDraft }: { rules: PermissionRule[]; isDraft: boolean }) {
+    if (rules.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-muted p-3 mb-3">
+                    <Shield className="size-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-sm font-medium">No rules defined</h3>
+                <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                    Add permission rules to define who can perform which operations on which resources.
+                </p>
+                {isDraft && (
+                    <Button size="sm" className="mt-4">
+                        <Plus className="mr-1.5 size-3.5" />
+                        Add Rule
+                    </Button>
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-3">
+            {isDraft && (
+                <div className="flex justify-end">
+                    <Button size="sm">
+                        <Plus className="mr-1.5 size-3.5" />
+                        Add Rule
+                    </Button>
+                </div>
+            )}
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-[40px]">#</TableHead>
+                        <TableHead>Subject</TableHead>
+                        <TableHead>Effect</TableHead>
+                        <TableHead>Operations</TableHead>
+                        <TableHead>Scope</TableHead>
+                        <TableHead className="text-center">Priority</TableHead>
+                        <TableHead className="text-center">Conditions</TableHead>
+                        <TableHead className="w-[60px]" />
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {rules.map((rule, index) => (
+                        <TableRow key={rule.id} className={cn(!rule.isActive && "opacity-50")}>
+                            <TableCell className="text-xs text-muted-foreground">
+                                {index + 1}
+                            </TableCell>
+                            <TableCell>
+                                <SubjectBadge type={rule.subjectType} subjectKey={rule.subjectKey} />
+                            </TableCell>
+                            <TableCell>
+                                <EffectBadge effect={rule.effect} />
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                    {rule.operations.slice(0, 3).map((op) => (
+                                        <Badge key={op} variant="secondary" className="text-xs font-mono">
+                                            {op}
+                                        </Badge>
+                                    ))}
+                                    {rule.operations.length > 3 && (
+                                        <Badge variant="secondary" className="text-xs">
+                                            +{rule.operations.length - 3}
+                                        </Badge>
+                                    )}
+                                </div>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                                {rule.scopeKey ? (
+                                    <span className="font-mono">{rule.scopeType}:{rule.scopeKey}</span>
+                                ) : (
+                                    <span className="capitalize">{rule.scopeType}</span>
+                                )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                                <Badge variant="outline" className="text-xs font-mono">
+                                    {rule.priority}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-center text-xs text-muted-foreground">
+                                {rule.conditions ? (
+                                    <Badge variant="secondary" className="text-xs">
+                                        <Eye className="mr-1 size-3" />
+                                        ABAC
+                                    </Badge>
+                                ) : (
+                                    "—"
+                                )}
+                            </TableCell>
+                            <TableCell>
+                                {isDraft && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="size-7 p-0">
+                                                <MoreVertical className="size-3.5" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem>
+                                                <Copy className="mr-2 size-3.5" />
+                                                Duplicate
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="text-destructive">
+                                                <Trash2 className="mr-2 size-3.5" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    );
+}
+
+// ─── Versions Tab ────────────────────────────────────────────
+
+function VersionsTab({ versions }: { versions: PolicyVersion[] }) {
+    if (versions.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+                <p className="text-sm text-muted-foreground">No versions created yet.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-3">
+            <div className="flex justify-end">
+                <Button size="sm">
+                    <Plus className="mr-1.5 size-3.5" />
+                    New Version
+                </Button>
+            </div>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Version</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Published</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead>Created By</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {versions.map((v) => (
+                        <TableRow key={v.id}>
+                            <TableCell className="font-medium">v{v.versionNo}</TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-1.5">
+                                    <StatusDot status={v.status} />
+                                    <span className="text-xs capitalize">{v.status}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                                {v.publishedAt
+                                    ? new Date(v.publishedAt).toLocaleDateString()
+                                    : "—"}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                                {new Date(v.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                                {v.createdBy}
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    );
+}
+
+// ─── Compiled Tab ────────────────────────────────────────────
+
+function CompiledTab({ compiled }: { compiled: PolicyDetail["compiled"] }) {
+    if (!compiled) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-muted p-3 mb-3">
+                    <Cog className="size-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-sm font-medium">Not compiled</h3>
+                <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                    Publish the current draft version to trigger policy compilation.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span>
+                    Hash: <code className="font-mono">{compiled.compiledHash.slice(0, 16)}...</code>
+                </span>
+                <span>
+                    Generated: {new Date(compiled.generatedAt).toLocaleString()}
+                </span>
+            </div>
+            <pre className="rounded-lg border bg-muted/50 p-4 text-xs font-mono overflow-auto max-h-[500px]">
+                {JSON.stringify(compiled.ruleIndex, null, 2)}
+            </pre>
+        </div>
+    );
+}
+
+// ─── Version Status Banner ───────────────────────────────────
+
+function VersionStatusBanner({ status }: { status: string }) {
+    if (status === "draft") {
+        return (
+            <div className="rounded-md border border-green-200 bg-green-50 px-3 py-1.5 text-xs text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
+                Draft — rules can be edited. Publish to activate this policy version.
+            </div>
+        );
+    }
+    if (status === "published") {
+        return (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                Published — this version is active and read-only. Create a new version to make changes.
+            </div>
+        );
+    }
+    if (status === "archived") {
+        return (
+            <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+                Archived — this version is deprecated and no longer evaluated.
+            </div>
+        );
+    }
+    return null;
+}
+
+// ─── Data Hook ───────────────────────────────────────────────
+
+interface UsePolicyDetailResult {
+    policy: PolicyDetail | null;
+    loading: boolean;
+    error: string | null;
+    refresh: () => void;
+}
+
+function usePolicyDetail(policyId: string): UsePolicyDetailResult {
+    const [policy, setPolicy] = useState<PolicyDetail | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const abortRef = useRef<AbortController | null>(null);
+
+    const fetchPolicy = useCallback(async () => {
+        abortRef.current?.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch(`/api/admin/mesh/policy-studio/${encodeURIComponent(policyId)}`, {
+                headers: buildHeaders(),
+                credentials: "same-origin",
+                signal: controller.signal,
+            });
+
+            if (!res.ok) {
+                const body = (await res.json()) as { error?: { message?: string } };
+                throw new Error(body.error?.message ?? `Failed to load policy (${res.status})`);
+            }
+
+            const body = (await res.json()) as { data: PolicyDetail };
+            setPolicy(body.data);
+        } catch (err) {
+            if ((err as Error).name === "AbortError") return;
+            setError(err instanceof Error ? err.message : "Failed to load policy");
+        } finally {
+            if (!controller.signal.aborted) {
+                setLoading(false);
+            }
+        }
+    }, [policyId]);
+
+    useEffect(() => {
+        fetchPolicy();
+        return () => abortRef.current?.abort();
+    }, [fetchPolicy]);
+
+    return { policy, loading, error, refresh: fetchPolicy };
+}
+
+// ─── Detail View ─────────────────────────────────────────────
+
+interface PolicyDetailViewProps {
+    policyId: string;
+    backHref: string;
+}
+
+export function PolicyDetailView({ policyId, backHref }: PolicyDetailViewProps) {
+    const { policy, loading, error, refresh } = usePolicyDetail(policyId);
+    const [activeTab, setActiveTab] = useState<TabId>("rules");
+
+    if (loading) {
+        return (
+            <div className="space-y-4">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-[300px] rounded-lg" />
+            </div>
+        );
+    }
+
+    if (error || !policy) {
+        return (
+            <div className="space-y-4">
+                <BackLink href={backHref} label="Back to Policy Studio" />
+                <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+                    <p className="text-sm text-destructive">{error ?? "Policy not found"}</p>
+                    <Button variant="outline" size="sm" className="mt-3" onClick={refresh}>
+                        Retry
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    const version = policy.currentVersion;
+    const status = version?.status ?? "draft";
+    const isDraft = status === "draft";
+
+    return (
+        <div className="space-y-4">
+            {/* Header */}
+            <BackLink href={backHref} label="Back to Policy Studio" />
+
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                    <h2 className="text-xl font-semibold tracking-tight truncate">
+                        {policy.name}
+                    </h2>
+                    <Badge variant="outline" className="capitalize shrink-0">
+                        {SCOPE_LABELS[policy.scopeType] ?? policy.scopeType}
+                    </Badge>
+                    {version && (
+                        <VersionBadge version={version.versionNo} status={version.status} />
+                    )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <MoreVertical className="size-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                                <Plus className="mr-2 size-4" />
+                                New Version
+                            </DropdownMenuItem>
+                            {isDraft && (
+                                <DropdownMenuItem>
+                                    <Play className="mr-2 size-4" />
+                                    Publish Version
+                                </DropdownMenuItem>
+                            )}
+                            {status === "published" && (
+                                <DropdownMenuItem>
+                                    <Archive className="mr-2 size-4" />
+                                    Archive
+                                </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem>
+                                <Cog className="mr-2 size-4" />
+                                Recompile
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive">
+                                <Trash2 className="mr-2 size-4" />
+                                Delete Policy
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </div>
+
+            {policy.description && (
+                <p className="text-sm text-muted-foreground">{policy.description}</p>
+            )}
+
+            {/* Scope Info */}
+            {policy.scopeKey && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>Scope target:</span>
+                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono">
+                        {policy.scopeKey}
+                    </code>
+                </div>
+            )}
+
+            {version && <VersionStatusBanner status={status} />}
+
+            {/* Summary Cards */}
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                            Rules
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{policy.rules.length}</div>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                            <span className="inline-flex items-center gap-1">
+                                <ShieldCheck className="size-3 text-green-500" />
+                                {policy.rules.filter((r) => r.effect === "allow").length} allow
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                                <ShieldX className="size-3 text-red-500" />
+                                {policy.rules.filter((r) => r.effect === "deny").length} deny
+                            </span>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                            Versions
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{policy.versions.length}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            {policy.versions.filter((v) => v.status === "published").length} published
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                            Compilation
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            {policy.compiled ? (
+                                <span className="text-green-600 dark:text-green-400">Active</span>
+                            ) : (
+                                <span className="text-muted-foreground">Pending</span>
+                            )}
+                        </div>
+                        {policy.compiled && (
+                            <p className="text-xs text-muted-foreground mt-1 font-mono">
+                                {policy.compiled.compiledHash.slice(0, 12)}...
+                            </p>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Tab Navigation */}
+            <nav className="flex items-center gap-1 border-b" role="tablist">
+                {TABS.map((tab) => (
+                    <button
+                        key={tab.id}
+                        role="tab"
+                        aria-selected={activeTab === tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                            "relative inline-flex items-center px-3 py-2 text-sm font-medium transition-colors",
+                            activeTab === tab.id
+                                ? "text-foreground"
+                                : "text-muted-foreground hover:text-foreground",
+                        )}
+                    >
+                        {tab.label}
+                        {tab.id === "rules" && policy.rules.length > 0 && (
+                            <Badge variant="secondary" className="ml-1.5 text-xs px-1.5 py-0">
+                                {policy.rules.length}
+                            </Badge>
+                        )}
+                        {activeTab === tab.id && (
+                            <span className="absolute inset-x-0 bottom-0 h-0.5 bg-foreground" />
+                        )}
+                    </button>
+                ))}
+            </nav>
+
+            {/* Tab Content */}
+            <div className="min-h-[200px]">
+                {activeTab === "rules" && (
+                    <RulesTab rules={policy.rules} isDraft={isDraft} />
+                )}
+                {activeTab === "versions" && (
+                    <VersionsTab versions={policy.versions} />
+                )}
+                {activeTab === "compiled" && (
+                    <CompiledTab compiled={policy.compiled} />
+                )}
+            </div>
+        </div>
+    );
+}

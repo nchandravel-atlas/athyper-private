@@ -13,6 +13,7 @@ import type {
   JobOptions,
   JobQueue,
   JobStatus,
+  ProcessOptions,
   QueueMetrics,
 } from "@athyper/core";
 import type { Redis } from "ioredis";
@@ -191,7 +192,8 @@ export class RedisJobQueue implements JobQueue {
   async process<TInput, TOutput>(
     jobType: string,
     concurrency: number,
-    handler: JobHandler<TInput, TOutput>
+    handler: JobHandler<TInput, TOutput>,
+    processOptions?: ProcessOptions,
   ): Promise<void> {
     // Check if worker already exists
     if (this.workers.has(jobType)) {
@@ -219,6 +221,8 @@ export class RedisJobQueue implements JobQueue {
       {
         connection: this.config.redis,
         concurrency,
+        ...(processOptions?.lockDuration ? { lockDuration: processOptions.lockDuration } : {}),
+        ...(processOptions?.lockRenewTime ? { lockRenewTime: processOptions.lockRenewTime } : {}),
       }
     );
 
@@ -316,6 +320,13 @@ export class RedisJobQueue implements JobQueue {
       delayed: counts.delayed ?? 0,
       paused: isPaused,
     };
+  }
+
+  /**
+   * Get the number of registered worker types (job types with active processors).
+   */
+  getRegisteredWorkerCount(): number {
+    return this.workers.size;
   }
 
   /**

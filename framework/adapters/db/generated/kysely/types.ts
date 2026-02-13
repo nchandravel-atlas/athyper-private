@@ -114,8 +114,14 @@ export type approval_template = {
     name: string;
     behaviors: unknown | null;
     escalation_style: string | null;
+    version_no: Generated<number>;
+    is_active: Generated<boolean>;
+    compiled_json: unknown | null;
+    compiled_hash: string | null;
     created_at: Generated<Timestamp>;
     created_by: string;
+    updated_at: Timestamp | null;
+    updated_by: string | null;
 };
 export type approval_template_rule = {
     id: Generated<string>;

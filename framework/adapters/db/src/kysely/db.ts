@@ -26,18 +26,28 @@ export type DbClientConfig = {
     statementTimeout?: number;
 };
 
+export interface DbPoolStats {
+    totalCount: number;
+    idleCount: number;
+    waitingCount: number;
+    max: number;
+}
+
 /**
  * Database client wrapper with Kysely instance and management methods.
  */
 export class DbClient {
     public readonly kysely: Kysely<DB>;
     private readonly pool: pg.Pool;
+    private readonly poolMax: number;
 
     constructor(config: DbClientConfig) {
+        this.poolMax = config.poolMax ?? 10;
+
         // Create pool
         const poolConfig: PoolConfig = {
             connectionString: config.connectionString,
-            max: config.poolMax ?? 10,
+            max: this.poolMax,
             statement_timeout: config.statementTimeout ?? 30000,
         };
 
@@ -63,6 +73,18 @@ export class DbClient {
      */
     async health(): Promise<{ healthy: boolean; message?: string }> {
         return healthCheck(this.pool);
+    }
+
+    /**
+     * Get pool statistics for health monitoring.
+     */
+    getPoolStats(): DbPoolStats {
+        return {
+            totalCount: this.pool.totalCount,
+            idleCount: this.pool.idleCount,
+            waitingCount: this.pool.waitingCount,
+            max: this.poolMax,
+        };
     }
 
     /**

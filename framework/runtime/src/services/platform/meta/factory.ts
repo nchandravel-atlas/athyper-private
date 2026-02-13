@@ -10,25 +10,41 @@ import { MetaCompilerService } from "./core/compiler.service.js";
 import { MetaStoreService } from "./core/meta-store.service.js";
 import { PolicyGateService } from "./core/policy-gate.service.js";
 import { MetaRegistryService } from "./core/registry.service.js";
-import { GenericDataAPIService } from "./data/generic-data-api.service.js";
+import { GenericDataAPIService, type FieldSecurityFilter } from "./data/generic-data-api.service.js";
 import { LifecycleManagerService } from "./lifecycle/lifecycle-manager.service.js";
 import { LifecycleRouteCompilerService } from "./lifecycle/lifecycle-route-compiler.service.js";
+import { LifecycleTimerServiceImpl } from "./lifecycle/lifecycle-timer.service.js";
 import { EntityClassificationServiceImpl } from "./classification/entity-classification.service.js";
 import { NumberingEngineService } from "./numbering/numbering-engine.service.js";
 import { ApprovalServiceImpl } from "./approval/approval.service.js";
+import { ApprovalTemplateServiceImpl } from "./approval/approval-template.service.js";
+import { ApproverResolverService } from "./approval/approver-resolver.service.js";
 import { DdlGeneratorService } from "./schema/ddl-generator.service.js";
 import { MigrationRunnerService } from "./schema/migration-runner.service.js";
 import { PublishService } from "./schema/publish.service.js";
 import { SchemaChangeNotifier } from "./schema/schema-change-notifier.js";
 import { ActionDispatcherServiceImpl, EntityPageDescriptorServiceImpl } from "./descriptor/index.js";
 import { MetaEventBusService } from "./core/event-bus.service.js";
+import { ValidationEngineService } from "./validation/rule-engine.service.js";
+import { MetaMetrics } from "./observability/metrics.js";
+import { DatabaseOverlayRepository, SchemaComposerService } from "../foundation/overlay-system/index.js";
+import type { IOverlayRepository } from "../foundation/overlay-system/index.js";
+import type { Logger } from "../../../kernel/logger.js";
+
+import {
+  SLA_JOB_TYPES,
+  createSlaReminderHandler,
+  createSlaEscalationHandler,
+} from "./approval/index.js";
 
 import type { MetaStore } from "./core/meta-store.service.js";
 import type { LifecycleDB_Type } from "./data/db-helpers.js";
 import type { DB } from "@athyper/adapter-db";
+import type { JobQueue, MetricsRegistry } from "@athyper/core";
 import type {
   ActionDispatcher,
   ApprovalService,
+  ApprovalTemplateService,
   AuditLogger,
   DdlGenerator,
   EntityClassificationService,
@@ -36,6 +52,7 @@ import type {
   GenericDataAPI,
   LifecycleManager,
   LifecycleRouteCompiler,
+  LifecycleTimerService,
   MetaCompiler,
   MetaEventBus,
   MetaRegistry,
@@ -55,11 +72,20 @@ export type MetaServicesConfig = {
   /** Redis cache instance */
   cache: Redis;
 
+  /** Job queue for SLA timer scheduling (optional — SLA timers disabled if absent) */
+  jobQueue?: JobQueue;
+
   /** Compiler cache TTL in seconds (default: 3600) */
   cacheTTL?: number;
 
   /** Enable caching (default: true) */
   enableCache?: boolean;
+
+  /** Field-level security filter (optional — field masking/redaction disabled if absent) */
+  fieldSecurityFilter?: FieldSecurityFilter;
+
+  /** Metrics registry for observability (optional — metrics disabled if absent) */
+  metricsRegistry?: MetricsRegistry;
 };
 
 /**
@@ -75,9 +101,11 @@ export type MetaServices = {
   metaStore: MetaStore;
   lifecycleRouteCompiler: LifecycleRouteCompiler;
   lifecycleManager: LifecycleManager;
+  lifecycleTimerService: LifecycleTimerService;
   classificationService: EntityClassificationService;
   numberingEngine: NumberingEngine;
   approvalService: ApprovalService;
+  approvalTemplateService: ApprovalTemplateService;
   ddlGenerator: DdlGenerator;
   migrationRunner: MigrationRunnerService;
   publishService: PublishService;
@@ -85,6 +113,9 @@ export type MetaServices = {
   descriptorService: EntityPageDescriptorService;
   actionDispatcher: ActionDispatcher;
   eventBus: MetaEventBus;
+  validationEngine: ValidationEngineService;
+  overlayRepository: IOverlayRepository;
+  schemaComposer: SchemaComposerService;
 };
 
 /**
@@ -111,8 +142,22 @@ export function createMetaServices(
 ): MetaServices {
   // Create services in dependency order
 
+  // 0. Console logger adapter for overlay system (simple wrapper)
+  const consoleLogger: Logger = {
+    info: (metaOrMsg: any, msgOrMeta?: any) => console.info(metaOrMsg, msgOrMeta),
+    warn: (metaOrMsg: any, msgOrMeta?: any) => console.warn(metaOrMsg, msgOrMeta),
+    error: (metaOrMsg: any, msgOrMeta?: any) => console.error(metaOrMsg, msgOrMeta),
+    debug: (metaOrMsg: any, msgOrMeta?: any) => console.debug(metaOrMsg, msgOrMeta),
+    trace: (metaOrMsg: any, msgOrMeta?: any) => console.trace(metaOrMsg, msgOrMeta),
+    fatal: (metaOrMsg: any, msgOrMeta?: any) => console.error("[FATAL]", metaOrMsg, msgOrMeta),
+    log: (msg: string) => console.log(msg),
+  };
+
   // 0. Event Bus (no dependencies — created first so other services can subscribe)
   const eventBus = new MetaEventBusService();
+
+  // 0.1. Metrics (optional — create if registry provided)
+  const metrics = config.metricsRegistry ? new MetaMetrics(config.metricsRegistry) : undefined;
 
   // 1. Registry (no dependencies on other META services)
   const registry = new MetaRegistryService(config.db);
@@ -150,16 +195,66 @@ export function createMetaServices(
     policyGate
   );
 
-  // 9. Approval Service (depends on db)
+  // 9. Lifecycle Timer Service (depends on db)
+  const lifecycleTimerService = new LifecycleTimerServiceImpl(
+    config.db as unknown as LifecycleDB_Type
+  );
+
+  // 10. Approval Service (depends on db)
   const approvalService = new ApprovalServiceImpl(
     config.db as unknown as LifecycleDB_Type
   );
 
-  // 10. Wire circular dependencies
+  // 11. Wire circular dependencies
   lifecycleManager.setApprovalService(approvalService);
   approvalService.setLifecycleManager(lifecycleManager);
+  lifecycleManager.setTimerService(lifecycleTimerService);
+  lifecycleTimerService.setLifecycleManager(lifecycleManager);
 
-  // 11. Generic Data API (depends on compiler, policyGate, auditLogger, lifecycleManager, classificationService, numberingEngine)
+  // 11.1 Wire timer service job queue (if provided)
+  if (config.jobQueue) {
+    lifecycleTimerService.setJobQueue(config.jobQueue);
+  }
+
+  // 11.2 Wire SLA timer job queue (if provided)
+  if (config.jobQueue) {
+    approvalService.setJobQueue(config.jobQueue);
+  }
+
+  // 10.2 Wire approver resolver (condition evaluation + role/group/hierarchy expansion)
+  const approverResolver = new ApproverResolverService(
+    config.db as unknown as LifecycleDB_Type,
+    config.cache,
+  );
+  approvalService.setApproverResolver(approverResolver);
+
+  // 10.3 Approval Template Service (depends on db, cache, approverResolver)
+  const approvalTemplateService = new ApprovalTemplateServiceImpl(
+    config.db as unknown as LifecycleDB_Type,
+    config.cache,
+    approverResolver,
+  );
+
+  // 10.4 Overlay Repository (depends on db)
+  const overlayRepository = new DatabaseOverlayRepository(
+    config.db as unknown as LifecycleDB_Type
+  );
+
+  // 10.4.1 Schema Composer (depends on overlayRepository)
+  const schemaComposer = new SchemaComposerService(
+    overlayRepository,
+    consoleLogger
+  );
+
+  // 10.5 Validation Engine (depends on compiler, registry, cache, db)
+  const validationEngine = new ValidationEngineService(
+    compiler,
+    registry,
+    config.cache,
+    config.db,
+  );
+
+  // 11. Generic Data API (depends on compiler, policyGate, auditLogger, lifecycleManager, classificationService, numberingEngine, validationEngine, registry, fieldSecurityFilter)
   const dataAPI = new GenericDataAPIService(
     config.db,
     compiler,
@@ -168,6 +263,9 @@ export function createMetaServices(
     lifecycleManager,
     classificationService,
     numberingEngine,
+    validationEngine,
+    registry,
+    config.fieldSecurityFilter,
   );
 
   // 8. MetaStore (depends on registry, compiler, auditLogger)
@@ -214,6 +312,15 @@ export function createMetaServices(
     dataAPI,
   );
 
+  // 15. Wire metrics to all instrumented services (late binding)
+  if (metrics) {
+    compiler.setMetrics(metrics);
+    validationEngine.setMetrics(metrics);
+    policyGate.setMetrics(metrics);
+    lifecycleManager.setMetrics(metrics);
+    dataAPI.setMetrics(metrics);
+  }
+
   return {
     registry,
     compiler,
@@ -223,9 +330,11 @@ export function createMetaServices(
     metaStore,
     lifecycleRouteCompiler,
     lifecycleManager,
+    lifecycleTimerService,
     classificationService,
     numberingEngine,
     approvalService,
+    approvalTemplateService,
     ddlGenerator,
     migrationRunner,
     publishService,
@@ -233,6 +342,9 @@ export function createMetaServices(
     descriptorService,
     actionDispatcher,
     eventBus,
+    validationEngine,
+    overlayRepository,
+    schemaComposer,
   };
 }
 

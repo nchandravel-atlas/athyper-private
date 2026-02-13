@@ -15,7 +15,14 @@
  */
 
 import { now, uuid } from "../data/db-helpers.js";
+import { META_SPANS, withSpan } from "../observability/tracing.js";
+import {
+  evaluateConditionGroup,
+  resolveFieldValue,
+  type ConditionGroup,
+} from "../../shared/condition-evaluator.js";
 
+import type { MetaMetrics } from "../observability/metrics.js";
 import type { LifecycleDB_Type } from "../data/db-helpers.js";
 import type {
   ApprovalService,
@@ -26,6 +33,7 @@ import type {
   LifecycleManager,
   LifecycleRouteCompiler,
   LifecycleState,
+  LifecycleTimerService,
   LifecycleTransition,
   LifecycleTransitionGate,
   LifecycleTransitionRequest,
@@ -34,11 +42,14 @@ import type {
   PaginatedResponse,
   PolicyGate,
   RequestContext,
+  ThresholdRule,
 } from "@athyper/core/meta";
 
 
 export class LifecycleManagerService implements LifecycleManager {
   private approvalService?: ApprovalService;
+  private timerService?: LifecycleTimerService;
+  private metrics?: MetaMetrics;
 
   constructor(
     private readonly db: LifecycleDB_Type,
@@ -46,12 +57,25 @@ export class LifecycleManagerService implements LifecycleManager {
     private readonly policyGate: PolicyGate,
   ) {}
 
+  /** Set metrics collector for observability (late binding). */
+  setMetrics(metrics: MetaMetrics): void {
+    this.metrics = metrics;
+  }
+
   /**
    * Set approval service for circular dependency resolution.
    * Called by factory after both services are constructed.
    */
   setApprovalService(svc: ApprovalService): void {
     this.approvalService = svc;
+  }
+
+  /**
+   * Set timer service for timer lifecycle management.
+   * Called by factory after both services are constructed.
+   */
+  setTimerService(svc: LifecycleTimerService): void {
+    this.timerService = svc;
   }
 
   // ============================================================================
@@ -198,126 +222,160 @@ export class LifecycleManagerService implements LifecycleManager {
   ): Promise<LifecycleTransitionResult> {
     const { entityName, entityId, operationCode, ctx } = request;
 
-    try {
-      // Get current instance
-      const instance = await this.getInstanceOrFail(
-        entityName,
-        entityId,
-        ctx.tenantId
-      );
+    return withSpan(
+      META_SPANS.LIFECYCLE_TRANSITION,
+      { "meta.entity": entityName, "meta.operation": operationCode, "meta.tenant_id": ctx.tenantId, "meta.record_id": entityId },
+      async (span) => {
+        const start = Date.now();
+        try {
+          // Get current instance
+          const instance = await this.getInstanceOrFail(
+            entityName,
+            entityId,
+            ctx.tenantId
+          );
 
-      // Get current state
-      const currentState = await this.getState(
-        instance.stateId,
-        ctx.tenantId
-      );
+          // Get current state
+          const currentState = await this.getState(
+            instance.stateId,
+            ctx.tenantId
+          );
 
-      // Check if current state is terminal
-      if (currentState.isTerminal) {
-        return {
-          success: false,
-          error: "Cannot transition from terminal state",
-          reason: `State '${currentState.code}' is terminal`,
-        };
-      }
+          // Check if current state is terminal
+          if (currentState.isTerminal) {
+            this.metrics?.transitionFailed({ entity: entityName, operation: operationCode, reason: "terminal_state" });
+            return {
+              success: false,
+              error: "Cannot transition from terminal state",
+              reason: `State '${currentState.code}' is terminal`,
+            };
+          }
 
-      // Find transition
-      const transition = await this.findTransition(
-        instance.lifecycleId,
-        instance.stateId,
-        operationCode,
-        ctx.tenantId
-      );
+          // Find transition
+          const transition = await this.findTransition(
+            instance.lifecycleId,
+            instance.stateId,
+            operationCode,
+            ctx.tenantId
+          );
 
-      if (!transition) {
-        return {
-          success: false,
-          error: "Transition not found",
-          reason: `No transition from '${currentState.code}' via '${operationCode}'`,
-        };
-      }
+          if (!transition) {
+            this.metrics?.transitionFailed({ entity: entityName, operation: operationCode, reason: "not_found" });
+            return {
+              success: false,
+              error: "Transition not found",
+              reason: `No transition from '${currentState.code}' via '${operationCode}'`,
+            };
+          }
 
-      // Validate gates (pass entity context for approval bridge)
-      const gateResult = await this.validateGates(
-        transition.id,
-        ctx,
-        request.payload,
-        { entityName, entityId }
-      );
+          // Validate gates (pass entity context for approval bridge)
+          const gateResult = await this.validateGates(
+            transition.id,
+            ctx,
+            request.payload,
+            { entityName, entityId }
+          );
 
-      if (!gateResult.allowed) {
-        return {
-          success: false,
-          error: "Gate validation failed",
-          reason: gateResult.reason || "Access denied",
-        };
-      }
+          if (!gateResult.allowed) {
+            this.metrics?.transitionFailed({ entity: entityName, operation: operationCode, reason: "gate_denied" });
+            return {
+              success: false,
+              error: "Gate validation failed",
+              reason: gateResult.reason || "Access denied",
+            };
+          }
 
-      // Get target state
-      const targetState = await this.getState(
-        transition.toStateId,
-        ctx.tenantId
-      );
+          // Get target state
+          const targetState = await this.getState(
+            transition.toStateId,
+            ctx.tenantId
+          );
 
-      // Execute transition
-      await this.db
-        .updateTable("core.entity_lifecycle_instance")
-        .set({
-          state_id: transition.toStateId,
-          updated_at: now(),
-          updated_by: ctx.userId,
-        })
-        .where("tenant_id", "=", ctx.tenantId)
-        .where("entity_name", "=", entityName)
-        .where("entity_id", "=", entityId)
-        .execute();
+          // Execute transition
+          await this.db
+            .updateTable("core.entity_lifecycle_instance")
+            .set({
+              state_id: transition.toStateId,
+              updated_at: now(),
+              updated_by: ctx.userId,
+            })
+            .where("tenant_id", "=", ctx.tenantId)
+            .where("entity_name", "=", entityName)
+            .where("entity_id", "=", entityId)
+            .execute();
 
-      // Log lifecycle event
-      const event = await this.logEvent({
-        tenantId: ctx.tenantId,
-        entityName,
-        entityId,
-        lifecycleId: instance.lifecycleId,
-        fromStateId: instance.stateId,
-        toStateId: transition.toStateId,
-        operationCode,
-        actorId: ctx.userId,
-        payload: request.payload,
-        correlationId: undefined,
-      });
+          // Log lifecycle event
+          const event = await this.logEvent({
+            tenantId: ctx.tenantId,
+            entityName,
+            entityId,
+            lifecycleId: instance.lifecycleId,
+            fromStateId: instance.stateId,
+            toStateId: transition.toStateId,
+            operationCode,
+            actorId: ctx.userId,
+            payload: request.payload,
+            correlationId: undefined,
+          });
 
-      console.log(JSON.stringify({
-        msg: "lifecycle_transition_success",
-        entityName,
-        entityId,
-        tenantId: ctx.tenantId,
-        operationCode,
-        fromState: currentState.code,
-        toState: targetState.code,
-        eventId: event.id,
-      }));
+          this.metrics?.transitionLatency(Date.now() - start, { entity: entityName, operation: operationCode });
 
-      return {
-        success: true,
-        newStateId: transition.toStateId,
-        newStateCode: targetState.code,
-        eventId: event.id,
-      };
-    } catch (error) {
-      console.error(JSON.stringify({
-        msg: "lifecycle_transition_error",
-        entityName,
-        entityId,
-        tenantId: ctx.tenantId,
-        operationCode,
-        error: String(error),
-      }));
+          console.log(JSON.stringify({
+            msg: "lifecycle_transition_success",
+            entityName,
+            entityId,
+            tenantId: ctx.tenantId,
+            operationCode,
+            fromState: currentState.code,
+            toState: targetState.code,
+            eventId: event.id,
+          }));
 
-      return {
-        success: false,
-        error: String(error),
-      };
-    }
+          // Timer lifecycle management (H4: Auto-transitions)
+          if (this.timerService) {
+            // Cancel old timers (prevent stale timer execution)
+            await this.timerService.cancelTimers(
+              entityName,
+              entityId,
+              ctx.tenantId,
+              `transitioned_to_${targetState.code}`
+            );
+
+            // Schedule new timers for target state (if policies exist)
+            await this.scheduleTimersForState(
+              entityName,
+              entityId,
+              transition.toStateId,
+              ctx,
+              request.payload
+            );
+          }
+
+          return {
+            success: true,
+            newStateId: transition.toStateId,
+            newStateCode: targetState.code,
+            eventId: event.id,
+          };
+        } catch (error) {
+          this.metrics?.transitionFailed({ entity: entityName, operation: operationCode, reason: "error" });
+
+          console.error(JSON.stringify({
+            msg: "lifecycle_transition_error",
+            entityName,
+            entityId,
+            tenantId: ctx.tenantId,
+            operationCode,
+            error: String(error),
+          }));
+
+          return {
+            success: false,
+            error: String(error),
+          };
+        }
+      },
+    );
   }
 
   /**
@@ -566,11 +624,134 @@ export class LifecycleManagerService implements LifecycleManager {
         // status === "completed" → allow (continue gate evaluation)
       }
 
-      // TODO: Evaluate threshold rules
-      // TODO: Evaluate custom conditions
+      // Evaluate threshold rules (H1)
+      if (gate.thresholdRules && record) {
+        const thresholdResult = this.evaluateThresholds(
+          gate.thresholdRules as { rules: ThresholdRule[] },
+          record as Record<string, unknown>
+        );
+        if (!thresholdResult.allowed) {
+          console.log(JSON.stringify({
+            msg: "lifecycle_gate_threshold_blocked",
+            transitionId,
+            tenantId: ctx.tenantId,
+            userId: ctx.userId,
+            reason: thresholdResult.reason,
+          }));
+          return {
+            allowed: false,
+            reason: thresholdResult.reason ?? "Threshold gate blocked",
+          };
+        }
+      }
+
+      // Evaluate custom conditions (H2)
+      if (gate.conditions && record) {
+        const conditionResult = this.evaluateGateConditions(
+          gate.conditions as ConditionGroup,
+          record as Record<string, unknown>,
+          ctx
+        );
+        if (!conditionResult) {
+          console.log(JSON.stringify({
+            msg: "lifecycle_gate_condition_blocked",
+            transitionId,
+            tenantId: ctx.tenantId,
+            userId: ctx.userId,
+          }));
+          return {
+            allowed: false,
+            reason: "Gate condition not met",
+          };
+        }
+      }
     }
 
+    // Log successful gate evaluation
+    console.log(JSON.stringify({
+      msg: "lifecycle_gate_evaluated",
+      transitionId,
+      gateCount: gates.length,
+      allowed: true,
+      tenantId: ctx.tenantId,
+      userId: ctx.userId,
+    }));
+
     return { allowed: true };
+  }
+
+  /**
+   * Evaluate threshold rules for a gate
+   * Checks numeric field values against threshold criteria
+   */
+  private evaluateThresholds(
+    thresholdConfig: { rules: ThresholdRule[] },
+    record: Record<string, unknown>
+  ): { allowed: boolean; reason?: string } {
+    for (const rule of thresholdConfig.rules ?? []) {
+      const actual = resolveFieldValue(rule.field, record);
+      const numVal = typeof actual === "number" ? actual : Number(actual);
+      if (isNaN(numVal)) continue; // non-numeric field — skip rule
+
+      let passed = true;
+      switch (rule.operator) {
+        case "gt":
+          passed = numVal > (rule.value as number);
+          break;
+        case "gte":
+          passed = numVal >= (rule.value as number);
+          break;
+        case "lt":
+          passed = numVal < (rule.value as number);
+          break;
+        case "lte":
+          passed = numVal <= (rule.value as number);
+          break;
+        case "eq":
+          passed = numVal === (rule.value as number);
+          break;
+        case "ne":
+          passed = numVal !== (rule.value as number);
+          break;
+        case "between": {
+          const [lo, hi] = rule.value as [number, number];
+          passed = numVal >= lo && numVal <= hi;
+          break;
+        }
+      }
+
+      if (!passed && rule.action === "block") {
+        return {
+          allowed: false,
+          reason: rule.reason ??
+            `Threshold blocked: ${rule.field} ${rule.operator} ${rule.value} (actual: ${numVal})`,
+        };
+      }
+      // action === "require_approval" handled by approval template gate (future enhancement)
+    }
+    return { allowed: true };
+  }
+
+  /**
+   * Evaluate custom condition group for a gate
+   * Uses shared condition evaluator with AND/OR logic
+   */
+  private evaluateGateConditions(
+    conditions: ConditionGroup,
+    record: Record<string, unknown>,
+    ctx: RequestContext
+  ): boolean {
+    // Build evaluation context merging record fields with request context
+    const evalCtx: Record<string, unknown> = {
+      ...record,
+      ctx: {
+        userId: ctx.userId,
+        tenantId: ctx.tenantId,
+        roles: ctx.roles,
+        realmId: ctx.realmId,
+      },
+    };
+    return evaluateConditionGroup(conditions, evalCtx);
   }
 
   /**
@@ -714,6 +895,66 @@ export class LifecycleManagerService implements LifecycleManager {
       throw new Error(
         `Cannot update ${entityName}/${entityId}: record is in terminal state`
       );
+    }
+  }
+
+  // ============================================================================
+  // Timer Management (H4: Auto-Transitions)
+  // ============================================================================
+
+  /**
+   * Schedule timers for a state based on timer policies.
+   * Called after successful transition to schedule timers for the new state.
+   *
+   * @param entityName - Entity name
+   * @param entityId - Entity record ID
+   * @param stateId - State ID to check for timer policies
+   * @param ctx - Request context
+   * @param triggerData - Entity record data for field-relative delay calculation
+   */
+  private async scheduleTimersForState(
+    entityName: string,
+    entityId: string,
+    stateId: string,
+    ctx: RequestContext,
+    triggerData?: Record<string, unknown>
+  ): Promise<void> {
+    if (!this.timerService) {
+      return;
+    }
+
+    // Query timer policies for this tenant
+    const policies = await this.db
+      .selectFrom("meta.lifecycle_timer_policy")
+      .selectAll()
+      .where("tenant_id", "=", ctx.tenantId)
+      .execute();
+
+    for (const policyRow of policies) {
+      try {
+        // Parse policy rules
+        const rules = JSON.parse(policyRow.rules as any);
+
+        // Check if this state triggers the timer
+        if (rules.triggerOnStateEntry?.includes(stateId)) {
+          await this.timerService.scheduleTimer(
+            policyRow.id,
+            entityName,
+            entityId,
+            ctx,
+            triggerData
+          );
+        }
+      } catch (error) {
+        console.error(JSON.stringify({
+          msg: "lifecycle_timer_scheduling_failed",
+          policyId: policyRow.id,
+          entityName,
+          entityId,
+          stateId,
+          error: String(error),
+        }));
+      }
     }
   }
 

@@ -187,6 +187,12 @@ export type LifecycleDB = DB & {
     name: string;
     behaviors: unknown | null; // jsonb
     escalation_style: string | null;
+    version_no: number;
+    is_active: boolean;
+    compiled_json: unknown | null; // jsonb
+    compiled_hash: string | null;
+    updated_at: Date | null;
+    updated_by: string | null;
     created_at: Date;
     created_by: string;
   };

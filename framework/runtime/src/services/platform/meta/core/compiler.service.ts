@@ -7,6 +7,9 @@
 
 import { createHash } from "node:crypto";
 
+import { META_SPANS, withSpan } from "../observability/tracing.js";
+
+import type { MetaMetrics } from "../observability/metrics.js";
 import type {
   CompileDiagnostic,
   CompiledField,
@@ -49,6 +52,7 @@ export type CompilerConfig = {
 export class MetaCompilerService implements MetaCompiler {
   private readonly cacheTTL: number;
   private readonly enableCache: boolean;
+  private metrics?: MetaMetrics;
 
   constructor(
     private readonly registry: MetaRegistry,
@@ -56,6 +60,11 @@ export class MetaCompilerService implements MetaCompiler {
   ) {
     this.cacheTTL = config.cacheTTL ?? 3600; // 1 hour default
     this.enableCache = config.enableCache ?? true;
+  }
+
+  /** Set metrics collector for observability (late binding). */
+  setMetrics(metrics: MetaMetrics): void {
+    this.metrics = metrics;
   }
 
   // =========================================================================
@@ -66,35 +75,31 @@ export class MetaCompilerService implements MetaCompiler {
     entityName: string,
     version: string
   ): Promise<CompiledModel> {
-    // Try cache first
-    if (this.enableCache) {
-      const cached = await this.getCached(entityName, version);
-      if (cached) {
-        // Phase 9.3: Log cache hit
-        console.log(
-          JSON.stringify({
-            msg: "compilation_cache_hit",
-            entity: entityName,
-            version,
-            input_hash: cached.inputHash,
-            output_hash: cached.outputHash,
-          })
-        );
-        return cached;
-      }
+    return withSpan(
+      META_SPANS.COMPILE,
+      { "meta.entity": entityName, "meta.version": version },
+      async (span) => {
+        const start = Date.now();
 
-      // Phase 9.3: Log cache miss
-      console.log(
-        JSON.stringify({
-          msg: "compilation_cache_miss",
-          entity: entityName,
-          version,
-        })
-      );
-    }
+        // Try cache first
+        if (this.enableCache) {
+          const cached = await this.getCached(entityName, version);
+          if (cached) {
+            span.setAttribute("meta.cache_hit", true);
+            this.metrics?.cacheHit({ entity: entityName });
+            this.metrics?.compilationLatency(Date.now() - start, { entity: entityName });
+            return cached;
+          }
+          span.setAttribute("meta.cache_hit", false);
+          this.metrics?.cacheMiss({ entity: entityName });
+        }
 
-    // Not in cache, compile and cache
-    return this.compileAndCache(entityName, version);
+        // Not in cache, compile and cache
+        const result = await this.compileAndCache(entityName, version);
+        this.metrics?.compilationLatency(Date.now() - start, { entity: entityName });
+        return result;
+      },
+    );
   }
 
   async recompile(
@@ -695,6 +700,7 @@ export class MetaCompilerService implements MetaCompiler {
       unique: field.unique,
       // Include validation constraints
       referenceTo: field.referenceTo,
+      onDelete: field.onDelete,
       enumValues: field.enumValues,
       minLength: field.minLength,
       maxLength: field.maxLength,

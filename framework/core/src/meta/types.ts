@@ -260,6 +260,9 @@ export type CompiledField = {
   /** For reference fields: target entity name */
   referenceTo?: string;
 
+  /** For reference fields: cascade behavior on delete */
+  onDelete?: "CASCADE" | "SET_NULL" | "RESTRICT";
+
   /** For enum fields: allowed values */
   enumValues?: string[];
 
@@ -1252,6 +1255,24 @@ export type ApprovalTemplate = {
   /** Escalation style */
   escalationStyle?: string;
 
+  /** Version number (1-indexed) */
+  versionNo: number;
+
+  /** Is this the active version? */
+  isActive: boolean;
+
+  /** Compiled template artifact (JSON) */
+  compiledJson?: Record<string, unknown>;
+
+  /** SHA-256 hash of compiled artifact */
+  compiledHash?: string;
+
+  /** Last updated timestamp */
+  updatedAt?: Date;
+
+  /** User who last updated */
+  updatedBy?: string;
+
   /** Audit fields */
   createdAt: Date;
   createdBy: string;
@@ -1531,6 +1552,170 @@ export type LifecycleTransitionResult = {
 
   /** Lifecycle event ID (if successful) */
   eventId?: string;
+};
+
+// ============================================================================
+// Lifecycle Timer Types (Auto-Transitions)
+// ============================================================================
+
+/**
+ * Lifecycle Timer Type
+ *
+ * Type of automated lifecycle timer action.
+ */
+export type LifecycleTimerType =
+  | "auto_close"        // Automatically close/complete entity after period
+  | "auto_cancel"       // Automatically cancel entity after period
+  | "reminder"          // Send reminder notification
+  | "auto_transition";  // Generic auto-transition to target state
+
+/**
+ * Lifecycle Timer Policy
+ *
+ * Defines timer rules for automatic state transitions.
+ * Stored in meta.lifecycle_timer_policy table.
+ */
+export type LifecycleTimerPolicy = {
+  /** Unique policy ID */
+  id: string;
+
+  /** Tenant ID */
+  tenantId: string;
+
+  /** Policy code (unique within tenant) */
+  code: string;
+
+  /** Human-readable policy name */
+  name: string;
+
+  /** Timer rules configuration */
+  rules: LifecycleTimerRules;
+
+  /** Audit fields */
+  createdAt: Date;
+  createdBy: string;
+};
+
+/**
+ * Lifecycle Timer Rules
+ *
+ * Configuration for timer scheduling and execution.
+ */
+export type LifecycleTimerRules = {
+  /** Type of timer */
+  timerType: LifecycleTimerType;
+
+  /** Trigger conditions - state codes that trigger this timer */
+  triggerOnStateEntry?: string[];
+
+  /** Trigger conditions - transition operation codes that trigger this timer */
+  triggerOnTransition?: string[];
+
+  /** Delay calculation type */
+  delayType: "fixed" | "field_relative" | "sla";
+
+  /** Fixed delay in milliseconds (for delayType: "fixed") */
+  delayMs?: number;
+
+  /** Field to calculate delay from (for delayType: "field_relative") */
+  delayFromField?: string;
+
+  /** Offset to add/subtract from field value in ms (for delayType: "field_relative") */
+  delayOffsetMs?: number;
+
+  /** Target transition ID to execute when timer fires */
+  targetTransitionId?: string;
+
+  /** Target operation code to execute (alternative to transition ID) */
+  targetOperationCode?: string;
+
+  /** Conditions that must be met when timer fires (evaluated at fire time) */
+  conditions?: ConditionGroup;
+
+  /** Cancel timer if entity transitions to any state */
+  cancelOnAnyTransition?: boolean;
+
+  /** Cancel timer if entity enters these states */
+  cancelOnStates?: string[];
+};
+
+/**
+ * Lifecycle Timer Schedule
+ *
+ * Represents an active scheduled timer for an entity instance.
+ * Stored in core.lifecycle_timer_schedule table.
+ */
+export type LifecycleTimerSchedule = {
+  /** Unique schedule ID */
+  id: string;
+
+  /** Tenant ID */
+  tenantId: string;
+
+  /** Entity name */
+  entityName: string;
+
+  /** Entity record ID */
+  entityId: string;
+
+  /** Lifecycle ID */
+  lifecycleId: string;
+
+  /** State ID when timer was scheduled */
+  stateId: string;
+
+  /** Timer type */
+  timerType: LifecycleTimerType;
+
+  /** Transition ID to execute (optional) */
+  transitionId?: string;
+
+  /** When timer was scheduled */
+  scheduledAt: Date;
+
+  /** When timer should fire */
+  fireAt: Date;
+
+  /** BullMQ job ID (for cancellation) */
+  jobId: string;
+
+  /** Policy ID that created this timer (optional - may be null if policy deleted) */
+  policyId?: string;
+
+  /** Immutable snapshot of policy rules at scheduling time */
+  policySnapshot: LifecycleTimerRules;
+
+  /** Timer status */
+  status: "scheduled" | "fired" | "canceled";
+
+  /** Audit fields */
+  createdAt: Date;
+  createdBy: string;
+};
+
+/**
+ * Lifecycle Timer Payload
+ *
+ * BullMQ job payload for timer execution.
+ */
+export type LifecycleTimerPayload = {
+  /** Schedule ID */
+  scheduleId: string;
+
+  /** Tenant ID */
+  tenantId: string;
+
+  /** Entity name */
+  entityName: string;
+
+  /** Entity record ID */
+  entityId: string;
+
+  /** Timer type */
+  timerType: LifecycleTimerType;
+
+  /** Policy snapshot */
+  policySnapshot: LifecycleTimerRules;
 };
 
 // ============================================================================
@@ -1952,6 +2137,112 @@ export type NumberingSequence = {
 export type EffectiveDatedListOptions = ListOptions & {
   /** Point-in-time date for effective dating filter */
   asOfDate?: Date;
+};
+
+// ============================================================================
+// EPIC G — Approval Template Authoring
+// ============================================================================
+
+/**
+ * Input for creating an approval template with stages and rules.
+ */
+export type ApprovalTemplateCreateInput = {
+  /** Stable template code */
+  code: string;
+
+  /** Display name */
+  name: string;
+
+  /** Behavioral flags (JSON) */
+  behaviors?: Record<string, unknown>;
+
+  /** Escalation style */
+  escalationStyle?: string;
+
+  /** Stages to create with the template */
+  stages: Array<{
+    stageNo: number;
+    name?: string;
+    mode: "serial" | "parallel";
+    quorum?: Record<string, unknown>;
+  }>;
+
+  /** Routing rules to create with the template */
+  rules: Array<{
+    priority: number;
+    conditions: Record<string, unknown>;
+    assignTo: Record<string, unknown>;
+  }>;
+};
+
+/**
+ * Input for updating an approval template.
+ */
+export type ApprovalTemplateUpdateInput = Partial<Omit<ApprovalTemplateCreateInput, "code">>;
+
+/**
+ * Result of template structural validation.
+ */
+export type TemplateValidationResult = {
+  valid: boolean;
+  errors: Array<{ path: string; message: string }>;
+  warnings: Array<{ path: string; message: string }>;
+};
+
+/**
+ * Compiled approval template artifact.
+ */
+export type CompiledApprovalTemplate = {
+  templateId: string;
+  code: string;
+  version: number;
+  stages: ApprovalTemplateStage[];
+  rules: ApprovalTemplateRule[];
+  compiledHash: string;
+  compiledAt: Date;
+};
+
+// ============================================================================
+// EPIC H — Lifecycle Gate Evaluation
+// ============================================================================
+
+/**
+ * Threshold rule for gate evaluation.
+ * Defines a numeric condition on an entity field that must pass for a transition.
+ */
+export type ThresholdRule = {
+  /** Entity field path (e.g., "amount", "risk_score") */
+  field: string;
+
+  /** Comparison operator */
+  operator: "gt" | "gte" | "lt" | "lte" | "eq" | "ne" | "between";
+
+  /** Threshold value or range (for "between") */
+  value: number | [number, number];
+
+  /** Action when threshold is NOT met */
+  action: "block" | "require_approval";
+
+  /** Human-readable reason for the block */
+  reason?: string;
+};
+
+/**
+ * Gate decision result with detailed evaluation trace.
+ */
+export type GateDecision = {
+  allowed: boolean;
+  reason?: string;
+  reasonCodes: string[];
+  thresholdResults?: Array<{
+    rule: ThresholdRule;
+    passed: boolean;
+    actualValue: unknown;
+  }>;
+  conditionResults?: Array<{
+    passed: boolean;
+    reason?: string;
+  }>;
 };
 
 // Note: All types are already exported inline above

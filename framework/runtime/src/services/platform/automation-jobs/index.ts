@@ -10,3 +10,4 @@ export const moduleName = "Automation Jobs";
 // Core job infrastructure
 export * from "./redis-queue.js";
 export * from "./worker-pool.js";
+export * from "./cron-scheduler.js";

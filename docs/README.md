@@ -77,10 +77,9 @@ Central index for all platform documentation.
 
 ### Platform Services
 
-> These services are implemented in `framework/runtime/src/services/platform/` but do not yet have dedicated documentation.
-
 | Service | Location | Description |
 |---------|----------|-------------|
+| [Document Services](./framework/DOCUMENT_SERVICES.md) | `platform-services/document/` | Multi-tenant document generation — templates, Puppeteer PDF rendering, brand profiles, letterheads, DLQ, 30 API endpoints |
 | Identity & Access | `identity-access/` | Role binding, group sync, OU membership, tenant resolution, entitlement snapshots |
 | Policy Rules | `policy-rules/` | Policy compiler, rule evaluator, decision logging, simulation & testing |
 | Workflow Engine | `workflow-engine/` | Workflow definitions, instance lifecycle, task management, SLA escalation, error recovery |
@@ -107,6 +106,7 @@ Central index for all platform documentation.
 - **Workflow Engine**: Workflow definitions, instance lifecycle, task management, SLA escalation, error recovery
 - **Audit & Governance**: Audit log persistence, retention jobs, compliance API
 - **Metadata Studio**: Schema design, visual modeling, API layer
+- **Document Services**: Multi-tenant PDF generation — Handlebars templates, Puppeteer rendering, brand profiles, letterheads, DLQ, 30 API endpoints, 104 tests
 - **Resilience**: Circuit breakers, retry with backoff, adapter protection, graceful shutdown
 - **Observability**: Health checks, Prometheus metrics, distributed tracing (W3C), structured JSON logging
 - **Job Processing**: BullMQ with priority queues, retry strategies, concurrency control
@@ -130,6 +130,8 @@ athyper-private/
 │   │       ├── policy-rules/     Policy evaluation, rule engine, testing
 │   │       ├── ui/               Server-driven UI definitions
 │   │       └── workflow-engine/  Workflow instances, tasks, recovery, SLA
+│   │   └── services/platform-services/
+│   │       └── document/         DOC module — templates, PDF rendering, outputs, DLQ
 │   └── adapters/
 │       ├── auth/                 @athyper/adapter-auth — Keycloak, JWKS
 │       ├── db/                   @athyper/adapter-db — Kysely, PostgreSQL

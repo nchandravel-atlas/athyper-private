@@ -571,6 +571,20 @@ Schema design, visual modeling, persistence & API layer. Module structure in pla
 
 BullMQ-backed job queuing, Redis-backed persistence, worker pools, scheduled execution, retry with exponential backoff.
 
+### 9.9 Document Services (`platform-services/document/`)
+
+Multi-tenant document generation platform. 8 database tables, 7 domain services, 30 API endpoints, 3 job workers, 104 tests.
+
+- **Templates** — Versioned Handlebars templates with publish/retire lifecycle, entity+operation+variant bindings (priority-based resolution), capability flags (RTL, letterhead requirement, allowed operations, supported locales)
+- **Rendering** — Puppeteer-core HTML-to-PDF with concurrent page semaphore, per-stage timeouts (compose 5s, render 30s, upload 30s), SSRF blocking via request interception, deterministic render manifests (v2)
+- **Brand Layer** — Per-tenant letterheads (logo, header/footer, watermark, page margins) and brand profiles (palette, typography, spacing, RTL/LTR direction), single-default enforcement via unique partial indexes
+- **Output Lifecycle** — Status state machine (QUEUED → RENDERING → RENDERED → DELIVERED → ARCHIVED, with FAILED/REVOKED branches), idempotency guard, integrity verification
+- **Error Handling** — 12-code error taxonomy with 4 categories (transient/permanent/timeout/crash), dead-letter queue with inspect/retry/bulk-replay, stuck job recovery worker
+- **Security** — HTML sanitization on template content (strips script/event handlers), SSRF protection (trusted domain allowlist), comprehensive audit trail (15 event types)
+- **Observability** — Stage-level metrics (compose/render/upload/db_update), failure-by-code counters, renderer pool gauges, structured logging (12 categories), health check
+
+See [Document Services](./framework/DOCUMENT_SERVICES.md) for full documentation.
+
 ---
 
 ## 10. pnpm Scripts Reference

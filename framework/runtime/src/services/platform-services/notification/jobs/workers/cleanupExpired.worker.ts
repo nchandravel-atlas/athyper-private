@@ -15,19 +15,27 @@ import type { Logger } from "../../../../../kernel/logger.js";
 const MESSAGE_TABLE = "core.notification_message" as keyof DB & string;
 const DELIVERY_TABLE = "core.notification_delivery" as keyof DB & string;
 
+export interface RetentionDefaults {
+    messageDays: number;
+    deliveryDays: number;
+}
+
 export function createCleanupExpiredHandler(
     db: Kysely<DB>,
     suppressionRepo: NotificationSuppressionRepo,
     logger: Logger,
+    defaultRetention: RetentionDefaults = { messageDays: 90, deliveryDays: 30 },
 ): JobHandler<CleanupExpiredPayload, void> {
     return async (job: Job<CleanupExpiredPayload>): Promise<void> => {
         const { payload } = job.data;
+        const messageDays = payload.messageDays ?? defaultRetention.messageDays;
+        const deliveryDays = payload.deliveryDays ?? defaultRetention.deliveryDays;
 
         logger.info(
             {
                 jobId: job.id,
-                messageDays: payload.messageDays,
-                deliveryDays: payload.deliveryDays,
+                messageDays,
+                deliveryDays,
             },
             "[notify:worker:cleanup] Starting cleanup",
         );
@@ -35,7 +43,7 @@ export function createCleanupExpiredHandler(
         try {
             // 1. Delete old delivery rows
             const deliveryCutoff = new Date();
-            deliveryCutoff.setDate(deliveryCutoff.getDate() - payload.deliveryDays);
+            deliveryCutoff.setDate(deliveryCutoff.getDate() - deliveryDays);
 
             const deliveryResult = await db
                 .deleteFrom(DELIVERY_TABLE as any)
@@ -47,7 +55,7 @@ export function createCleanupExpiredHandler(
 
             // 2. Delete old message rows (only completed/failed)
             const messageCutoff = new Date();
-            messageCutoff.setDate(messageCutoff.getDate() - payload.messageDays);
+            messageCutoff.setDate(messageCutoff.getDate() - messageDays);
 
             const messageResult = await db
                 .deleteFrom(MESSAGE_TABLE as any)

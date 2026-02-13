@@ -10,7 +10,7 @@
 
 -- ─── 1. Scoped Notification Preferences ─────────────────────────────────────
 
-CREATE TABLE "core"."notification_preference" (
+CREATE TABLE IF NOT EXISTS "core"."notification_preference" (
     "id"           UUID        NOT NULL DEFAULT gen_random_uuid(),
     "tenant_id"    UUID        NOT NULL,
     "scope"        TEXT        NOT NULL,       -- 'user' | 'org_unit' | 'tenant'
@@ -38,10 +38,10 @@ CREATE TABLE "core"."notification_preference" (
         CHECK ("frequency" IN ('immediate', 'hourly_digest', 'daily_digest', 'weekly_digest'))
 );
 
-CREATE UNIQUE INDEX "core_notification_preference_scope_uniq"
+CREATE UNIQUE INDEX IF NOT EXISTS "core_notification_preference_scope_uniq"
     ON "core"."notification_preference"("tenant_id", "scope", "scope_id", "event_code", "channel");
 
-CREATE INDEX "idx_core_notification_preference_lookup"
+CREATE INDEX IF NOT EXISTS "idx_core_notification_preference_lookup"
     ON "core"."notification_preference"("tenant_id", "scope_id", "event_code", "channel");
 
 -- Migrate existing user-scope preferences from ui.notification_preference
@@ -55,11 +55,12 @@ SELECT
     p."is_enabled", p."frequency", p."quiet_hours", p."metadata",
     p."created_at", p."created_by", p."updated_at", p."updated_by"
 FROM "ui"."notification_preference" p
-WHERE EXISTS (SELECT 1 FROM "core"."tenant" t WHERE t."id" = p."tenant_id");
+WHERE EXISTS (SELECT 1 FROM "core"."tenant" t WHERE t."id" = p."tenant_id")
+ON CONFLICT DO NOTHING;
 
 -- ─── 2. Dead Letter Queue ───────────────────────────────────────────────────
 
-CREATE TABLE "core"."notification_dlq" (
+CREATE TABLE IF NOT EXISTS "core"."notification_dlq" (
     "id"              UUID        NOT NULL DEFAULT gen_random_uuid(),
     "tenant_id"       UUID        NOT NULL,
     "delivery_id"     UUID        NOT NULL,
@@ -87,16 +88,16 @@ CREATE TABLE "core"."notification_dlq" (
         ON DELETE CASCADE ON UPDATE NO ACTION
 );
 
-CREATE INDEX "idx_notification_dlq_tenant"
+CREATE INDEX IF NOT EXISTS "idx_notification_dlq_tenant"
     ON "core"."notification_dlq"("tenant_id", "dead_at" DESC);
 
-CREATE INDEX "idx_notification_dlq_unreplayed"
+CREATE INDEX IF NOT EXISTS "idx_notification_dlq_unreplayed"
     ON "core"."notification_dlq"("tenant_id")
     WHERE "replayed_at" IS NULL;
 
 -- ─── 3. Digest Staging ──────────────────────────────────────────────────────
 
-CREATE TABLE "core"."notification_digest_staging" (
+CREATE TABLE IF NOT EXISTS "core"."notification_digest_staging" (
     "id"              UUID        NOT NULL DEFAULT gen_random_uuid(),
     "tenant_id"       UUID        NOT NULL,
     "principal_id"    UUID        NOT NULL,
@@ -122,17 +123,17 @@ CREATE TABLE "core"."notification_digest_staging" (
         CHECK ("frequency" IN ('hourly_digest', 'daily_digest', 'weekly_digest'))
 );
 
-CREATE INDEX "idx_digest_staging_pending"
+CREATE INDEX IF NOT EXISTS "idx_digest_staging_pending"
     ON "core"."notification_digest_staging"("tenant_id", "principal_id", "channel", "frequency")
     WHERE "delivered_at" IS NULL;
 
-CREATE INDEX "idx_digest_staging_frequency"
+CREATE INDEX IF NOT EXISTS "idx_digest_staging_frequency"
     ON "core"."notification_digest_staging"("frequency", "staged_at")
     WHERE "delivered_at" IS NULL;
 
 -- ─── 4. WhatsApp Consent ────────────────────────────────────────────────────
 
-CREATE TABLE "core"."whatsapp_consent" (
+CREATE TABLE IF NOT EXISTS "core"."whatsapp_consent" (
     "id"                          UUID        NOT NULL DEFAULT gen_random_uuid(),
     "tenant_id"                   UUID        NOT NULL,
     "phone_number"                TEXT        NOT NULL,
@@ -155,9 +156,9 @@ CREATE TABLE "core"."whatsapp_consent" (
         ON DELETE CASCADE ON UPDATE NO ACTION
 );
 
-CREATE UNIQUE INDEX "whatsapp_consent_tenant_phone_uniq"
+CREATE UNIQUE INDEX IF NOT EXISTS "whatsapp_consent_tenant_phone_uniq"
     ON "core"."whatsapp_consent"("tenant_id", "phone_number");
 
-CREATE INDEX "idx_whatsapp_consent_principal"
+CREATE INDEX IF NOT EXISTS "idx_whatsapp_consent_principal"
     ON "core"."whatsapp_consent"("principal_id")
     WHERE "principal_id" IS NOT NULL;

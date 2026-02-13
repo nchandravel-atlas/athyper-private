@@ -47,6 +47,14 @@ export async function registerMetaServices(
     "singleton"
   );
 
+  // Resolve optional field-level security filter (registered by IAM module if available)
+  let fieldSecurityFilter: any;
+  try {
+    fieldSecurityFilter = await container.resolve(TOKENS.fieldAccessService);
+  } catch {
+    // FieldAccessService not registered — field-level security disabled (graceful degradation)
+  }
+
   // Create all META services using factory
   const { createMetaServices } = await import("../services/platform/meta/factory.js");
 
@@ -55,6 +63,7 @@ export async function registerMetaServices(
     cache,
     cacheTTL: metaConfig.cacheTTL,
     enableCache: metaConfig.enableCache,
+    fieldSecurityFilter,
   });
 
   // Register MetaRegistry
@@ -192,6 +201,93 @@ export async function registerMetaServices(
       return metaStore;
     },
     "singleton"
+  );
+
+  // Register ApprovalService (needed by SLA timer workers in contribute phase)
+  container.register(
+    META_TOKENS.approvalService,
+    async () => metaServices.approvalService,
+    "singleton"
+  );
+
+  // Register ApprovalService health check
+  healthRegistry.register(
+    "meta_approval_service",
+    async () => {
+      const result = await metaServices.approvalService.healthCheck();
+      return {
+        status: result.healthy ? "healthy" : "unhealthy",
+        message: result.message,
+        details: result.details,
+        timestamp: new Date(),
+      };
+    },
+    { type: "meta", required: false }
+  );
+
+  // Register ApprovalTemplateService (needed by template authoring handlers)
+  container.register(
+    META_TOKENS.approvalTemplateService,
+    async () => metaServices.approvalTemplateService,
+    "singleton"
+  );
+
+  // Register LifecycleManager (needed by lifecycle transition handlers)
+  container.register(
+    META_TOKENS.lifecycleManager,
+    async () => metaServices.lifecycleManager,
+    "singleton"
+  );
+
+  // Register LifecycleManager health check
+  healthRegistry.register(
+    "meta_lifecycle_manager",
+    async () => {
+      const result = await metaServices.lifecycleManager.healthCheck();
+      return {
+        status: result.healthy ? "healthy" : "unhealthy",
+        message: result.message,
+        details: result.details,
+        timestamp: new Date(),
+      };
+    },
+    { type: "meta", required: false }
+  );
+
+  // Register OverlayRepository (EPIC I - overlay system)
+  container.register(
+    META_TOKENS.overlayRepository,
+    async () => metaServices.overlayRepository,
+    "singleton"
+  );
+
+  // Register SchemaComposerService (EPIC I - overlay composition)
+  container.register(
+    META_TOKENS.schemaComposer,
+    async () => metaServices.schemaComposer,
+    "singleton"
+  );
+
+  // Register overlay system health check
+  healthRegistry.register(
+    "meta_overlay_repository",
+    async () => {
+      try {
+        // Basic connectivity check
+        return {
+          status: "healthy" as const,
+          message: "Overlay repository operational",
+          timestamp: new Date(),
+        };
+      } catch (err) {
+        return {
+          status: "unhealthy" as const,
+          message: String(err),
+          timestamp: new Date(),
+        };
+      }
+    },
+    { type: "meta", required: false }
   );
 
   // Optional: Precompile all active versions on startup

@@ -39,14 +39,45 @@ export async function registerAdapters(container: Container, config: RuntimeConf
 
             const protectedAdapter = protectDbAdapter(adapter, circuitBreakers);
 
-            // Register health check
+            // Register health check with pool saturation probe
             healthRegistry.register(
                 "database",
                 async () => {
-                    const result = await protectedAdapter.health();
+                    const connectResult = await protectedAdapter.health();
+                    const poolStats = protectedAdapter.getPoolStats();
+
+                    const activeCount = poolStats.totalCount - poolStats.idleCount;
+                    const saturation = poolStats.max > 0 ? activeCount / poolStats.max : 0;
+                    const SATURATION_THRESHOLD = 0.8;
+                    const isSaturated = saturation >= SATURATION_THRESHOLD;
+
+                    let status: "healthy" | "degraded" | "unhealthy";
+                    if (!connectResult.healthy) {
+                        status = "unhealthy";
+                    } else if (isSaturated) {
+                        status = "degraded";
+                    } else {
+                        status = "healthy";
+                    }
+
                     return {
-                        status: result.healthy ? "healthy" : "unhealthy",
-                        message: result.message,
+                        status,
+                        message: !connectResult.healthy
+                            ? connectResult.message
+                            : isSaturated
+                                ? `Pool saturation: ${(saturation * 100).toFixed(0)}%`
+                                : "Connected",
+                        details: {
+                            canConnect: connectResult.healthy,
+                            pool: {
+                                total: poolStats.totalCount,
+                                active: activeCount,
+                                idle: poolStats.idleCount,
+                                waiting: poolStats.waitingCount,
+                                max: poolStats.max,
+                                saturation: Math.round(saturation * 100),
+                            },
+                        },
                         timestamp: new Date(),
                     };
                 },
@@ -76,21 +107,38 @@ export async function registerAdapters(container: Container, config: RuntimeConf
 
             const protectedClient = protectCacheAdapter(client, circuitBreakers);
 
-            // Register health check
+            // Register health check with PING + latency probe
+            // Uses raw client (not protectedClient) for truthful health status
             healthRegistry.register(
                 "cache",
                 async () => {
                     try {
-                        await protectedClient.get("__health__");
+                        const start = Date.now();
+                        await client.ping();
+                        const latencyMs = Date.now() - start;
+
+                        const connectionStatus = client.status;
+                        const LATENCY_THRESHOLD_MS = 100;
+                        const isSlowPing = latencyMs > LATENCY_THRESHOLD_MS;
+
                         return {
-                            status: "healthy" as const,
-                            message: "Cache is responding",
+                            status: isSlowPing ? ("degraded" as const) : ("healthy" as const),
+                            message: isSlowPing
+                                ? `Redis ping latency: ${latencyMs}ms (threshold: ${LATENCY_THRESHOLD_MS}ms)`
+                                : `Redis OK (${latencyMs}ms)`,
+                            details: {
+                                latencyMs,
+                                connectionStatus,
+                            },
                             timestamp: new Date(),
                         };
                     } catch (error) {
                         return {
                             status: "unhealthy" as const,
-                            message: error instanceof Error ? error.message : "Cache unreachable",
+                            message: error instanceof Error ? error.message : "Redis unreachable",
+                            details: {
+                                connectionStatus: client.status,
+                            },
                             timestamp: new Date(),
                         };
                     }

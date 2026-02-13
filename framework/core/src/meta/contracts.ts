@@ -22,8 +22,14 @@ import type {
   ApprovalEvent,
   ApprovalInstance,
   ApprovalTask,
+  ApprovalTemplate,
+  ApprovalTemplateCreateInput,
+  ApprovalTemplateRule,
+  ApprovalTemplateStage,
+  ApprovalTemplateUpdateInput,
   AuditEvent,
   AuditEventType,
+  CompiledApprovalTemplate,
   CompiledLifecycleRoute,
   CompiledModel,
   Entity,
@@ -42,6 +48,7 @@ import type {
   PaginatedResponse,
   PolicyDecision,
   RequestContext,
+  TemplateValidationResult,
   ValidationResult,
 } from "./types.js";
 
@@ -920,6 +927,149 @@ export interface LifecycleManager {
 }
 
 // ============================================================================
+// Lifecycle Timer Service (Auto-Transitions)
+// ============================================================================
+
+/**
+ * Lifecycle Timer Service
+ *
+ * Manages automatic state transitions via scheduled timers.
+ * Integrates with BullMQ for delayed job execution.
+ *
+ * Use cases:
+ * - Auto-close: Automatically close entities after inactivity period
+ * - Auto-cancel: Automatically cancel stale requests
+ * - Reminders: Send notifications before deadlines
+ * - Auto-transition: Generic scheduled state changes
+ *
+ * Pattern:
+ * 1. Entity enters state → scheduleTimer()
+ * 2. Timer fires via BullMQ → processTimer()
+ * 3. Conditions evaluated → transition executed
+ * 4. Manual transition → cancelTimers() (prevent stale execution)
+ */
+export interface LifecycleTimerService {
+  // ===== Timer Scheduling =====
+
+  /**
+   * Schedule a timer for an entity instance based on timer policy.
+   * Called when entity enters a state or completes a transition.
+   *
+   * @param policyId - Timer policy ID from meta.lifecycle_timer_policy
+   * @param entityName - Entity name
+   * @param entityId - Entity record ID
+   * @param ctx - Request context
+   * @param triggerData - Optional record data for field-relative delay calculation
+   * @returns Scheduled timer or undefined if scheduling skipped
+   */
+  scheduleTimer(
+    policyId: string,
+    entityName: string,
+    entityId: string,
+    ctx: RequestContext,
+    triggerData?: Record<string, unknown>
+  ): Promise<LifecycleTimerSchedule | undefined>;
+
+  // ===== Timer Cancellation =====
+
+  /**
+   * Cancel all active timers for an entity instance.
+   * Called when entity transitions to prevent stale timer execution.
+   *
+   * @param entityName - Entity name
+   * @param entityId - Entity record ID
+   * @param tenantId - Tenant ID
+   * @param reason - Reason for cancellation (for audit trail)
+   * @returns Number of timers canceled
+   */
+  cancelTimers(
+    entityName: string,
+    entityId: string,
+    tenantId: string,
+    reason: string
+  ): Promise<number>;
+
+  /**
+   * Cancel specific timers by type.
+   *
+   * @param entityName - Entity name
+   * @param entityId - Entity record ID
+   * @param tenantId - Tenant ID
+   * @param timerType - Type of timers to cancel
+   * @returns Number of timers canceled
+   */
+  cancelTimersByType(
+    entityName: string,
+    entityId: string,
+    tenantId: string,
+    timerType: LifecycleTimerType
+  ): Promise<number>;
+
+  // ===== Timer Execution =====
+
+  /**
+   * Process a timer when BullMQ job fires.
+   * Verifies conditions still met, then executes the transition.
+   *
+   * Guard checks:
+   * - Timer not already fired or canceled
+   * - Entity still exists
+   * - Conditions still met (if defined)
+   *
+   * @param scheduleId - Timer schedule ID
+   * @param tenantId - Tenant ID
+   */
+  processTimer(scheduleId: string, tenantId: string): Promise<void>;
+
+  // ===== Timer Rehydration =====
+
+  /**
+   * Rehydrate timers after server restart.
+   * Reschedules BullMQ jobs for scheduled timers with future fire dates.
+   *
+   * @param tenantId - Tenant ID
+   * @returns Number of timers rehydrated
+   */
+  rehydrateTimers(tenantId: string): Promise<number>;
+
+  // ===== Timer Queries =====
+
+  /**
+   * Get active timers for an entity instance.
+   *
+   * @param entityName - Entity name
+   * @param entityId - Entity record ID
+   * @param tenantId - Tenant ID
+   * @returns List of active (scheduled) timers
+   */
+  getActiveTimers(
+    entityName: string,
+    entityId: string,
+    tenantId: string
+  ): Promise<LifecycleTimerSchedule[]>;
+
+  // ===== Dependency Injection =====
+
+  /**
+   * Set job queue (late binding to prevent circular dependencies)
+   */
+  setJobQueue(queue: JobQueue): void;
+
+  /**
+   * Set lifecycle manager (late binding to prevent circular dependencies)
+   */
+  setLifecycleManager(manager: LifecycleManager): void;
+
+  // ===== Health Check =====
+
+  /**
+   * Health check for timer service.
+   * Checks for stale timers and job queue connectivity.
+   */
+  healthCheck(): Promise<HealthCheckResult>;
+}
+
+// ============================================================================
 // Approval Service (Phase 13)
 // ============================================================================
 
@@ -1397,6 +1547,271 @@ export interface ActionDispatcher {
     request: ActionExecutionRequest,
     ctx: RequestContext
   ): Promise<ActionExecutionResult>;
+}
+
+// ============================================================================
+// Approval Template Service (EPIC G — Template Authoring)
+// ============================================================================
+
+/**
+ * Approval Template Service
+ *
+ * CRUD, validation, compilation, and version management for approval templates.
+ * Templates define multi-stage approval workflows that can be bound to
+ * lifecycle transition gates.
+ */
+export interface ApprovalTemplateService {
+  // ===== CRUD (G1) =====
+
+  create(
+    input: ApprovalTemplateCreateInput,
+    tenantId: string,
+    userId: string
+  ): Promise<ApprovalTemplate>;
+
+  get(
+    idOrCode: string,
+    tenantId: string
+  ): Promise<ApprovalTemplate | undefined>;
+
+  list(
+    tenantId: string,
+    options?: ListOptions
+  ): Promise<PaginatedResponse<ApprovalTemplate>>;
+
+  update(
+    idOrCode: string,
+    input: ApprovalTemplateUpdateInput,
+    tenantId: string,
+    userId: string
+  ): Promise<ApprovalTemplate>;
+
+  delete(idOrCode: string, tenantId: string): Promise<void>;
+
+  // ===== Nested Resources =====
+
+  getStages(
+    templateId: string,
+    tenantId: string
+  ): Promise<ApprovalTemplateStage[]>;
+
+  getRules(
+    templateId: string,
+    tenantId: string
+  ): Promise<ApprovalTemplateRule[]>;
+
+  // ===== Validation & Compilation (G2) =====
+
+  validate(
+    idOrCode: string,
+    tenantId: string
+  ): Promise<TemplateValidationResult>;
+
+  compile(
+    idOrCode: string,
+    tenantId: string
+  ): Promise<CompiledApprovalTemplate>;
+
+  // ===== Version Management (G3) =====
+
+  listVersions(
+    code: string,
+    tenantId: string
+  ): Promise<ApprovalTemplate[]>;
+
+  rollback(
+    code: string,
+    targetVersion: number,
+    tenantId: string,
+    userId: string
+  ): Promise<ApprovalTemplate>;
+
+  diff(
+    code: string,
+    v1: number,
+    v2: number,
+    tenantId: string
+  ): Promise<Record<string, unknown>>;
+
+  impactAnalysis(
+    idOrCode: string,
+    tenantId: string
+  ): Promise<{
+    affectedTransitions: Array<{
+      transitionId: string;
+      entityName: string;
+      operationCode: string;
+    }>;
+  }>;
+
+  // ===== Resolution Test (G4) =====
+
+  testResolution(
+    idOrCode: string,
+    context: Record<string, unknown>,
+    tenantId: string
+  ): Promise<{
+    resolvedAssignees: Array<{
+      principalId?: string;
+      groupId?: string;
+      strategy: string;
+    }>;
+  }>;
+}
+
+// ============================================================================
+// Approval Template Service (EPIC G)
+// ============================================================================
+
+/**
+ * Approval Template Service
+ *
+ * Manages approval workflow template authoring, validation, and versioning.
+ * Provides CRUD operations for templates, stages, and routing rules.
+ */
+export interface ApprovalTemplateService {
+  // ===== CRUD Operations =====
+
+  /**
+   * Create a new approval template with stages and rules
+   */
+  create(
+    input: ApprovalTemplateCreateInput,
+    tenantId: string,
+    userId: string
+  ): Promise<ApprovalTemplate>;
+
+  /**
+   * Get a template by ID or code (returns active version by default)
+   */
+  get(
+    idOrCode: string,
+    tenantId: string
+  ): Promise<ApprovalTemplate | undefined>;
+
+  /**
+   * List all templates for a tenant
+   */
+  list(
+    tenantId: string,
+    options?: ListOptions
+  ): Promise<PaginatedResponse<ApprovalTemplate>>;
+
+  /**
+   * Update a template (creates new version)
+   */
+  update(
+    idOrCode: string,
+    input: ApprovalTemplateUpdateInput,
+    tenantId: string,
+    userId: string
+  ): Promise<ApprovalTemplate>;
+
+  /**
+   * Delete a template and all its versions
+   */
+  delete(idOrCode: string, tenantId: string): Promise<void>;
+
+  // ===== Nested Resources =====
+
+  /**
+   * Get all stages for a template
+   */
+  getStages(
+    templateId: string,
+    tenantId: string
+  ): Promise<ApprovalTemplateStage[]>;
+
+  /**
+   * Get all routing rules for a template
+   */
+  getRules(
+    templateId: string,
+    tenantId: string
+  ): Promise<ApprovalTemplateRule[]>;
+
+  // ===== Validation & Compilation (G2) =====
+
+  /**
+   * Validate template structure
+   * Checks stage sequencing, rule syntax, and approver assignment validity
+   */
+  validate(
+    idOrCode: string,
+    tenantId: string
+  ): Promise<TemplateValidationResult>;
+
+  /**
+   * Compile template into runtime artifact
+   * Produces compiled JSON with SHA-256 hash
+   */
+  compile(
+    idOrCode: string,
+    tenantId: string
+  ): Promise<CompiledApprovalTemplate>;
+
+  // ===== Version Management (G3) =====
+
+  /**
+   * List all versions of a template by code
+   */
+  listVersions(
+    code: string,
+    tenantId: string
+  ): Promise<ApprovalTemplate[]>;
+
+  /**
+   * Rollback to a previous version (creates new version as copy)
+   */
+  rollback(
+    code: string,
+    targetVersion: number,
+    tenantId: string,
+    userId: string
+  ): Promise<ApprovalTemplate>;
+
+  /**
+   * Compute diff between two template versions
+   */
+  diff(
+    code: string,
+    v1: number,
+    v2: number,
+    tenantId: string
+  ): Promise<Record<string, unknown>>;
+
+  /**
+   * Analyze impact of template changes
+   * Returns list of lifecycle transitions that reference this template
+   */
+  impactAnalysis(
+    idOrCode: string,
+    tenantId: string
+  ): Promise<{
+    affectedTransitions: Array<{
+      transitionId: string;
+      entityName: string;
+      operationCode: string;
+    }>;
+  }>;
+
+  // ===== Resolution Test (G4) =====
+
+  /**
+   * Test approver resolution with sample context
+   * Useful for template authors to verify routing rules
+   */
+  testResolution(
+    idOrCode: string,
+    context: Record<string, unknown>,
+    tenantId: string
+  ): Promise<{
+    resolvedAssignees: Array<{
+      principalId?: string;
+      groupId?: string;
+      strategy: string;
+    }>;
+  }>;
 }
 
 // Note: All interfaces are already exported inline above

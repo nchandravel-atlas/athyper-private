@@ -15,6 +15,7 @@ import { sql } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type { Job } from "bullmq";
 import type { Kysely } from "kysely";
+import { callRetentionDelete } from "./domain/tenant-context-setter.js";
 
 /**
  * Audit log retention job data
@@ -39,6 +40,12 @@ export type AuditLogRetentionResult = {
 
   /** Number of permission decision logs deleted */
   decisionLogsDeleted: number;
+
+  /** Number of workflow audit events deleted */
+  workflowAuditEventsDeleted: number;
+
+  /** Number of dead/persisted outbox items deleted */
+  deadOutboxItemsDeleted: number;
 
   /** Cutoff date used for deletion */
   cutoffDate: Date;
@@ -77,15 +84,27 @@ export async function processAuditLogRetention(
 
   let auditLogsDeleted = 0;
   let decisionLogsDeleted = 0;
+  let workflowAuditEventsDeleted = 0;
+  let deadOutboxItemsDeleted = 0;
 
   try {
     // Delete old audit logs
     if (!dryRun) {
+      // meta.meta_audit has no immutability trigger — direct DELETE is fine
       const auditResult = await deleteOldAuditLogs(db, cutoffDate, tenantId);
       auditLogsDeleted = auditResult.deletedCount;
 
-      const decisionResult = await deleteOldDecisionLogs(db, cutoffDate, tenantId);
-      decisionLogsDeleted = decisionResult.deletedCount;
+      // Protected tables use SECURITY DEFINER function for bypass
+      decisionLogsDeleted = await callRetentionDelete(
+        db, "permission_decision_log", cutoffDate, tenantId,
+      );
+
+      workflowAuditEventsDeleted = await callRetentionDelete(
+        db, "workflow_audit_event", cutoffDate, tenantId,
+      );
+
+      const outboxResult = await deleteOldOutboxItems(db, cutoffDate);
+      deadOutboxItemsDeleted = outboxResult.deletedCount;
     } else {
       // Dry run: Count what would be deleted
       const auditCount = await countOldAuditLogs(db, cutoffDate, tenantId);
@@ -93,6 +112,12 @@ export async function processAuditLogRetention(
 
       const decisionCount = await countOldDecisionLogs(db, cutoffDate, tenantId);
       decisionLogsDeleted = decisionCount;
+
+      const workflowCount = await countOldWorkflowAuditEvents(db, cutoffDate, tenantId);
+      workflowAuditEventsDeleted = workflowCount;
+
+      const outboxCount = await countOldOutboxItems(db, cutoffDate);
+      deadOutboxItemsDeleted = outboxCount;
     }
 
     console.log(
@@ -101,6 +126,8 @@ export async function processAuditLogRetention(
         jobId: job.id,
         auditLogsDeleted,
         decisionLogsDeleted,
+        workflowAuditEventsDeleted,
+        deadOutboxItemsDeleted,
         cutoffDate: cutoffDate.toISOString(),
         dryRun,
       })
@@ -109,6 +136,8 @@ export async function processAuditLogRetention(
     return {
       auditLogsDeleted,
       decisionLogsDeleted,
+      workflowAuditEventsDeleted,
+      deadOutboxItemsDeleted,
       cutoffDate,
       tenantId,
       dryRun,
@@ -207,6 +236,87 @@ async function countOldDecisionLogs(
     FROM core.permission_decision_log
     WHERE occurred_at < ${cutoffDate.toISOString()}
       ${tenantId ? sql`AND tenant_id = ${tenantId}` : sql``}
+  `;
+
+  const result = await query.execute(db);
+  return Number(result.rows[0]?.count ?? 0);
+}
+
+/**
+ * Delete old workflow audit events
+ * Note: Requires SET LOCAL athyper.audit_retention_bypass = 'true'
+ */
+async function deleteOldWorkflowAuditEvents(
+  db: Kysely<DB>,
+  cutoffDate: Date,
+  tenantId?: string
+): Promise<{ deletedCount: number }> {
+  const query = sql<{ count: number }>`
+    WITH deleted AS (
+      DELETE FROM core.workflow_audit_event
+      WHERE created_at < ${cutoffDate.toISOString()}::timestamptz
+        ${tenantId ? sql`AND tenant_id = ${tenantId}::uuid` : sql``}
+      RETURNING id
+    )
+    SELECT COUNT(*) as count FROM deleted
+  `;
+
+  const result = await query.execute(db);
+  return { deletedCount: Number(result.rows[0]?.count ?? 0) };
+}
+
+/**
+ * Delete old outbox items (persisted and dead only)
+ */
+async function deleteOldOutboxItems(
+  db: Kysely<DB>,
+  cutoffDate: Date,
+): Promise<{ deletedCount: number }> {
+  const query = sql<{ count: number }>`
+    WITH deleted AS (
+      DELETE FROM core.audit_outbox
+      WHERE status IN ('persisted', 'dead')
+        AND created_at < ${cutoffDate.toISOString()}::timestamptz
+      RETURNING id
+    )
+    SELECT COUNT(*) as count FROM deleted
+  `;
+
+  const result = await query.execute(db);
+  return { deletedCount: Number(result.rows[0]?.count ?? 0) };
+}
+
+/**
+ * Count old workflow audit events (for dry run)
+ */
+async function countOldWorkflowAuditEvents(
+  db: Kysely<DB>,
+  cutoffDate: Date,
+  tenantId?: string
+): Promise<number> {
+  const query = sql<{ count: number }>`
+    SELECT COUNT(*) as count
+    FROM core.workflow_audit_event
+    WHERE created_at < ${cutoffDate.toISOString()}::timestamptz
+      ${tenantId ? sql`AND tenant_id = ${tenantId}::uuid` : sql``}
+  `;
+
+  const result = await query.execute(db);
+  return Number(result.rows[0]?.count ?? 0);
+}
+
+/**
+ * Count old outbox items (for dry run)
+ */
+async function countOldOutboxItems(
+  db: Kysely<DB>,
+  cutoffDate: Date,
+): Promise<number> {
+  const query = sql<{ count: number }>`
+    SELECT COUNT(*) as count
+    FROM core.audit_outbox
+    WHERE status IN ('persisted', 'dead')
+      AND created_at < ${cutoffDate.toISOString()}::timestamptz
   `;
 
   const result = await query.execute(db);

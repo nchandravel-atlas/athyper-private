@@ -5,7 +5,10 @@ import { TOKENS } from "../kernel/tokens";
 import { module as httpFoundation } from "./platform/foundation/http/module";
 import { module as metaModule } from "./platform/meta/module";
 import { module as dashboardModule } from "./platform/ui/module";
+import { module as documentModule } from "./platform-services/document/index";
 import { module as notificationModule } from "./platform-services/notification/index";
+import { module as auditGovernanceModule } from "./platform/audit-governance/index";
+import { module as iamModule } from "./platform/foundation/iam/iam.module";
 
 import type { AuditEvent, AuditWriter } from "../kernel/audit";
 import type { Container } from "../kernel/container";
@@ -19,12 +22,13 @@ export type RuntimeModule = {
 };
 
 const modules: RuntimeModule[] = [
-    // (await import("./tenancy/module")).module,
-    // (await import("./iam/module")).module,
     httpFoundation,
     metaModule,
+    iamModule,
     dashboardModule,
+    documentModule,
     notificationModule,
+    auditGovernanceModule,
 ];
 
 export async function loadServices(container: Container) {

@@ -37,10 +37,11 @@ export async function startWorkerRuntime(container: Container) {
     const jobQueue = await container.resolve<any>(TOKENS.jobQueue);
     await jobQueue.start?.();
 
+    const workerCount = (jobQueue as any).getRegisteredWorkerCount?.() ?? "unknown";
     if (logger.info) {
-        logger.info({ service: config.serviceName }, "[worker] started");
+        logger.info({ service: config.serviceName, registeredWorkers: workerCount }, "[worker] started");
     } else {
-        logger.log?.(`[worker] ${config.serviceName} started`);
+        logger.log?.(`[worker] ${config.serviceName} started — registered workers: ${workerCount}`);
     }
 
     // Graceful shutdown: stop pulling jobs, finish in-flight tasks, close resources

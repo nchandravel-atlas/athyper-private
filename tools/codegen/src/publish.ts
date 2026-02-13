@@ -109,7 +109,7 @@ async function stepValidate(): Promise<StepResult> {
   banner(1, "Validate schema");
   const t0 = Date.now();
 
-  await run("pnpm", ["prisma", "validate", "--schema", SCHEMA_PATH], {
+  await run("pnpm", ["prisma", "validate"], {
     cwd: DB_DIR,
     env: prismaOfflineEnv(),
   });
@@ -125,7 +125,7 @@ async function stepDiff(): Promise<StepResult> {
     const diffSql = await runCapture("pnpm", [
       "prisma", "migrate", "diff",
       "--from-migrations", MIGRATIONS_DIR,
-      "--to-schema-datamodel", SCHEMA_PATH,
+      "--to-schema", SCHEMA_PATH,
       "--script",
     ], { cwd: DB_DIR, env: prismaOfflineEnv() });
 
@@ -175,7 +175,6 @@ async function stepMigrate(opts: PublishOptions): Promise<StepResult> {
 
   await run("pnpm", [
     "prisma", "migrate", "dev",
-    "--schema", SCHEMA_PATH,
     "--name", opts.migrationName,
   ], {
     cwd: DB_DIR,
@@ -195,7 +194,7 @@ async function stepGenerate(): Promise<StepResult> {
   banner(4, "Generate (Prisma Client + Zod + Kysely)");
   const t0 = Date.now();
 
-  await run("pnpm", ["prisma", "generate", "--schema", SCHEMA_PATH], {
+  await run("pnpm", ["prisma", "generate"], {
     cwd: DB_DIR,
     env: prismaOfflineEnv(),
   });

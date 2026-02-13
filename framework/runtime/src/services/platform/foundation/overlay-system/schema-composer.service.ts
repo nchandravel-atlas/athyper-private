@@ -217,9 +217,13 @@ export class SchemaComposerService {
           return this.applyTweakPolicy(schema, change, conflictMode);
 
         case "add_index":
+          return this.applyAddIndex(schema, change, conflictMode);
+
         case "remove_index":
+          return this.applyRemoveIndex(schema, change);
+
         case "tweak_relation":
-          // Future implementations
+          // Future implementation
           this.logger.warn({
             msg: "unsupported_change_kind",
             kind: change.kind,
@@ -357,6 +361,76 @@ export class SchemaComposerService {
     return { success: true };
   }
 
+  /**
+   * Add an index definition to the schema (EPIC I - I2)
+   */
+  private applyAddIndex(
+    schema: Record<string, unknown>,
+    change: OverlayChangeRecord,
+    conflictMode: OverlayConflictMode
+  ): { success: boolean; conflict?: string } {
+    // Ensure indexes array exists
+    if (!schema.indexes) {
+      schema.indexes = [];
+    }
+
+    const indexes = schema.indexes as Array<unknown>;
+    const indexDef = change.value as { name: string; columns: string[]; unique?: boolean };
+
+    // Check if index with same name already exists
+    const existingIndex = indexes.find((idx: any) => idx.name === indexDef.name);
+
+    if (existingIndex) {
+      switch (conflictMode) {
+        case "fail":
+          return {
+            success: false,
+            conflict: `Index already exists: ${indexDef.name}`,
+          };
+
+        case "overwrite":
+          // Remove existing and add new
+          const index = indexes.findIndex((idx: any) => idx.name === indexDef.name);
+          indexes.splice(index, 1, indexDef);
+          return { success: true };
+
+        case "merge":
+          // Merge index properties
+          Object.assign(existingIndex, indexDef);
+          return { success: true };
+      }
+    }
+
+    // Add new index
+    indexes.push(indexDef);
+    return { success: true };
+  }
+
+  /**
+   * Remove an index definition from the schema (EPIC I - I2)
+   */
+  private applyRemoveIndex(
+    schema: Record<string, unknown>,
+    change: OverlayChangeRecord
+  ): { success: boolean; conflict?: string } {
+    if (!schema.indexes || !Array.isArray(schema.indexes)) {
+      // No indexes to remove - that's okay
+      return { success: true };
+    }
+
+    const indexName = change.value as string;
+    const indexes = schema.indexes as Array<any>;
+    const index = indexes.findIndex(idx => idx.name === indexName);
+
+    if (index === -1) {
+      // Index doesn't exist - that's okay, consider it removed
+      return { success: true };
+    }
+
+    indexes.splice(index, 1);
+    return { success: true };
+  }
+
   // ============================================================================
   // Validation Helpers
   // ============================================================================
@@ -393,6 +467,47 @@ export class SchemaComposerService {
           path: change.path,
           message: `Value is required for ${change.kind} changes`,
           code: "MISSING_VALUE",
+        });
+      }
+    }
+
+    // Validate index operations (EPIC I - I2)
+    if (change.kind === "add_index") {
+      if (!change.value || typeof change.value !== "object") {
+        errors.push({
+          changeIndex: index,
+          path: change.path,
+          message: "add_index requires value with {name, columns} properties",
+          code: "MISSING_INDEX_DEF",
+        });
+      } else {
+        const indexDef = change.value as any;
+        if (!indexDef.name || !indexDef.columns || !Array.isArray(indexDef.columns)) {
+          errors.push({
+            changeIndex: index,
+            path: change.path,
+            message: "Index definition must have name and columns array",
+            code: "INVALID_INDEX_DEF",
+          });
+        }
+        if (indexDef.columns && Array.isArray(indexDef.columns) && indexDef.columns.length === 0) {
+          errors.push({
+            changeIndex: index,
+            path: change.path,
+            message: "Index must specify at least one column",
+            code: "EMPTY_INDEX_COLUMNS",
+          });
+        }
+      }
+    }
+
+    if (change.kind === "remove_index") {
+      if (!change.value || typeof change.value !== "string") {
+        errors.push({
+          changeIndex: index,
+          path: change.path,
+          message: "remove_index requires index name as string value",
+          code: "MISSING_INDEX_NAME",
         });
       }
     }

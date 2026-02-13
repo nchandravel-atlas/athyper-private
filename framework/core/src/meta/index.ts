@@ -130,6 +130,23 @@ export type {
   NumberingRule,
   NumberingSequence,
   EffectiveDatedListOptions,
+
+  // Template authoring (EPIC G)
+  ApprovalTemplateCreateInput,
+  ApprovalTemplateUpdateInput,
+  TemplateValidationResult,
+  CompiledApprovalTemplate,
+
+  // Lifecycle gate evaluation (EPIC H)
+  ThresholdRule,
+  GateDecision,
+
+  // Lifecycle timers (H4: Auto-Transitions)
+  LifecycleTimerType,
+  LifecycleTimerPolicy,
+  LifecycleTimerRules,
+  LifecycleTimerSchedule,
+  LifecycleTimerPayload,
 } from "./types.js";
 
 export type {
@@ -172,6 +189,7 @@ export type {
   // Lifecycle services (Phase 12)
   LifecycleRouteCompiler,
   LifecycleManager,
+  LifecycleTimerService,
 
   // Approval services (Phase 13)
   ApprovalService,
@@ -201,6 +219,9 @@ export type {
   MetaEventType,
   MetaEventHandler,
   MetaEventBus,
+
+  // Template authoring (EPIC G)
+  ApprovalTemplateService,
 } from "./contracts.js";
 
 // ============================================================================
@@ -213,6 +234,33 @@ export {
 } from "./tokens.js";
 
 export { DEFAULT_ENTITY_FEATURE_FLAGS } from "./types.js";
+
+// Validation rules (Dynamic Rule Engine)
+export type {
+  ConditionOperator as ValidationConditionOperator,
+  ConditionLeaf as ValidationConditionLeaf,
+  ConditionGroup as ValidationConditionGroup,
+  ConditionGroup, // Also export without alias for lifecycle timers
+  ValidationRuleSeverity,
+  ValidationPhase,
+  ValidationTrigger,
+  ValidationRuleKind,
+  BaseValidationRule,
+  RequiredRule,
+  MinMaxRule,
+  LengthRule,
+  RegexRule,
+  EnumConstraintRule,
+  CrossFieldRule,
+  ConditionalRule,
+  DateRangeRule,
+  ReferentialIntegrityRule,
+  UniqueRule,
+  ValidationRule,
+  ValidationRuleSet,
+  RuleValidationError,
+  RuleValidationResult,
+} from "./validation-rules.js";
 
 export type {
   // Token types

@@ -201,7 +201,17 @@ async function buildAuthContext(scope: Container, tenant: TenantContext, require
         throw e;
     }
 
-    return normalizeClaimsToAuthContext(claims, tenant);
+    const authCtx = normalizeClaimsToAuthContext(claims, tenant);
+
+    // Persona resolution (best-effort — failure should never block auth)
+    try {
+        const capService = await scope.resolve<{ resolveEffectivePersona(roles: string[]): string }>(TOKENS.iamCapabilityService);
+        authCtx.effectivePersona = capService.resolveEffectivePersona(authCtx.roles);
+    } catch {
+        // persona enrichment is best-effort; service may not be registered
+    }
+
+    return authCtx;
 }
 
 function extractBearer(req: Request): string | undefined {

@@ -7,6 +7,7 @@ import { createKernelContainer } from "./container";
 import { registerAdapters } from "./container.adapters";
 import { installSignalHandlers, registerKernelDefaults } from "./container.defaults";
 import { registerMetaServices } from "./container.meta";
+import { registerRuntimeServices } from "./container.runtime";
 import { TenantContextError } from "./tenantContext";
 import { TOKENS } from "./tokens";
 
@@ -38,6 +39,10 @@ const EXIT_CODES: Record<string, number> = {
     UNKNOWN_TENANT: 21,
     UNKNOWN_ORG: 22,
     ORG_WITHOUT_TENANT: 23,
+
+    // Runtime engine
+    JOB_QUEUE_CONNECT_ERROR: 60,
+    SCHEDULER_START_ERROR: 61,
 
     // Generic
     BOOTSTRAP_ERROR: 50,
@@ -268,6 +273,10 @@ export async function bootstrap(): Promise<BootstrapResult> {
         // Register META Engine services
         await registerMetaServices(container, config);
 
+        // Register runtime execution engines (jobQueue, workerPool, scheduler)
+        // Must happen BEFORE loadServices() — modules resolve TOKENS.jobQueue during register()
+        await registerRuntimeServices(container, config);
+
         // Boot-time realm safety: verify IdP issuer matches config (staging/production only)
         {
             const { assertBootRealmSafety } = await import(
@@ -299,6 +308,19 @@ export async function bootstrap(): Promise<BootstrapResult> {
 
         // Load modules/services (definitions -> registries)
         await loadServices(container);
+
+        // Fail-fast: validate runtime engine availability for worker/scheduler modes
+        if (config.mode === "worker" || config.mode === "scheduler") {
+            try {
+                const jobQueue = await container.resolve<any>(TOKENS.jobQueue);
+                const metrics = await jobQueue.getMetrics();
+                boot.info("boot.jobQueue.connected", { bootId, ...metrics });
+            } catch (err) {
+                boot.error("boot.jobQueue.failed", { bootId, error: String(err) });
+                process.exitCode = EXIT_CODES.JOB_QUEUE_CONNECT_ERROR;
+                throw err;
+            }
+        }
 
         boot.info("boot.mode.start", { bootId, mode: config.mode });
 

@@ -14,10 +14,13 @@
 import type {
   ActionDispatcher,
   ApprovalService,
+  ApprovalTemplateService,
   AuditLogger,
   EntityClassificationService,
   EntityPageDescriptorService,
   GenericDataAPI,
+  LifecycleManager,
+  LifecycleTimerService,
   MetaCompiler,
   MetaEventBus,
   MetaRegistry,
@@ -97,6 +100,25 @@ export const META_TOKENS = {
 
   /** Meta Event Bus - cross-cutting notification bus */
   eventBus: "meta.eventBus",
+
+  // ===== Lifecycle & Template Authoring (EPIC G + H) =====
+
+  /** Lifecycle Manager - state transitions, gate evaluation */
+  lifecycleManager: "meta.lifecycleManager",
+
+  /** Lifecycle Timer Service - auto-transitions, scheduled state changes */
+  lifecycleTimerService: "meta.lifecycleTimerService",
+
+  /** Approval Template Service - template CRUD, validation, compilation */
+  approvalTemplateService: "meta.approvalTemplateService",
+
+  // ===== Overlay System (EPIC I) =====
+
+  /** Overlay Repository - overlay CRUD operations */
+  overlayRepository: "meta.overlayRepository",
+
+  /** Schema Composer Service - overlay composition and validation */
+  schemaComposer: "meta.schemaComposer",
 } as const;
 
 // ============================================================================
@@ -159,6 +181,15 @@ export interface MetaTokenTypes {
 
   // Event Bus
   [META_TOKENS.eventBus]: MetaEventBus;
+
+  // Lifecycle & Template Authoring
+  [META_TOKENS.lifecycleManager]: LifecycleManager;
+  [META_TOKENS.lifecycleTimerService]: LifecycleTimerService;
+  [META_TOKENS.approvalTemplateService]: ApprovalTemplateService;
+
+  // Overlay System
+  [META_TOKENS.overlayRepository]: unknown; // IOverlayRepository from runtime
+  [META_TOKENS.schemaComposer]: unknown; // SchemaComposerService from runtime
 }
 
 /**

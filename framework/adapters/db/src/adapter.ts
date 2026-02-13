@@ -1,9 +1,11 @@
 // framework/adapters/db/src/adapter.ts
-import { DbClient, type DbClientConfig } from "./kysely/db.js";
+import { DbClient, type DbClientConfig, type DbPoolStats } from "./kysely/db.js";
 import { withTx, withTxIsolation } from "./kysely/tx.js";
 
 import type { DB } from "../generated/kysely/types.js";
 import type { Kysely } from "kysely";
+
+export type { DbPoolStats } from "./kysely/db.js";
 
 /**
  * Database adapter interface for the runtime.
@@ -39,6 +41,11 @@ export interface DbAdapter {
      * Health check
      */
     health(): Promise<{ healthy: boolean; message?: string }>;
+
+    /**
+     * Pool statistics for health monitoring
+     */
+    getPoolStats(): DbPoolStats;
 }
 
 /**
@@ -74,5 +81,6 @@ export function createDbAdapter(config: DbClientConfig): DbAdapter {
         withTxIsolation,
         close: () => client.close(),
         health: () => client.health(),
+        getPoolStats: () => client.getPoolStats(),
     };
 }

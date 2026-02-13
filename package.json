@@ -46,7 +46,7 @@
     "db:provision:force": "pnpm -F @athyper/adapter-db db:provision:force",
     "db:migrate": "pnpm -F @athyper/adapter-db prisma:migrate",
     "db:deploy": "pnpm -F @athyper/adapter-db prisma:deploy",
-    "db:reset": "pnpm -F @athyper/adapter-db prisma migrate reset --schema prisma/schema.prisma",
+    "db:reset": "pnpm -F @athyper/adapter-db prisma migrate reset",
     "db:generate": "pnpm -F @athyper/adapter-db prisma:generate",
     "db:pull": "pnpm -F @athyper/adapter-db prisma:pull",
     "db:pull:force": "pnpm -F @athyper/adapter-db prisma:pull:force",
@@ -68,17 +68,14 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "@prisma/client",
       "@prisma/engines",
       "esbuild",
       "prisma",
-      "prisma-zod-generator",
       "sharp",
       "unrs-resolver"
     ],
     "overrides": {
-      "prisma": "6.19.2",
-      "@prisma/client": "6.19.2"
+      "prisma": "^7.4.0"
     }
   },
   "devDependencies": {
@@ -110,5 +107,12 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0",
     "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@xyflow/react": "^12.10.0",
+    "handlebars": "^4.7.8",
+    "monaco-editor": "^0.55.1",
+    "puppeteer-core": "^24.37.2"
   }
 }

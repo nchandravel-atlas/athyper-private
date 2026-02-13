@@ -127,6 +127,13 @@ export const RuntimeConfigSchema = z.object({
 
     redis: z.object({ url: z.string().min(1) }),
 
+    jobQueue: z.object({
+        /** BullMQ queue name (all job types share one queue, differentiated by data.type) */
+        queueName: z.string().min(1).default("athyper-jobs"),
+        /** Default retry attempts for failed jobs */
+        defaultRetries: z.coerce.number().int().min(0).default(3),
+    }).default({}),
+
     s3: z.object({
         endpoint: z.string().min(1),
         accessKey: z.string().min(1),
@@ -140,6 +147,58 @@ export const RuntimeConfigSchema = z.object({
         otlpEndpoint: z.string().min(1).optional(),
         enabled: Bool.default(true),
     }),
+
+    document: z.object({
+        enabled: Bool.default(false),
+        rendering: z.object({
+            engine: z.enum(["puppeteer", "playwright"]).default("puppeteer"),
+            chromiumPath: z.string().optional(),
+            concurrency: z.coerce.number().int().min(1).max(10).default(3),
+            timeoutMs: z.coerce.number().int().positive().default(30000),
+            maxRetries: z.coerce.number().int().min(0).default(3),
+            paperFormat: z.enum(["A4", "LETTER", "LEGAL"]).default("A4"),
+            trustedDomains: z.array(z.string()).default([]),
+            allowedHosts: z.array(z.string()).default([]),
+            composeTimeoutMs: z.coerce.number().int().positive().default(5000),
+            uploadTimeoutMs: z.coerce.number().int().positive().default(30000),
+        }).default({}),
+        storage: z.object({
+            pathPrefix: z.string().default("documents"),
+            presignedUrlExpirySeconds: z.coerce.number().int().positive().default(3600),
+            downloadMode: z.enum(["stream", "presigned"]).default("stream"),
+        }).default({}),
+        jobs: z.object({
+            leaseSeconds: z.coerce.number().int().positive().default(300),
+            heartbeatSeconds: z.coerce.number().int().positive().default(30),
+        }).default({}),
+        retention: z.object({
+            defaultDays: z.coerce.number().int().positive().default(2555),
+            archiveAfterDays: z.coerce.number().int().positive().default(365),
+        }).default({}),
+    }).default({}),
+
+    audit: z.object({
+        /** Audit write mode: off (drop events), sync (direct write), outbox (async via outbox) */
+        writeMode: z.enum(["off", "sync", "outbox"]).default("outbox"),
+        /** Enable SHA-256 hash chain tamper evidence */
+        hashChainEnabled: Bool.default(true),
+        /** Enable unified activity timeline service */
+        timelineEnabled: Bool.default(true),
+        /** Retention period in days */
+        retentionDays: z.coerce.number().int().positive().default(90),
+        /** Number of months to pre-create partitions ahead */
+        partitionPreCreateMonths: z.coerce.number().int().min(1).max(12).default(3),
+        /** Enable column-level encryption for sensitive fields */
+        encryptionEnabled: Bool.default(false),
+        /** Enable load shedding policy evaluation */
+        loadSheddingEnabled: Bool.default(false),
+        /** Enable storage tiering (hot/warm/cold) */
+        tieringEnabled: Bool.default(false),
+        /** Days before data transitions from hot to warm tier */
+        warmAfterDays: z.coerce.number().int().positive().default(90),
+        /** Days before data transitions from warm to cold tier */
+        coldAfterDays: z.coerce.number().int().positive().default(365),
+    }).default({}),
 
     notification: z.object({
         enabled: Bool.default(true),

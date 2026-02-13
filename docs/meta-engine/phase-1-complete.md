@@ -143,7 +143,7 @@ ALTER TABLE "meta"."meta_versions"
 pnpm db:migrate
 # or
 cd framework/adapters/db
-pnpm prisma migrate deploy --schema src/prisma/schema.prisma
+pnpm prisma migrate deploy
 ```
 
 ---
@@ -214,19 +214,16 @@ export type DB = {
 ```bash
 pnpm kysely:codegen
 # or
-pnpm prisma:generate --schema src/prisma/schema.prisma
+pnpm prisma:generate
 ```
 
 **Generators Running**:
-1. **prisma-client-js** → `@prisma/client` (dev/migration only)
-2. **prisma-zod-generator** → Zod validation schemas
-3. **prisma-kysely** → Kysely type definitions
+
+1. **prisma-kysely** → Kysely type definitions
 
 **Output**:
 ```
-✔ Generated Prisma Client (v6.19.2)
-✔ Generated Prisma Zod Generator to ./src/generated/zod
-✔ Generated Kysely types (3.0.0) to ./src/generated/kysely
+✔ Generated Kysely types (3.0.0) to ./generated/kysely
 ```
 
 ---
@@ -253,15 +250,7 @@ pnpm prisma:generate --schema src/prisma/schema.prisma
    - Generated Zod schemas use `import type { Prisma }` (erased at runtime)
    - No value imports of Prisma Client
 
-4. **Build externals** (from `package.json`):
-   ```json
-   {
-     "scripts": {
-       "build": "tsup ... --external @prisma/client"
-     }
-   }
-   ```
-   Prisma Client is marked as external, never bundled into runtime code.
+4. **No Prisma Client dependency**: As of Prisma 7 upgrade, `@prisma/client` was removed from `package.json` entirely — only the `prisma` CLI remains as a devDependency for schema management and code generation.
 
 **Conclusion**: ✅ Prisma is **build-time only** (schema → types), Kysely is **runtime**
 

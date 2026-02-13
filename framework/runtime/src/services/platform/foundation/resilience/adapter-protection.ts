@@ -86,6 +86,10 @@ export function protectDbAdapter(adapter: DbAdapter, breakers: AdapterCircuitBre
       }
     },
 
+    getPoolStats() {
+      return adapter.getPoolStats(); // Local state only — no circuit breaker needed
+    },
+
     async close(): Promise<void> {
       await adapter.close();
     },

@@ -79,6 +79,13 @@ export type JobHandler<TInput = unknown, TOutput = unknown> = (
   job: Job<TInput>
 ) => Promise<TOutput>;
 
+export interface ProcessOptions {
+  /** Lock duration in milliseconds (how long a worker holds a job before it's considered stalled) */
+  lockDuration?: number;
+  /** Lock renew time in milliseconds (how often to extend the lock while processing) */
+  lockRenewTime?: number;
+}
+
 export interface JobQueue {
   /**
    * Add a job to the queue
@@ -96,7 +103,8 @@ export interface JobQueue {
   process<TInput, TOutput>(
     jobType: string,
     concurrency: number,
-    handler: JobHandler<TInput, TOutput>
+    handler: JobHandler<TInput, TOutput>,
+    processOptions?: ProcessOptions,
   ): Promise<void>;
 
   /**

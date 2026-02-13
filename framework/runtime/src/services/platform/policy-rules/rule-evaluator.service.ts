@@ -9,6 +9,10 @@
  * - Returns authorization decision
  */
 
+import {
+  evaluateConditionGroup as sharedEvaluateConditionGroup,
+  type EvaluationContext,
+} from "../shared/condition-evaluator.js";
 import type { OperationCatalogService } from "./operation-catalog.service.js";
 import type { PolicyCompilerService } from "./policy-compiler.service.js";
 import type { PolicyResolutionService } from "./policy-resolution.service.js";
@@ -18,7 +22,6 @@ import type {
   AuthorizationRequest,
   CompiledPolicy,
   CompiledRule,
-  Condition,
   ConditionGroup,
   ScopeType,
   SubjectKey,
@@ -249,6 +252,9 @@ export class RuleEvaluatorService {
 
   /**
    * Evaluate ABAC conditions
+   *
+   * Delegates to the shared condition evaluator, building a flat context
+   * from subject, resource, and environment.
    */
   private async evaluateConditions(
     conditions: CompiledRule["conditions"],
@@ -257,191 +263,19 @@ export class RuleEvaluatorService {
   ): Promise<boolean> {
     if (!conditions) return true;
 
-    // Build evaluation context
-    const context: ConditionContext = {
+    // Build flat evaluation context for the shared evaluator
+    const context: EvaluationContext = {
       subject,
       resource: request.resource,
       environment: {
         now: new Date(),
         requestId: crypto.randomUUID(),
       },
+      // Spread subject attributes at root level for backward-compatible shorthand paths
+      ...subject.attributes,
     };
 
-    return this.evaluateConditionGroup(conditions, context);
-  }
-
-  /**
-   * Evaluate a condition group (AND/OR)
-   */
-  private evaluateConditionGroup(
-    group: ConditionGroup,
-    context: ConditionContext
-  ): boolean {
-    const operator = group.operator ?? "and";
-
-    if (operator === "and") {
-      // All conditions must be true
-      for (const condition of group.conditions) {
-        if ("operator" in condition && ("conditions" in condition)) {
-          // Nested group
-          if (!this.evaluateConditionGroup(condition as ConditionGroup, context)) {
-            return false;
-          }
-        } else {
-          // Single condition
-          if (!this.evaluateCondition(condition as Condition, context)) {
-            return false;
-          }
-        }
-      }
-      return true;
-    } else {
-      // At least one condition must be true
-      for (const condition of group.conditions) {
-        if ("operator" in condition && ("conditions" in condition)) {
-          // Nested group
-          if (this.evaluateConditionGroup(condition as ConditionGroup, context)) {
-            return true;
-          }
-        } else {
-          // Single condition
-          if (this.evaluateCondition(condition as Condition, context)) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
-  }
-
-  /**
-   * Evaluate a single condition
-   */
-  private evaluateCondition(
-    condition: Condition,
-    context: ConditionContext
-  ): boolean {
-    // Resolve field value
-    const fieldValue = this.resolveFieldValue(condition.field, context);
-
-    // Get comparison value
-    const compareValue = condition.value;
-
-    // Apply operator
-    switch (condition.operator) {
-      case "eq":
-        return fieldValue === compareValue;
-
-      case "ne":
-        return fieldValue !== compareValue;
-
-      case "gt":
-        return typeof fieldValue === "number" &&
-          typeof compareValue === "number" &&
-          fieldValue > compareValue;
-
-      case "gte":
-        return typeof fieldValue === "number" &&
-          typeof compareValue === "number" &&
-          fieldValue >= compareValue;
-
-      case "lt":
-        return typeof fieldValue === "number" &&
-          typeof compareValue === "number" &&
-          fieldValue < compareValue;
-
-      case "lte":
-        return typeof fieldValue === "number" &&
-          typeof compareValue === "number" &&
-          fieldValue <= compareValue;
-
-      case "in":
-        return Array.isArray(compareValue) &&
-          compareValue.includes(fieldValue);
-
-      case "not_in":
-        return Array.isArray(compareValue) &&
-          !compareValue.includes(fieldValue);
-
-      case "contains":
-        return typeof fieldValue === "string" &&
-          typeof compareValue === "string" &&
-          fieldValue.includes(compareValue);
-
-      case "starts_with":
-        return typeof fieldValue === "string" &&
-          typeof compareValue === "string" &&
-          fieldValue.startsWith(compareValue);
-
-      case "ends_with":
-        return typeof fieldValue === "string" &&
-          typeof compareValue === "string" &&
-          fieldValue.endsWith(compareValue);
-
-      case "matches":
-        try {
-          return typeof fieldValue === "string" &&
-            typeof compareValue === "string" &&
-            new RegExp(compareValue).test(fieldValue);
-        } catch {
-          return false;
-        }
-
-      case "exists":
-        return fieldValue !== undefined && fieldValue !== null;
-
-      case "not_exists":
-        return fieldValue === undefined || fieldValue === null;
-
-      default:
-        console.warn(`Unknown condition operator: ${condition.operator}`);
-        return false;
-    }
-  }
-
-  /**
-   * Resolve field value from context
-   * Fields use dot notation: subject.department, resource.owner_id, etc.
-   */
-  private resolveFieldValue(
-    field: string,
-    context: ConditionContext
-  ): unknown {
-    const parts = field.split(".");
-    const source = parts[0];
-    const path = parts.slice(1);
-
-    let value: unknown;
-
-    switch (source) {
-      case "subject":
-        value = context.subject;
-        break;
-      case "resource":
-        value = context.resource;
-        break;
-      case "environment":
-        value = context.environment;
-        break;
-      default:
-        // Try subject.attributes
-        if (context.subject.attributes[field]) {
-          return context.subject.attributes[field];
-        }
-        return undefined;
-    }
-
-    // Navigate path
-    for (const key of path) {
-      if (value === null || value === undefined) return undefined;
-      if (typeof value === "object") {
-        value = (value as Record<string, unknown>)[key];
-      } else {
-        return undefined;
-      }
-    }
-
-    return value;
+    return sharedEvaluateConditionGroup(conditions, context);
   }
 
   /**
@@ -535,14 +369,4 @@ export class RuleEvaluatorService {
   }
 }
 
-/**
- * Context for condition evaluation
- */
-type ConditionContext = {
-  subject: SubjectSnapshot;
-  resource: AuthorizationRequest["resource"];
-  environment: {
-    now: Date;
-    requestId: string;
-  };
-};
+// ConditionContext replaced by shared EvaluationContext from ../shared/condition-evaluator

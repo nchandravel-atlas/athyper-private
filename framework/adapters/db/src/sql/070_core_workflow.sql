@@ -92,7 +92,7 @@ create table if not exists core.workflow_instance (
   updated_at         timestamptz,
   updated_by         text,
 
-  constraint workflow_instance_entity_uniq unique (entity_type, entity_id),
+  constraint workflow_instance_entity_uniq unique (tenant_id, entity_type, entity_id),
   constraint workflow_instance_status_chk check (status in ('active','paused','completed','failed','canceled'))
 );
 

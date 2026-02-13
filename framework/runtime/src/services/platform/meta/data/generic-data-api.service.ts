@@ -9,6 +9,9 @@
 import { sql, type Kysely } from "kysely";
 
 import { QueryValidatorService, DEFAULT_QUERY_LIMITS } from "./query-validator.service.js";
+import { META_SPANS, startSpan, type MetaSpanName } from "../observability/tracing.js";
+
+import type { MetaMetrics } from "../observability/metrics.js";
 
 import type { DB } from "@athyper/adapter-db";
 import type {
@@ -23,11 +26,33 @@ import type {
   LifecycleTransitionResult,
   ListOptions,
   MetaCompiler,
+  MetaRegistry,
   NumberingEngine,
   PaginatedResponse,
   PolicyGate,
   RequestContext,
 } from "@athyper/core/meta";
+import type { ValidationEngineService } from "../validation/rule-engine.service.js";
+
+/**
+ * Structural interface for field-level security filtering.
+ * Decouples GenericDataAPI from the concrete FieldAccessService implementation.
+ */
+export interface FieldSecurityFilter {
+  filterReadable(
+    entityId: string,
+    record: Record<string, unknown>,
+    subject: { id: string; type: string; tenantId: string; roles: string[] },
+    context: { tenantId: string },
+  ): Promise<{ record: Record<string, unknown>; maskedFields: string[]; removedFields: string[] }>;
+
+  filterWritable(
+    entityId: string,
+    input: Record<string, unknown>,
+    subject: { id: string; type: string; tenantId: string; roles: string[] },
+    context: { tenantId: string },
+  ): Promise<{ record: Record<string, unknown>; removedFields: string[] }>;
+}
 
 /**
  * Generic Data API Service
@@ -35,6 +60,7 @@ import type {
  */
 export class GenericDataAPIService implements GenericDataAPI {
   private readonly queryValidator: QueryValidatorService;
+  private metrics?: MetaMetrics;
 
   constructor(
     private readonly db: Kysely<DB>,
@@ -44,9 +70,43 @@ export class GenericDataAPIService implements GenericDataAPI {
     private readonly lifecycleManager?: LifecycleManager,
     private readonly classificationService?: EntityClassificationService,
     private readonly numberingEngine?: NumberingEngine,
+    private readonly validationEngine?: ValidationEngineService,
+    private readonly registry?: MetaRegistry,
+    private readonly fieldSecurityFilter?: FieldSecurityFilter,
   ) {
     // Initialize query validator with default limits
     this.queryValidator = new QueryValidatorService(DEFAULT_QUERY_LIMITS);
+  }
+
+  /** Set metrics collector for observability (late binding). */
+  setMetrics(metrics: MetaMetrics): void {
+    this.metrics = metrics;
+  }
+
+  /**
+   * Wrap an async operation with a tracing span and metrics recording.
+   * Used internally by CRUD methods to instrument data operations.
+   */
+  private async traced<T>(
+    spanName: MetaSpanName,
+    entityName: string,
+    operation: string,
+    tenantId: string,
+    fn: () => Promise<T>,
+  ): Promise<T> {
+    const span = startSpan(spanName, { "meta.entity": entityName, "meta.operation": operation, "meta.tenant_id": tenantId });
+    const opStart = Date.now();
+    try {
+      const result = await fn();
+      span.setStatus("ok");
+      this.metrics?.dataOpLatency(Date.now() - opStart, { entity: entityName, operation });
+      return result;
+    } catch (err) {
+      span.setStatus("error", err instanceof Error ? err.message : String(err));
+      throw err;
+    } finally {
+      span.end();
+    }
   }
 
   async list<T = unknown>(
@@ -54,6 +114,7 @@ export class GenericDataAPIService implements GenericDataAPI {
     ctx: RequestContext,
     options: ListOptions = {}
   ): Promise<PaginatedResponse<T>> {
+    return this.traced(META_SPANS.DATA_LIST, entityName, "list", ctx.tenantId, async () => {
     // Check policy
     await this.policyGate.enforce("read", entityName, ctx);
 
@@ -127,13 +188,27 @@ export class GenericDataAPIService implements GenericDataAPI {
       const total = Number((countResult.rows[0] as any)?.count ?? 0);
       const totalPages = Math.ceil(total / pageSize);
 
-      // Filter fields based on field-level policies
-      const filteredData = await this.filterFields(
+      // Filter fields based on entity-level policies
+      let filteredData = await this.filterFields(
         dataResult.rows as T[],
         "read",
         entityName,
         ctx
       );
+
+      // Apply field-level security (masking/redaction) if available
+      if (this.fieldSecurityFilter) {
+        const subject = { id: ctx.userId, type: "user" as const, tenantId: ctx.tenantId, roles: ctx.roles ?? [] };
+        const accessCtx = { tenantId: ctx.tenantId };
+        filteredData = await Promise.all(
+          (filteredData as T[]).map(async (record) => {
+            const result = await this.fieldSecurityFilter!.filterReadable(
+              entityName, record as Record<string, unknown>, subject, accessCtx
+            );
+            return result.record as T;
+          })
+        );
+      }
 
       // Log audit event
       await this.auditLogger.log({
@@ -177,6 +252,7 @@ export class GenericDataAPIService implements GenericDataAPI {
 
       throw error;
     }
+    }); // end traced
   }
 
   async get<T = unknown>(
@@ -204,10 +280,20 @@ export class GenericDataAPIService implements GenericDataAPI {
 
       const record = result.rows[0] as T | undefined;
 
-      // Filter fields based on field-level policies
-      const filteredRecord = record
-        ? await this.filterFields(record, "read", entityName, ctx)
+      // Filter fields based on entity-level policies
+      let filteredRecord: T | undefined = record
+        ? (await this.filterFields(record, "read", entityName, ctx)) as T
         : undefined;
+
+      // Apply field-level security (masking/redaction) if available
+      if (filteredRecord && this.fieldSecurityFilter) {
+        const subject = { id: ctx.userId, type: "user" as const, tenantId: ctx.tenantId, roles: ctx.roles ?? [] };
+        const accessCtx = { tenantId: ctx.tenantId };
+        const result = await this.fieldSecurityFilter.filterReadable(
+          entityName, filteredRecord as Record<string, unknown>, subject, accessCtx
+        );
+        filteredRecord = result.record as T;
+      }
 
       // Log audit event
       await this.auditLogger.log({
@@ -298,16 +384,42 @@ export class GenericDataAPIService implements GenericDataAPI {
     data: unknown,
     ctx: RequestContext
   ): Promise<T> {
+    return this.traced(META_SPANS.DATA_CREATE, entityName, "create", ctx.tenantId, async () => {
     // Check policy
     await this.policyGate.enforce("create", entityName, ctx);
 
     // Get compiled model
     const model = await this.compiler.compile(entityName, "v1");
 
+    // Strip fields the caller is not allowed to write (field-level security)
+    let writeData = data;
+    if (this.fieldSecurityFilter) {
+      const subject = { id: ctx.userId, type: "user" as const, tenantId: ctx.tenantId, roles: ctx.roles ?? [] };
+      const accessCtx = { tenantId: ctx.tenantId };
+      const writeResult = await this.fieldSecurityFilter.filterWritable(
+        entityName, data as Record<string, unknown>, subject, accessCtx
+      );
+      writeData = writeResult.record;
+    }
+
     // Validate data against schema (create mode - all required fields)
-    const validation = await this.validateData(model, data, "create");
+    const validation = await this.validateData(model, writeData, "create");
     if (!validation.valid) {
       throw new Error(`Validation failed: ${validation.errors.join(", ")}`);
+    }
+
+    // Run dynamic validation rules (after basic schema validation, before persist)
+    if (this.validationEngine) {
+      const ruleResult = await this.validationEngine.validate(
+        entityName,
+        writeData as Record<string, unknown>,
+        "create",
+        ctx,
+      );
+      if (!ruleResult.valid) {
+        const messages = ruleResult.errors.map((e: { message: string }) => e.message);
+        throw new Error(`Rule validation failed: ${messages.join(", ")}`);
+      }
     }
 
     try {
@@ -317,7 +429,7 @@ export class GenericDataAPIService implements GenericDataAPI {
 
       const record: Record<string, unknown> = {
         id,
-        ...(data as Record<string, unknown>),
+        ...(writeData as Record<string, unknown>),
         tenant_id: ctx.tenantId,
         realm_id: ctx.realmId,
         version: 1, // Optimistic locking: initialize version
@@ -439,6 +551,7 @@ export class GenericDataAPIService implements GenericDataAPI {
 
       throw error;
     }
+    }); // end traced
   }
 
   async update<T = unknown>(
@@ -447,6 +560,7 @@ export class GenericDataAPIService implements GenericDataAPI {
     data: Partial<unknown>,
     ctx: RequestContext
   ): Promise<T> {
+    return this.traced(META_SPANS.DATA_UPDATE, entityName, "update", ctx.tenantId, async () => {
     // Check policy
     await this.policyGate.enforce("update", entityName, ctx);
 
@@ -460,7 +574,17 @@ export class GenericDataAPIService implements GenericDataAPI {
       : undefined;
 
     // Remove _version from update data (it's metadata, not a field)
-    const { _version, ...dataWithoutVersion } = dataObj;
+    let { _version, ...dataWithoutVersion } = dataObj;
+
+    // Strip fields the caller is not allowed to write (field-level security)
+    if (this.fieldSecurityFilter) {
+      const subject = { id: ctx.userId, type: "user" as const, tenantId: ctx.tenantId, roles: ctx.roles ?? [] };
+      const accessCtx = { tenantId: ctx.tenantId };
+      const writeResult = await this.fieldSecurityFilter.filterWritable(
+        entityName, dataWithoutVersion as Record<string, unknown>, subject, accessCtx
+      );
+      dataWithoutVersion = writeResult.record;
+    }
 
     // Check if record exists and belongs to tenant
     const existing = await this.get<T>(entityName, id, ctx);
@@ -488,6 +612,21 @@ export class GenericDataAPIService implements GenericDataAPI {
     const validation = await this.validateData(model, dataWithoutVersion, "update");
     if (!validation.valid) {
       throw new Error(`Validation failed: ${validation.errors.join(", ")}`);
+    }
+
+    // Run dynamic validation rules (update mode — pass existing record for cross-field comparisons)
+    if (this.validationEngine) {
+      const ruleResult = await this.validationEngine.validate(
+        entityName,
+        dataWithoutVersion as Record<string, unknown>,
+        "update",
+        ctx,
+        existing as Record<string, unknown>,
+      );
+      if (!ruleResult.valid) {
+        const messages = ruleResult.errors.map((e: { message: string }) => e.message);
+        throw new Error(`Rule validation failed: ${messages.join(", ")}`);
+      }
     }
 
     try {
@@ -553,6 +692,7 @@ export class GenericDataAPIService implements GenericDataAPI {
 
       throw error;
     }
+    }); // end traced
   }
 
   async delete(
@@ -560,6 +700,7 @@ export class GenericDataAPIService implements GenericDataAPI {
     id: string,
     ctx: RequestContext
   ): Promise<void> {
+    return this.traced(META_SPANS.DATA_DELETE, entityName, "delete", ctx.tenantId, async () => {
     // Check policy
     await this.policyGate.enforce("delete", entityName, ctx);
 
@@ -617,102 +758,154 @@ export class GenericDataAPIService implements GenericDataAPI {
 
       throw error;
     }
+    }); // end traced
   }
 
   /**
-   * Handle cascading deletes based on reference field rules
+   * Handle cascading deletes based on reference field onDelete rules.
    *
-   * TODO: Full implementation requires:
-   * - Registry of all entity schemas
-   * - Discovery of all entities with reference fields pointing to this entity
-   * - Support for CASCADE, SET_NULL, and RESTRICT rules
+   * Scans all entities for reference fields pointing to the entity being deleted.
+   * Applies the configured cascade rule per field:
+   * - RESTRICT: Throw if any active records reference the target (checked first)
+   * - CASCADE: Recursively soft-delete referencing records
+   * - SET_NULL: Set the reference column to NULL
+   * - undefined/no rule: No action (orphaned references allowed)
    *
-   * Current implementation: Basic CASCADE support for explicitly configured relationships
+   * Circular reference protection via a visited set.
+   * Max cascade depth of 10 to prevent runaway recursion.
    */
   private async handleCascadeDeletes(
     entityName: string,
     id: string,
-    _ctx: RequestContext
+    ctx: RequestContext,
+    visited?: Set<string>,
+    depth?: number,
   ): Promise<void> {
-    // Get the model being deleted
-    const _model = await this.compiler.compile(entityName, "v1");
+    // Guard: no registry means cascade discovery is impossible — skip silently
+    if (!this.registry) return;
 
-    // Find all reference fields in the schema
-    // In a full implementation, we would:
-    // 1. Query a meta registry for all entities
-    // 2. Check each entity's schema for reference fields pointing to this entity
-    // 3. Apply the appropriate cascade rule
+    const currentDepth = depth ?? 0;
+    if (currentDepth > 10) {
+      throw new Error(
+        `Cascade delete depth exceeded (max 10). Possible circular reference involving ${entityName}:${id}`
+      );
+    }
 
-    // For now, we implement basic CASCADE logic:
-    // If a field has referenceTo=entityName and onDelete="CASCADE",
-    // we would delete those records
+    // Circular reference guard
+    const visitKey = `${entityName}:${id}`;
+    const visitedSet = visited ?? new Set<string>();
+    if (visitedSet.has(visitKey)) return;
+    visitedSet.add(visitKey);
 
-    // Example CASCADE logic (simplified):
-    // This would need to be enhanced with a proper entity registry
+    // Collect all entities (paginate to ensure we get all)
+    const allEntities: Array<{ name: string }> = [];
+    let page = 1;
+    let hasMore = true;
+    while (hasMore) {
+      const result = await this.registry.listEntities({ page, pageSize: 100 });
+      allEntities.push(...result.data);
+      hasMore = result.meta.hasNext;
+      page++;
+    }
 
-    /* Full implementation would look like:
-
-    const allEntities = await this.metaRegistry.listEntities();
+    // Collect RESTRICT violations, CASCADE targets, and SET_NULL targets
+    const restrictViolations: Array<{ entity: string; field: string; count: number }> = [];
+    const cascadeTargets: Array<{ entity: string; model: CompiledModel; field: CompiledField }> = [];
+    const setNullTargets: Array<{ model: CompiledModel; field: CompiledField }> = [];
 
     for (const entity of allEntities) {
-      const entityModel = await this.compiler.compile(entity.name, 'v1');
+      // Skip the entity being deleted (self-references handled by visited set)
+      let model: CompiledModel;
+      try {
+        model = await this.compiler.compile(entity.name, "v1");
+      } catch {
+        continue; // Entity has no compiled version — skip
+      }
 
-      for (const field of entityModel.fields) {
-        if (field.referenceTo === entityName) {
-          const onDelete = field.onDelete; // From FieldDefinition
+      for (const field of model.fields) {
+        if (field.referenceTo !== entityName) continue;
 
-          if (onDelete === 'CASCADE') {
-            // Delete all records that reference this record
-            const referencingRecords = await this.list(
-              entity.name,
-              ctx,
-              { filters: { [field.name]: id } }
-            );
-            for (const record of referencingRecords.data) {
-              await this.delete(entity.name, (record as any).id, ctx);
-            }
-          } else if (onDelete === 'SET_NULL') {
-            // Set reference field to null
-            await sql`
-              UPDATE ${sql.table(entityModel.tableName)}
-              SET ${sql.ref(field.columnName)} = NULL,
-                  updated_at = ${new Date()},
-                  updated_by = ${ctx.userId}
-              WHERE ${sql.ref(field.columnName)} = ${id}
-                AND tenant_id = ${ctx.tenantId}
-                AND realm_id = ${ctx.realmId}
-            `.execute(this.db);
-          } else if (onDelete === 'RESTRICT') {
-            // Check if any records reference this one
-            const count = await sql`
-              SELECT COUNT(*) as count
-              FROM ${sql.table(entityModel.tableName)}
-              WHERE ${sql.ref(field.columnName)} = ${id}
-                AND tenant_id = ${ctx.tenantId}
-                AND realm_id = ${ctx.realmId}
-                AND deleted_at IS NULL
-            `.execute(this.db);
+        const onDelete = field.onDelete;
+        if (!onDelete) continue; // No cascade rule — orphaned references allowed
 
-            if (Number((count.rows[0] as any).count) > 0) {
-              throw new Error(
-                `Cannot delete ${entityName} ${id}: Referenced by ${entity.name} records`
-              );
-            }
+        if (onDelete === "RESTRICT") {
+          // Count active references
+          const countResult = await sql`
+            SELECT COUNT(*) as count
+            FROM ${sql.table(model.tableName)}
+            WHERE ${sql.ref(field.columnName)} = ${id}
+              AND tenant_id = ${ctx.tenantId}
+              AND realm_id = ${ctx.realmId}
+              AND deleted_at IS NULL
+          `.execute(this.db);
+
+          const refCount = Number((countResult.rows[0] as any)?.count ?? 0);
+          if (refCount > 0) {
+            restrictViolations.push({ entity: entity.name, field: field.name, count: refCount });
           }
+        } else if (onDelete === "CASCADE") {
+          cascadeTargets.push({ entity: entity.name, model, field });
+        } else if (onDelete === "SET_NULL") {
+          setNullTargets.push({ model, field });
         }
       }
     }
-    */
 
-    // Placeholder: Log that cascade handling is invoked
-    console.log(
-      JSON.stringify({
-        msg: "cascade_delete_check",
-        entity: entityName,
-        id,
-        note: "Full cascade implementation requires entity registry",
-      })
-    );
+    // RESTRICT check — fail fast before any mutations
+    if (restrictViolations.length > 0) {
+      const details = restrictViolations
+        .map((v) => `${v.entity}.${v.field} (${v.count} record${v.count > 1 ? "s" : ""})`)
+        .join(", ");
+      throw new Error(
+        `Cannot delete ${entityName} ${id}: Referenced by ${details}`
+      );
+    }
+
+    // CASCADE — recursively soft-delete referencing records
+    const now = new Date();
+    for (const { entity, model, field } of cascadeTargets) {
+      // Find all active records referencing this ID
+      const refs = await sql`
+        SELECT id
+        FROM ${sql.table(model.tableName)}
+        WHERE ${sql.ref(field.columnName)} = ${id}
+          AND tenant_id = ${ctx.tenantId}
+          AND realm_id = ${ctx.realmId}
+          AND deleted_at IS NULL
+      `.execute(this.db);
+
+      for (const row of refs.rows) {
+        const refId = (row as any).id as string;
+        // Recurse first (depth-first cascade)
+        await this.handleCascadeDeletes(entity, refId, ctx, visitedSet, currentDepth + 1);
+        // Then soft-delete
+        await sql`
+          UPDATE ${sql.table(model.tableName)}
+          SET deleted_at = ${now},
+              deleted_by = ${ctx.userId},
+              updated_at = ${now},
+              updated_by = ${ctx.userId}
+          WHERE id = ${refId}
+            AND tenant_id = ${ctx.tenantId}
+            AND realm_id = ${ctx.realmId}
+            AND deleted_at IS NULL
+        `.execute(this.db);
+      }
+    }
+
+    // SET_NULL — nullify reference columns
+    for (const { model, field } of setNullTargets) {
+      await sql`
+        UPDATE ${sql.table(model.tableName)}
+        SET ${sql.ref(field.columnName)} = NULL,
+            updated_at = ${now},
+            updated_by = ${ctx.userId}
+        WHERE ${sql.ref(field.columnName)} = ${id}
+          AND tenant_id = ${ctx.tenantId}
+          AND realm_id = ${ctx.realmId}
+          AND deleted_at IS NULL
+      `.execute(this.db);
+    }
   }
 
   async restore(

@@ -357,10 +357,26 @@ describe("ApprovalServiceImpl", () => {
       // Setup: update task succeeds
       mocks.execute.mockResolvedValueOnce(undefined);
 
-      // Setup: log event succeeds
+      // Setup: cancelTimers → getTask (re-fetches task by id)
+      mocks.executeTakeFirst.mockResolvedValueOnce({
+        id: taskId,
+        tenant_id: "tenant-456",
+        approval_instance_id: instanceId,
+        approval_stage_id: stageId,
+        status: "approved",
+        created_at: new Date(),
+      });
+
+      // Setup: cancelTimers → logEvent
       mocks.execute.mockResolvedValueOnce(undefined);
 
-      // Setup: stage complete check (no more pending tasks)
+      // Setup: log decision event succeeds
+      mocks.execute.mockResolvedValueOnce(undefined);
+
+      // Setup: isStageComplete → get stage mode
+      mocks.executeTakeFirst.mockResolvedValueOnce({ mode: "all" });
+
+      // Setup: isStageComplete → get tasks for stage (no more pending tasks)
       mocks.execute.mockResolvedValueOnce([{ status: "approved" }]);
 
       // Setup: stage outcome check (all approved)
@@ -439,7 +455,20 @@ describe("ApprovalServiceImpl", () => {
       // Setup: update task succeeds
       mocks.execute.mockResolvedValueOnce(undefined);
 
-      // Setup: log event succeeds
+      // Setup: cancelTimers → getTask (re-fetches task by id)
+      mocks.executeTakeFirst.mockResolvedValueOnce({
+        id: taskId,
+        tenant_id: "tenant-456",
+        approval_instance_id: instanceId,
+        approval_stage_id: stageId,
+        status: "rejected",
+        created_at: new Date(),
+      });
+
+      // Setup: cancelTimers → logEvent
+      mocks.execute.mockResolvedValueOnce(undefined);
+
+      // Setup: log decision event succeeds
       mocks.execute.mockResolvedValueOnce(undefined);
 
       // Setup: isStageComplete -> get stage mode (executeTakeFirst)

@@ -28,6 +28,11 @@ export type AuthContext = {
     groups: string[];
 
     claims?: Record<string, unknown>;
+
+    /** Effective persona resolved from roles (e.g., "manager", "agent", "viewer") */
+    effectivePersona?: string;
+    /** All personas this user qualifies for */
+    qualifiedPersonas?: string[];
 };
 
 export type HttpHandlerContext = {

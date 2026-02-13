@@ -108,6 +108,7 @@ import type { Container } from "../../../kernel/container.js";
 import type { Logger } from "../../../kernel/logger.js";
 import type { RuntimeModule } from "../../registry.js";
 import type { RouteRegistry } from "../../platform/foundation/registries/routes.registry.js";
+import type { JobRegistry } from "../../platform/foundation/registries/jobs.registry.js";
 import type { RuntimeConfig } from "../../../kernel/config.schema.js";
 import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
@@ -713,13 +714,29 @@ export const module: RuntimeModule = {
         await jobQueue.process("plan-notification", concurrency, createPlanNotificationHandler(orchestrator, workerLogger));
         await jobQueue.process("deliver-notification", concurrency, createDeliverNotificationHandler(orchestrator, workerLogger));
         await jobQueue.process("process-callback", 2, createProcessCallbackHandler(orchestrator, workerLogger));
-        await jobQueue.process("cleanup-expired", 1, createCleanupExpiredHandler(db, suppressionRepo, workerLogger));
+        const retentionDefaults = {
+            messageDays: config.notification?.retention?.messageDays ?? 90,
+            deliveryDays: config.notification?.retention?.deliveryDays ?? 30,
+        };
+        await jobQueue.process("cleanup-expired", 1, createCleanupExpiredHandler(db, suppressionRepo, workerLogger, retentionDefaults));
 
         // Phase 2: Digest worker
         const digestAggregator = await c.resolve<DigestAggregator>(TOKENS.notificationDigestAggregator);
         await jobQueue.process("digest-notification", 1, createDigestNotificationHandler(digestAggregator, workerLogger));
 
-        logger.info("Notification module contributed — routes and workers registered");
+        // ================================================================
+        // Schedule Contributions (for CronScheduler)
+        // ================================================================
+
+        const jobRegistry = await c.resolve<JobRegistry>(TOKENS.jobRegistry);
+
+        jobRegistry.addSchedule({
+            name: "cleanup-expired-notifications",
+            cron: "0 4 * * *",       // daily at 4 AM
+            jobName: "cleanup-expired",
+        });
+
+        logger.info("Notification module contributed — routes, workers, and schedules registered");
     },
 };
 

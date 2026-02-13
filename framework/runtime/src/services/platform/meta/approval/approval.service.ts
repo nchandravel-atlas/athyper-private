@@ -2,8 +2,7 @@
  * Approval Service Implementation
  *
  * Manages approval workflow instances using existing DB tables.
- * Phase-1 scope: instance creation, decision processing, lifecycle bridge.
- * SLA timers (BullMQ) are stubs in Phase-1.
+ * Supports SLA timer scheduling via BullMQ (reminder + escalation jobs).
  *
  * Status mapping (DB constraint vs Spec):
  *   Spec "rejected" → DB "canceled" + context.reason = "rejected"
@@ -32,8 +31,15 @@ import type {
   LifecycleManager,
   RequestContext,
 } from "@athyper/core/meta";
+import type { JobQueue } from "@athyper/core";
 import type { LifecycleDB_Type } from "../data/db-helpers.js";
 import { uuid } from "../data/db-helpers.js";
+import {
+  SLA_JOB_TYPES,
+  type SlaReminderPayload,
+  type SlaEscalationPayload,
+} from "./workers/sla-timer.worker.js";
+import type { ApproverResolverService } from "./approver-resolver.service.js";
 
 // ============================================================================
 // Row Mappers (DB → Spec types with status mapping)
@@ -145,6 +151,8 @@ function mapEscalationFromDb(
 
 export class ApprovalServiceImpl implements ApprovalService {
   private lifecycleManager?: LifecycleManager;
+  private jobQueue?: JobQueue;
+  private approverResolver?: ApproverResolverService;
 
   constructor(private readonly db: LifecycleDB_Type) {}
 
@@ -154,6 +162,23 @@ export class ApprovalServiceImpl implements ApprovalService {
    */
   setLifecycleManager(svc: LifecycleManager): void {
     this.lifecycleManager = svc;
+  }
+
+  /**
+   * Set job queue for SLA timer scheduling.
+   * Called by factory after the job queue is resolved from the DI container.
+   */
+  setJobQueue(queue: JobQueue): void {
+    this.jobQueue = queue;
+  }
+
+  /**
+   * Set approver resolver for advanced assignee resolution strategies.
+   * When set, resolveAssignees delegates to the resolver for condition evaluation,
+   * role/group/hierarchy expansion, and caching.
+   */
+  setApproverResolver(resolver: ApproverResolverService): void {
+    this.approverResolver = resolver;
   }
 
   // =========================================================================
@@ -249,9 +274,10 @@ export class ApprovalServiceImpl implements ApprovalService {
           .execute();
 
         // 6. Resolve assignees from rules and create tasks
-        const assignees = this.resolveAssignees(
+        const assignees = await this.resolveAssignees(
           rules,
-          assignmentContext ?? {}
+          assignmentContext ?? {},
+          ctx.tenantId,
         );
 
         for (const assignee of assignees) {
@@ -475,6 +501,9 @@ export class ApprovalServiceImpl implements ApprovalService {
         .where("tenant_id", "=", ctx.tenantId)
         .execute();
 
+      // Cancel any outstanding SLA timers for this task
+      await this.cancelTimers(taskId, ctx.tenantId);
+
       // Log decision event
       await this.logEvent(
         task.approvalInstanceId,
@@ -622,46 +651,240 @@ export class ApprovalServiceImpl implements ApprovalService {
   }
 
   // =========================================================================
-  // SLA Timers (Phase-1 stubs)
+  // SLA Timers
   // =========================================================================
 
+  /**
+   * Schedule a reminder job that fires at the given time.
+   * Uses BullMQ delayed job. If no job queue is configured, silently no-ops.
+   */
   async scheduleReminder(
-    _taskId: string,
-    _fireAt: Date,
-    _tenantId: string
+    taskId: string,
+    fireAt: Date,
+    tenantId: string
   ): Promise<void> {
-    // Phase-1 stub: No BullMQ integration yet
+    if (!this.jobQueue) return;
+
+    const delayMs = fireAt.getTime() - Date.now();
+    if (delayMs <= 0) return; // Already past due — skip scheduling
+
+    // Load task to get instance/stage IDs for the job payload
+    const task = await this.getTask(taskId, tenantId);
+    if (!task || task.status !== "pending") return;
+
+    const payload: SlaReminderPayload = {
+      taskId,
+      tenantId,
+      instanceId: task.approvalInstanceId,
+      stageId: task.approvalStageId,
+    };
+
+    await this.jobQueue.add(
+      {
+        type: SLA_JOB_TYPES.REMINDER,
+        payload,
+        metadata: {
+          scheduledFor: fireAt.toISOString(),
+          taskId,
+        },
+      },
+      {
+        delay: delayMs,
+        attempts: 3,
+        backoff: { type: "exponential", delay: 5_000 },
+        removeOnComplete: true,
+      },
+    );
+
+    await this.logEvent(
+      task.approvalInstanceId,
+      tenantId,
+      "sla_reminder_scheduled",
+      { taskId, fireAt: fireAt.toISOString() },
+      "system",
+    );
   }
 
+  /**
+   * Schedule an escalation job that fires at the given time.
+   * Carries the escalation payload (reassignment target, notification config, etc.).
+   */
   async scheduleEscalation(
-    _taskId: string,
-    _fireAt: Date,
-    _escalationPayload: Record<string, unknown>,
-    _tenantId: string
+    taskId: string,
+    fireAt: Date,
+    escalationPayload: Record<string, unknown>,
+    tenantId: string
   ): Promise<void> {
-    // Phase-1 stub: No BullMQ integration yet
+    if (!this.jobQueue) return;
+
+    const delayMs = fireAt.getTime() - Date.now();
+    if (delayMs <= 0) return;
+
+    const task = await this.getTask(taskId, tenantId);
+    if (!task || task.status !== "pending") return;
+
+    const payload: SlaEscalationPayload = {
+      taskId,
+      tenantId,
+      instanceId: task.approvalInstanceId,
+      stageId: task.approvalStageId,
+      escalation: escalationPayload,
+    };
+
+    await this.jobQueue.add(
+      {
+        type: SLA_JOB_TYPES.ESCALATION,
+        payload,
+        metadata: {
+          scheduledFor: fireAt.toISOString(),
+          taskId,
+          escalationKind: escalationPayload.kind ?? "sla_breach",
+        },
+      },
+      {
+        delay: delayMs,
+        attempts: 3,
+        backoff: { type: "exponential", delay: 10_000 },
+        removeOnComplete: true,
+      },
+    );
+
+    await this.logEvent(
+      task.approvalInstanceId,
+      tenantId,
+      "sla_escalation_scheduled",
+      { taskId, fireAt: fireAt.toISOString(), escalationKind: escalationPayload.kind },
+      "system",
+    );
   }
 
+  /**
+   * Process a reminder when the job fires.
+   * Verifies the task is still pending, then logs the reminder event.
+   * Notification delivery is delegated to the notification service (future integration).
+   */
   async processReminder(
-    _taskId: string,
-    _tenantId: string
+    taskId: string,
+    tenantId: string
   ): Promise<void> {
-    // Phase-1 stub
+    const task = await this.getTask(taskId, tenantId);
+    if (!task || task.status !== "pending") return;
+
+    await this.logEvent(
+      task.approvalInstanceId,
+      tenantId,
+      "sla_reminder_sent",
+      {
+        taskId,
+        assigneePrincipalId: task.assigneePrincipalId,
+        assigneeGroupId: task.assigneeGroupId,
+      },
+      "system",
+    );
   }
 
+  /**
+   * Process an escalation when the job fires.
+   * Records an escalation row in `core.approval_escalation` and logs the event.
+   */
   async processEscalation(
-    _taskId: string,
-    _escalationPayload: Record<string, unknown>,
-    _tenantId: string
+    taskId: string,
+    escalationPayload: Record<string, unknown>,
+    tenantId: string
   ): Promise<void> {
-    // Phase-1 stub
+    const task = await this.getTask(taskId, tenantId);
+    if (!task || task.status !== "pending") return;
+
+    // Record escalation
+    await this.db
+      .insertInto("core.approval_escalation")
+      .values({
+        id: uuid(),
+        tenant_id: tenantId,
+        approval_instance_id: task.approvalInstanceId,
+        kind: (escalationPayload.kind as string) ?? "sla_breach",
+        payload: JSON.stringify(escalationPayload),
+        occurred_at: new Date(),
+      })
+      .execute();
+
+    await this.logEvent(
+      task.approvalInstanceId,
+      tenantId,
+      "sla_escalation_executed",
+      {
+        taskId,
+        escalationKind: escalationPayload.kind ?? "sla_breach",
+        escalationPayload,
+      },
+      "system",
+    );
   }
 
+  /**
+   * Cancel outstanding SLA timers for a task.
+   *
+   * Since BullMQ jobs don't support metadata-based cancellation directly,
+   * the worker handlers perform a guard check (task.status !== "pending" → skip).
+   * This method logs the cancellation intent for audit trail; the actual
+   * jobs are silently skipped when they fire.
+   */
   async cancelTimers(
-    _taskId: string,
-    _tenantId: string
+    taskId: string,
+    tenantId: string
   ): Promise<void> {
-    // Phase-1 stub
+    // Guard check ensures workers skip stale jobs at execution time.
+    // Log the intent for audit purposes.
+    const task = await this.getTask(taskId, tenantId);
+    if (task) {
+      await this.logEvent(
+        task.approvalInstanceId,
+        tenantId,
+        "sla_timers_cancelled",
+        { taskId, reason: "task_resolved" },
+        "system",
+      );
+    }
+  }
+
+  /**
+   * Rehydrate SLA timers after a restart.
+   * Scans for pending tasks with a due_at in the future and reschedules
+   * reminder + escalation jobs if missing.
+   */
+  async rehydratePendingTimers(tenantId: string): Promise<number> {
+    const pendingTasks = await this.db
+      .selectFrom("core.approval_task")
+      .selectAll()
+      .where("tenant_id", "=", tenantId)
+      .where("status", "=", "pending")
+      .where("due_at", "is not", null)
+      .execute();
+
+    let scheduled = 0;
+
+    for (const row of pendingTasks) {
+      const task = mapTaskFromDb(row as unknown as Record<string, unknown>);
+      if (!task.dueAt) continue;
+
+      const dueAt = new Date(task.dueAt);
+      if (dueAt.getTime() <= Date.now()) continue; // Already past
+
+      // Schedule a reminder at 75% of time-to-deadline
+      const timeUntilDue = dueAt.getTime() - Date.now();
+      const reminderAt = new Date(Date.now() + timeUntilDue * 0.75);
+
+      await this.scheduleReminder(task.id, reminderAt, tenantId);
+      await this.scheduleEscalation(
+        task.id,
+        dueAt,
+        { kind: "sla_breach", rehydrated: true },
+        tenantId,
+      );
+      scheduled++;
+    }
+
+    return scheduled;
   }
 
   // =========================================================================
@@ -755,25 +978,36 @@ export class ApprovalServiceImpl implements ApprovalService {
 
   /**
    * Resolve assignees from routing rules.
-   * Simple priority-based matching: first matching rule wins.
+   *
+   * When an ApproverResolverService is available, delegates to it for:
+   * - Condition evaluation (shared condition evaluator)
+   * - Multi-strategy resolution (role, group, hierarchy, department, custom_field)
+   * - Redis-backed caching
+   *
+   * Falls back to simple direct assignment when no resolver is configured.
    */
-  private resolveAssignees(
+  private async resolveAssignees(
     rules: Array<{
       id: string;
       conditions: unknown;
       assign_to: unknown;
+      priority?: number;
     }>,
-    context: Record<string, unknown>
-  ): Array<{
+    context: Record<string, unknown>,
+    tenantId?: string,
+  ): Promise<Array<{
     principalId?: string;
     groupId?: string;
     ruleId?: string;
-  }> {
-    // If no rules, return empty (admin must configure)
+  }>> {
     if (rules.length === 0) return [];
 
-    // For Phase-1: use first rule's assign_to directly
-    // Full condition evaluation deferred to Phase-2
+    // Delegate to resolver if available (full condition eval + strategy expansion)
+    if (this.approverResolver && tenantId) {
+      return this.approverResolver.resolveAssignees(rules, context, tenantId);
+    }
+
+    // Fallback: simple direct assignment (Phase-1 compatible)
     for (const rule of rules) {
       const assignTo = rule.assign_to as Record<string, unknown>;
       if (!assignTo) continue;
@@ -784,7 +1018,6 @@ export class ApprovalServiceImpl implements ApprovalService {
         ruleId?: string;
       }> = [];
 
-      // Support array of assignees
       const assignments = Array.isArray(assignTo.assignees)
         ? (assignTo.assignees as Record<string, unknown>[])
         : [assignTo];

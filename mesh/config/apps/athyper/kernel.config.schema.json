@@ -224,6 +224,412 @@
         }
       },
       "additionalProperties": false
+    },
+    "jobQueue": {
+      "type": "object",
+      "description": "BullMQ job queue configuration.",
+      "properties": {
+        "queueName": {
+          "type": "string",
+          "minLength": 1,
+          "default": "athyper-jobs",
+          "description": "BullMQ queue name (all job types share one queue, differentiated by data.type)"
+        },
+        "defaultRetries": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 3,
+          "description": "Default retry attempts for failed jobs"
+        }
+      },
+      "additionalProperties": false
+    },
+    "document": {
+      "type": "object",
+      "description": "Document services configuration (PDF rendering, storage, retention).",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable document rendering services"
+        },
+        "rendering": {
+          "type": "object",
+          "properties": {
+            "engine": {
+              "type": "string",
+              "enum": ["puppeteer", "playwright"],
+              "default": "puppeteer",
+              "description": "PDF rendering engine (only puppeteer currently implemented)"
+            },
+            "chromiumPath": {
+              "type": "string",
+              "description": "Path to Chromium binary (auto-detected if omitted)"
+            },
+            "concurrency": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "default": 3,
+              "description": "Maximum concurrent PDF rendering pages"
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 30000,
+              "description": "PDF render timeout in milliseconds"
+            },
+            "maxRetries": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 3,
+              "description": "Maximum retry attempts for failed renders"
+            },
+            "paperFormat": {
+              "type": "string",
+              "enum": ["A4", "LETTER", "LEGAL"],
+              "default": "A4",
+              "description": "Default paper format for PDF output"
+            },
+            "trustedDomains": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": [],
+              "description": "Trusted domains for network requests during rendering (fonts CDN, etc.)"
+            },
+            "allowedHosts": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": [],
+              "description": "Allowed external hosts for URL-fetching during template resolution"
+            },
+            "composeTimeoutMs": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 5000,
+              "description": "HTML composition timeout in milliseconds"
+            },
+            "uploadTimeoutMs": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 30000,
+              "description": "Output upload to S3 timeout in milliseconds"
+            }
+          },
+          "additionalProperties": false
+        },
+        "storage": {
+          "type": "object",
+          "properties": {
+            "pathPrefix": {
+              "type": "string",
+              "default": "documents",
+              "description": "S3 path prefix for document outputs"
+            },
+            "presignedUrlExpirySeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 3600,
+              "description": "Presigned download URL expiry in seconds"
+            },
+            "downloadMode": {
+              "type": "string",
+              "enum": ["stream", "presigned"],
+              "default": "stream",
+              "description": "Download mode: stream (proxy through API) or presigned (redirect to S3)"
+            }
+          },
+          "additionalProperties": false
+        },
+        "jobs": {
+          "type": "object",
+          "properties": {
+            "leaseSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 300,
+              "description": "BullMQ lock duration for render jobs (seconds)"
+            },
+            "heartbeatSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 30,
+              "description": "BullMQ lock renewal interval for render jobs (seconds)"
+            }
+          },
+          "additionalProperties": false
+        },
+        "retention": {
+          "type": "object",
+          "properties": {
+            "defaultDays": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 2555,
+              "description": "Default retention period for document outputs (days)"
+            },
+            "archiveAfterDays": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 365,
+              "description": "Days after which rendered outputs are archived"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "audit": {
+      "type": "object",
+      "description": "Audit governance configuration.",
+      "properties": {
+        "writeMode": {
+          "type": "string",
+          "enum": ["off", "sync", "outbox"],
+          "default": "outbox",
+          "description": "Audit write mode: off (drop events), sync (direct write), outbox (async via outbox)"
+        },
+        "hashChainEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable SHA-256 hash chain tamper evidence"
+        },
+        "timelineEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable unified activity timeline service"
+        },
+        "retentionDays": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 90,
+          "description": "Audit log retention period in days"
+        },
+        "partitionPreCreateMonths": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "default": 3,
+          "description": "Number of months to pre-create partitions ahead"
+        },
+        "encryptionEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable column-level encryption for sensitive audit fields (ip_address, user_agent, etc.)"
+        },
+        "loadSheddingEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable load shedding policy evaluation for audit writes"
+        },
+        "tieringEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable storage tiering (hot/warm/cold) for audit data"
+        },
+        "warmAfterDays": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 90,
+          "description": "Days before audit data transitions from hot to warm tier"
+        },
+        "coldAfterDays": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 365,
+          "description": "Days before audit data transitions from warm to cold tier"
+        }
+      },
+      "additionalProperties": false
+    },
+    "notification": {
+      "type": "object",
+      "description": "Notification framework configuration.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable notification services"
+        },
+        "providers": {
+          "type": "object",
+          "properties": {
+            "email": {
+              "type": "object",
+              "properties": {
+                "sendgrid": {
+                  "type": "object",
+                  "properties": {
+                    "apiKeyRef": {
+                      "type": "string",
+                      "description": "LOCKED — Reference for SUPERSTAR env secret resolution (ATHYPER_SUPER__SENDGRID_API_KEY)"
+                    },
+                    "fromAddress": {
+                      "type": "string",
+                      "description": "Default sender email address"
+                    },
+                    "fromName": {
+                      "type": "string",
+                      "description": "Default sender display name"
+                    },
+                    "enabled": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable SendGrid email provider"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "teams": {
+              "type": "object",
+              "properties": {
+                "powerAutomate": {
+                  "type": "object",
+                  "properties": {
+                    "webhookUrl": {
+                      "type": "string",
+                      "description": "LOCKED — Power Automate webhook URL"
+                    },
+                    "enabled": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable Teams via Power Automate"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "whatsapp": {
+              "type": "object",
+              "properties": {
+                "phoneNumberId": {
+                  "type": "string",
+                  "description": "WhatsApp Business phone number ID"
+                },
+                "accessTokenRef": {
+                  "type": "string",
+                  "description": "LOCKED — Reference for SUPERSTAR env secret resolution"
+                },
+                "businessAccountId": {
+                  "type": "string",
+                  "description": "WhatsApp Business Account ID"
+                },
+                "webhookVerifyToken": {
+                  "type": "string",
+                  "description": "LOCKED — Webhook verification token"
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Enable WhatsApp provider"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "delivery": {
+          "type": "object",
+          "properties": {
+            "maxRetries": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 3,
+              "description": "Maximum delivery retry attempts"
+            },
+            "retryBackoffMs": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 2000,
+              "description": "Retry backoff delay in milliseconds"
+            },
+            "dedupWindowMs": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 300000,
+              "description": "Deduplication window in milliseconds (5 minutes default)"
+            },
+            "defaultPriority": {
+              "type": "string",
+              "enum": ["low", "normal", "high", "critical"],
+              "default": "normal",
+              "description": "Default notification priority"
+            },
+            "defaultLocale": {
+              "type": "string",
+              "minLength": 2,
+              "default": "en",
+              "description": "Default locale for notification templates"
+            },
+            "workerConcurrency": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 5,
+              "description": "Number of concurrent notification delivery workers"
+            }
+          },
+          "additionalProperties": false
+        },
+        "digest": {
+          "type": "object",
+          "properties": {
+            "hourlyAt": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 59,
+              "default": 0,
+              "description": "Minute of hour for hourly digest processing"
+            },
+            "dailyAtHourUtc": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23,
+              "default": 8,
+              "description": "Hour (UTC) for daily digest processing"
+            },
+            "weeklyDay": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6,
+              "default": 1,
+              "description": "Day of week for weekly digest (0=Sunday, 1=Monday)"
+            },
+            "maxItemsPerDigest": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 50,
+              "description": "Maximum items per digest batch"
+            }
+          },
+          "additionalProperties": false
+        },
+        "retention": {
+          "type": "object",
+          "properties": {
+            "messageDays": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 90,
+              "description": "Retention period for notification messages (days)"
+            },
+            "deliveryDays": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 30,
+              "description": "Retention period for delivery records (days)"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,

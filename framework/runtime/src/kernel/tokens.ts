@@ -1,4 +1,5 @@
 // framework/runtime/kernel/tokens.ts
+import type { JobQueue } from "@athyper/core";
 import type { AuditWriter } from "./audit";
 import type { RuntimeConfig } from "./config.schema";
 import type { Lifecycle } from "./lifecycle";
@@ -51,6 +52,12 @@ export const TOKENS = {
     auditWriter: "governance.audit",
     featureFlags: "governance.featureFlags",
 
+    // IAM (Identity & Access)
+    iamCapabilityService: "iam.capabilityService",
+    iamMfaService: "iam.mfaService",
+    iamSessionInvalidation: "iam.sessionInvalidation",
+    iamTenantProfile: "iam.tenantProfile",
+
     // UI Services
     dashboardService: "ui.dashboard",
     widgetRegistry: "ui.widgetRegistry",
@@ -68,6 +75,47 @@ export const TOKENS = {
     notificationDlqManager: "notify.dlqManager",
     notificationExplainability: "notify.explainability",
     notificationScopedPreferences: "notify.scopedPreferences",
+
+    // Audit & Governance
+    auditWorkflowRepo: "audit.workflowRepo",
+    auditOutboxRepo: "audit.outboxRepo",
+    auditHashChain: "audit.hashChain",
+    auditRedaction: "audit.redaction",
+    auditRateLimiter: "audit.rateLimiter",
+    auditQueryGate: "audit.queryGate",
+    auditResilientWriter: "audit.resilientWriter",
+    auditTimeline: "audit.timeline",
+    auditMetrics: "audit.metrics",
+    auditFeatureFlags: "audit.featureFlags",
+    auditDlqRepo: "audit.dlqRepo",
+    auditDlqManager: "audit.dlqManager",
+    auditEncryption: "audit.encryption",
+    auditLoadShedding: "audit.loadShedding",
+    auditIntegrity: "audit.integrity",
+    auditReplay: "audit.replay",
+    auditArchiveMarkerRepo: "audit.archiveMarkerRepo",
+    auditStorageTiering: "audit.storageTiering",
+    auditExplainability: "audit.explainability",
+    auditAccessReport: "audit.accessReport",
+    auditDsar: "audit.dsar",
+
+    // Security & Policy
+    policyGate: "security.policyGate",
+    fieldAccessService: "security.fieldAccess",
+    fieldSecurityRepo: "security.fieldSecurityRepo",
+    fieldProjectionBuilder: "security.fieldProjection",
+
+    // Document Framework
+    documentRenderService: "doc.renderService",
+    documentTemplateService: "doc.templateService",
+    documentOutputService: "doc.outputService",
+    documentLetterheadService: "doc.letterheadService",
+    documentBrandService: "doc.brandService",
+    documentHtmlComposer: "doc.htmlComposer",
+    documentPdfRenderer: "doc.pdfRenderer",
+    documentMetrics: "doc.metrics",
+    documentDlqManager: "doc.dlqManager",
+    documentAuditEmitter: "doc.auditEmitter",
 } as const;
 
 export type TokenName = (typeof TOKENS)[keyof typeof TOKENS]; // "kernel.config" | ...
@@ -91,11 +139,12 @@ export interface TokenTypes {
     [TOKENS.tenantContext]: unknown;
     [TOKENS.authContext]: unknown;
 
+    // Runtime
+    [TOKENS.jobQueue]: JobQueue;
+
     // Governance
     [TOKENS.auditWriter]: AuditWriter;
     [TOKENS.featureFlags]: unknown;
-
-    // NOTE: adapters/runtime/registries can be added when concrete types exist.
 }
 
 export type TokenValue<T extends TokenName> = T extends keyof TokenTypes

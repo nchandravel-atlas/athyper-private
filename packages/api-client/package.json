@@ -12,6 +12,14 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./messaging/messagingClient": {
+      "types": "./src/messaging/messagingClient.ts",
+      "default": "./src/messaging/messagingClient.ts"
+    },
+    "./content": {
+      "types": "./src/content/index.ts",
+      "default": "./src/content/index.ts"
+    },
     "./package.json": "./package.json"
   },
   "files": ["dist", "src"],

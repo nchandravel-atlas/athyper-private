@@ -17,7 +17,7 @@ import { ArrowDown, Loader2, MessageSquare } from "lucide-react";
 import { Button } from "../button";
 import { ScrollArea } from "../scroll-area";
 import { MessageBubble, type MessageBubbleProps } from "./MessageBubble";
-import { cn } from "../../lib/utils";
+import { cn } from "../lib/utils";
 
 export interface ChatViewProps {
     messages: Omit<MessageBubbleProps, "currentUserId">[];

@@ -54,7 +54,7 @@ export function RelationFormDialog({ open, onOpenChange, relation, onSubmit }: R
     const isEditing = relation !== null;
 
     const form = useForm<RelationFormValues>({
-        resolver: zodResolver(relationSchema),
+        resolver: zodResolver(relationSchema as any),
         defaultValues: {
             name: relation?.name ?? "",
             relationKind: relation?.relationKind ?? "belongs_to",

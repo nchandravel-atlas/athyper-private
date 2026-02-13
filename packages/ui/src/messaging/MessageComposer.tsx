@@ -14,7 +14,7 @@
 import { Send, Loader2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "../button";
-import { cn } from "../../lib/utils";
+import { cn } from "../lib/utils";
 
 export interface MessageComposerProps {
     onSend: (message: string) => Promise<void> | void;

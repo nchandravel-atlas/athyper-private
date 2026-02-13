@@ -17,7 +17,8 @@ import * as contentService from "@neon/content/server";
  * Note: This route generates a presigned URL but doesn't stream the file.
  * Client uses the returned URL to download directly from S3.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const sid = await getSessionId();
   if (!sid) {
     return NextResponse.json(
@@ -30,7 +31,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 
   const tenantId = process.env.DEFAULT_TENANT_ID ?? "default";
-  const attachmentId = params.id;
+  const attachmentId = id;
 
   try {
     // TODO: Check permissions via PolicyGateService

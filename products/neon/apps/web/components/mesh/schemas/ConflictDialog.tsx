@@ -53,7 +53,7 @@ export function ConflictDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                {conflict?.serverData && (
+                {conflict?.serverData ? (
                     <div className="rounded-md border bg-muted/50 p-3">
                         <p className="mb-2 text-xs font-medium text-muted-foreground">
                             Server version
@@ -67,7 +67,7 @@ export function ConflictDialog({
                             {JSON.stringify(conflict.serverData, null, 2)}
                         </pre>
                     </div>
-                )}
+                ) : null}
 
                 <DialogFooter className="gap-2 sm:gap-0">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>

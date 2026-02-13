@@ -10,8 +10,8 @@ import type {
     ConversationParticipant,
     Message,
     ConversationId,
-} from "../types.js";
-import { AccessDeniedError } from "../types.js";
+} from "../types";
+import { AccessDeniedError } from "../types";
 
 /**
  * Verifies tenant isolation

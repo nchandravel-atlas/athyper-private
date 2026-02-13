@@ -2,9 +2,9 @@
  * Notification UI Components
  */
 
-export * from "./NotificationBell.js";
-export * from "./NotificationInboxPanel.js";
-export * from "./NotificationList.js";
-export * from "./NotificationCard.js";
-export * from "./NotificationFilters.js";
-export * from "./MarkAllReadButton.js";
+export * from "./NotificationBell";
+export * from "./NotificationInboxPanel";
+export * from "./NotificationList";
+export * from "./NotificationCard";
+export * from "./NotificationFilters";
+export * from "./MarkAllReadButton";

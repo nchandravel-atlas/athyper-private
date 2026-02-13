@@ -17,7 +17,7 @@ import { Button } from "../button";
 import { ScrollArea } from "../scroll-area";
 import { MessageBubble, type MessageBubbleProps } from "./MessageBubble";
 import { MessageComposer } from "./MessageComposer";
-import { cn } from "../../lib/utils";
+import { cn } from "../lib/utils";
 
 export interface ThreadViewProps {
     parentMessage: Omit<MessageBubbleProps, "currentUserId">;

@@ -8,8 +8,8 @@
 
 import { Loader2, Inbox } from "lucide-react";
 import type { Notification } from "@athyper/api-client";
-import { NotificationCard } from "./NotificationCard.js";
-import { cn } from "../lib/utils.js";
+import { NotificationCard } from "./NotificationCard";
+import { cn } from "../lib/utils";
 
 export interface NotificationListProps {
     notifications: Notification[];

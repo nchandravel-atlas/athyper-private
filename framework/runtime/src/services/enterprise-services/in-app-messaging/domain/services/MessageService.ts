@@ -17,14 +17,14 @@ import type {
     CreateMessageInput,
     EditMessageInput,
     MarkMessageReadInput,
-} from "../types.js";
+} from "../types";
 import {
     validateCreateMessageInput,
     validateEditMessageInput,
     applyMessageEdit,
     validateMessageDeletion,
     softDeleteMessage,
-} from "../models/Message.js";
+} from "../models/Message";
 import {
     enforceParticipantAccess,
     enforceSendMessagePermission,
@@ -32,19 +32,19 @@ import {
     enforceEditMessagePermission,
     enforceDeleteMessagePermission,
     getActiveParticipantIds,
-} from "../policies/ConversationAccessPolicy.js";
-import { ConversationRepo } from "../../persistence/ConversationRepo.js";
-import { ParticipantRepo } from "../../persistence/ParticipantRepo.js";
+} from "../policies/ConversationAccessPolicy";
+import { ConversationRepo } from "../../persistence/ConversationRepo";
+import { ParticipantRepo } from "../../persistence/ParticipantRepo";
 import {
     MessageRepo,
     type ListMessagesOptions,
     type SearchMessagesOptions,
     type MessageSearchResult,
-} from "../../persistence/MessageRepo.js";
-import { MessageDeliveryRepo, type CreateDeliveryInput } from "../../persistence/MessageDeliveryRepo.js";
-import { MessagingAuditLogger } from "../audit/MessagingAuditLogger.js";
-import { MessagingRateLimiter, RateLimitExceededError } from "../rate-limit/MessagingRateLimiter.js";
-import { MessagingMetrics, MetricTimer } from "../observability/MessagingMetrics.js";
+} from "../../persistence/MessageRepo";
+import { MessageDeliveryRepo, type CreateDeliveryInput } from "../../persistence/MessageDeliveryRepo";
+import { MessagingAuditLogger } from "../audit/MessagingAuditLogger";
+import { MessagingRateLimiter, RateLimitExceededError } from "../rate-limit/MessagingRateLimiter";
+import { MessagingMetrics, MetricTimer } from "../observability/MessagingMetrics";
 
 export interface MessageWithDeliveries {
     message: Message;

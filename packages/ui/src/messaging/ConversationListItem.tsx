@@ -14,7 +14,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { Users, User } from "lucide-react";
 import { Badge } from "../badge";
-import { cn } from "../../lib/utils";
+import { cn } from "../lib/utils";
 
 export interface ConversationListItemProps {
     conversation: {

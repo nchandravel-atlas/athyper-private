@@ -54,15 +54,42 @@ const FALLBACK_TREE: NavTree = {
             sortOrder: 2,
             modules: [
                 {
+                    code: "core-accounting",
+                    label: "Core Accounting",
+                    icon: "Landmark",
+                    sortOrder: 1,
+                    requiredRole: "neon:MODULES:core-accounting",
+                    entities: [
+                        { slug: "account", label: "Accounts", icon: "BookOpen", sortOrder: 1 },
+                    ],
+                },
+                {
                     code: "accounting",
                     label: "Accounting",
                     icon: "Calculator",
-                    sortOrder: 1,
+                    sortOrder: 2,
                     requiredRole: "neon:MODULES:accounting",
                     entities: [
                         { slug: "invoice", label: "Invoices", icon: "Receipt", sortOrder: 1 },
                         { slug: "payment", label: "Payments", icon: "CreditCard", sortOrder: 2 },
                         { slug: "journal-entry", label: "Journal Entries", icon: "BookOpen", sortOrder: 3 },
+                    ],
+                },
+            ],
+        },
+        {
+            code: "supply-chain",
+            label: "Supply Chain",
+            sortOrder: 4,
+            modules: [
+                {
+                    code: "customer-experience",
+                    label: "Customer Experience",
+                    icon: "Handshake",
+                    sortOrder: 1,
+                    requiredRole: "neon:MODULES:customer-experience",
+                    entities: [
+                        { slug: "purchase-invoice", label: "Purchase Invoices", icon: "FileText", sortOrder: 1 },
                     ],
                 },
             ],

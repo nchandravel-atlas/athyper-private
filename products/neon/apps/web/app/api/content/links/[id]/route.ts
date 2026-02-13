@@ -13,7 +13,8 @@ import * as linkService from "@neon/content/server";
  * 3. Call runtime API to get linked entities
  * 4. Return list of entities
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const sid = await getSessionId();
   if (!sid) {
     return NextResponse.json(
@@ -26,7 +27,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 
   const tenantId = process.env.DEFAULT_TENANT_ID ?? "default";
-  const attachmentId = params.id;
+  const attachmentId = id;
 
   try {
     const result = await linkService.getLinkedEntities(attachmentId, tenantId);

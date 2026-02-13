@@ -9,7 +9,6 @@
  */
 
 import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 
 export interface CreateMultipartUploadParams {
   tenantId: string;
@@ -40,7 +39,7 @@ export interface MultipartUpload {
 }
 
 export class MultipartUploadRepo {
-  constructor(private db: Kysely<DB>) {}
+  constructor(private db: Kysely<any>) {}
 
   /**
    * Create multipart upload tracking record

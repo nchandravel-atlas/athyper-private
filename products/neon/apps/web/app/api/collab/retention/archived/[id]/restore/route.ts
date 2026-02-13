@@ -8,15 +8,16 @@ import { getSessionId } from "@neon/auth/session";
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const sid = await getSessionId();
   if (!sid) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const commentId = params.id;
+    const commentId = id;
     const backendUrl = process.env.API_MESH_URL || "http://localhost:3000";
 
     const response = await fetch(`${backendUrl}/api/collab/retention/archived/${commentId}/restore`, {

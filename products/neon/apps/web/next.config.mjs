@@ -2,6 +2,7 @@
 const nextConfig = {
   transpilePackages: [
     "@neon/auth",
+    "@neon/content",
     "@neon/ui",
     "@neon/theme",
     "@athyper/ui",
@@ -12,7 +13,8 @@ const nextConfig = {
     "@athyper/workbench-partner",
     "@athyper/workbench-user",
     "@athyper/i18n",
-    "@athyper/dashboard"
+    "@athyper/dashboard",
+    "@athyper/runtime"
   ],
   experimental: {
     serverActions: { allowedOrigins: ["neon.athyper.local", "localhost:3001"] }

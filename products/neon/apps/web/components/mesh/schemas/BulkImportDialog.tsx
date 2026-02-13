@@ -50,15 +50,17 @@ export function BulkImportDialog({ open, onOpenChange, entityName, onImport }: B
 
         try {
             if (format === "csv") {
-                const fields = parseCsvFields(rawInput);
+                const { fields, errors } = parseCsvFields(rawInput);
                 result.fields = fields;
-                if (fields.length === 0) {
+                result.errors.push(...errors);
+                if (fields.length === 0 && errors.length === 0) {
                     result.errors.push("No fields found in CSV input");
                 }
             } else {
-                const fields = parseJsonFields(rawInput);
+                const { fields, errors } = parseJsonFields(rawInput);
                 result.fields = fields;
-                if (fields.length === 0) {
+                result.errors.push(...errors);
+                if (fields.length === 0 && errors.length === 0) {
                     result.errors.push("No fields found in JSON input");
                 }
             }

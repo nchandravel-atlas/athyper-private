@@ -6,7 +6,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useCsrf } from "./use-csrf";
+import { buildHeaders } from "./use-csrf";
 
 import type { MutationResult } from "./types";
 
@@ -74,7 +74,6 @@ export function useEntityValidation(entityName: string | undefined) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [etag, setEtag] = useState<string | null>(null);
-    const { buildHeaders } = useCsrf();
 
     const fetchRules = useCallback(async () => {
         if (!entityName) return;

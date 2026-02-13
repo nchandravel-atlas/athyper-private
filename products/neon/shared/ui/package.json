@@ -9,6 +9,18 @@
     ".": {
       "types": "./index.ts",
       "default": "./index.ts"
+    },
+    "./badge": {
+      "types": "./badge.ts",
+      "default": "./badge.ts"
+    },
+    "./button": {
+      "types": "./button.ts",
+      "default": "./button.ts"
+    },
+    "./card": {
+      "types": "./card.ts",
+      "default": "./card.ts"
     }
   },
   "dependencies": {

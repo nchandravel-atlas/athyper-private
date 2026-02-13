@@ -19,8 +19,8 @@ const SYSTEM_FIELDS = new Set([
 
 interface FieldRowProps {
     field: FieldDefinition;
-    onEdit: (field: FieldDefinition) => void;
-    onDelete: (field: FieldDefinition) => void;
+    onEdit?: (field: FieldDefinition) => void;
+    onDelete?: (field: FieldDefinition) => void;
 }
 
 export function FieldRow({ field, onEdit, onDelete }: FieldRowProps) {
@@ -104,11 +104,14 @@ export function FieldRow({ field, onEdit, onDelete }: FieldRowProps) {
                 )}
             </div>
 
+            {(onEdit || onDelete) && (
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                {onEdit && (
                 <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onEdit(field)}>
                     <Pencil className="size-3.5" />
                 </Button>
-                {!isSystem && (
+                )}
+                {!isSystem && onDelete && (
                     <Button
                         variant="ghost"
                         size="sm"
@@ -119,6 +122,7 @@ export function FieldRow({ field, onEdit, onDelete }: FieldRowProps) {
                     </Button>
                 )}
             </div>
+            )}
         </div>
     );
 }

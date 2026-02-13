@@ -12,7 +12,7 @@ import type {
     ConversationId,
     MessageFormat,
     CreateMessageInput,
-} from "../domain/types.js";
+} from "../domain/types";
 
 export interface ListMessagesOptions {
     limit?: number;
@@ -418,22 +418,22 @@ export class MessageRepo {
             )
             .where("tenant_id", "=", tenantId)
             .where(
-                sql`body_tsv @@ to_tsquery('english', ${sanitizedQuery})`
+                sql`body_tsv @@ to_tsquery('english', ${sanitizedQuery})` as any
             );
 
         // Optional: filter by conversation
         if (options?.conversationId) {
-            query = query.where("conversation_id", "=", options.conversationId);
+            query = query.where("conversation_id" as any, "=", options.conversationId);
         }
 
         // Exclude deleted messages unless explicitly requested
         if (!options?.includeDeleted) {
-            query = query.where("deleted_at", "is", null);
+            query = query.where("deleted_at" as any, "is", null);
         }
 
         // Order by relevance (highest rank first)
-        query = query.orderBy("rank", "desc");
-        query = query.orderBy("created_at", "desc"); // Secondary sort by recency
+        query = query.orderBy("rank" as any, "desc");
+        query = query.orderBy("created_at" as any, "desc"); // Secondary sort by recency
 
         // Pagination
         query = query.limit(options?.limit ?? 50);
@@ -473,15 +473,15 @@ export class MessageRepo {
             .select((eb: any) => eb.fn.count("id").as("count"))
             .where("tenant_id", "=", tenantId)
             .where(
-                sql`body_tsv @@ to_tsquery('english', ${sanitizedQuery})`
+                sql`body_tsv @@ to_tsquery('english', ${sanitizedQuery})` as any
             );
 
         if (options?.conversationId) {
-            query = query.where("conversation_id", "=", options.conversationId);
+            query = query.where("conversation_id" as any, "=", options.conversationId);
         }
 
         if (!options?.includeDeleted) {
-            query = query.where("deleted_at", "is", null);
+            query = query.where("deleted_at" as any, "is", null);
         }
 
         const result = await query.executeTakeFirst();

@@ -17,7 +17,7 @@ import { Button } from "../button";
 import { Input } from "../input";
 import { ScrollArea } from "../scroll-area";
 import { ConversationListItem, type ConversationListItemProps } from "./ConversationListItem";
-import { cn } from "../../lib/utils";
+import { cn } from "../lib/utils";
 
 export interface ConversationListProps {
     conversations: ConversationListItemProps[];

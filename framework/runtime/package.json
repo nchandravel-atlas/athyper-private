@@ -12,7 +12,23 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./services/enterprise-services/in-app-messaging/domain/services/ConversationService": {
+      "types": "./src/services/enterprise-services/in-app-messaging/domain/services/ConversationService.ts",
+      "default": "./src/services/enterprise-services/in-app-messaging/domain/services/ConversationService.ts"
+    },
+    "./services/enterprise-services/in-app-messaging/domain/services/MessageService": {
+      "types": "./src/services/enterprise-services/in-app-messaging/domain/services/MessageService.ts",
+      "default": "./src/services/enterprise-services/in-app-messaging/domain/services/MessageService.ts"
+    },
+    "./services/enterprise-services/in-app-messaging/domain/types": {
+      "types": "./src/services/enterprise-services/in-app-messaging/domain/types.ts",
+      "default": "./src/services/enterprise-services/in-app-messaging/domain/types.ts"
+    },
+    "./services/platform-services/notification/persistence/InAppNotificationRepo": {
+      "types": "./src/services/platform-services/notification/persistence/InAppNotificationRepo.ts",
+      "default": "./src/services/platform-services/notification/persistence/InAppNotificationRepo.ts"
+    }
   },
   "files": [
     "dist",

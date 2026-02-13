@@ -10,7 +10,7 @@ import type {
     MessageDelivery,
     DeliveryId,
     MessageId,
-} from "../domain/types.js";
+} from "../domain/types";
 
 export interface CreateDeliveryInput {
     messageId: MessageId;

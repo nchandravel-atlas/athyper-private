@@ -7,12 +7,12 @@
 import { getSessionId } from "@neon/auth/session";
 import { NextResponse } from "next/server";
 
-async function getRedisClient() {
+async function getRedisClient(): Promise<{ get: (key: string) => Promise<string | null>; del: (key: string | string[]) => Promise<number>; quit: () => Promise<void>; isOpen: boolean }> {
     const { createClient } = await import("redis");
     const url = process.env.REDIS_URL ?? "redis://localhost:6379/0";
     const client = createClient({ url });
     if (!client.isOpen) await client.connect();
-    return client;
+    return client as any;
 }
 
 export interface ApiContext {

@@ -4,8 +4,8 @@
  * Search principals by username or display name for autocomplete features.
  */
 
-import type { HttpHandlerContext } from "../../../../foundation/http/types.js";
-import type { Database } from "@athyper/adapter-db";
+import type { HttpHandlerContext } from "../../http/types.js";
+import type { Kysely } from "kysely";
 import { TOKENS } from "../../../../../kernel/tokens.js";
 
 /**
@@ -44,7 +44,7 @@ export class SearchPrincipalsHandler {
     const parsedLimit = Math.min(Math.max(parseInt(String(limit), 10) || 10, 1), 50);
 
     // Execute search
-    const db = await ctx.container.resolve<Database>(TOKENS.db);
+    const db = await ctx.container.resolve<Kysely<any>>(TOKENS.db);
     const searchPattern = `%${searchTerm}%`;
 
     const results = await db
@@ -57,7 +57,7 @@ export class SearchPrincipalsHandler {
       ])
       .where("tenant_id", "=", tenantId)
       .where("is_active", "=", true)
-      .where((eb) =>
+      .where((eb: any) =>
         eb.or([
           eb("username", "ilike", searchPattern),
           eb("display_name", "ilike", searchPattern),
@@ -70,7 +70,7 @@ export class SearchPrincipalsHandler {
 
     return {
       ok: true,
-      data: results.map((p) => ({
+      data: results.map((p: any) => ({
         id: p.id,
         username: p.username,
         displayName: p.displayName || p.username,

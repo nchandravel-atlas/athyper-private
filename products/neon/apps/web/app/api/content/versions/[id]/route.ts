@@ -13,7 +13,8 @@ import * as versionService from "@neon/content/server";
  * 3. Call runtime API to get version history
  * 4. Return list of all versions with current version highlighted
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const sid = await getSessionId();
   if (!sid) {
     return NextResponse.json(
@@ -26,7 +27,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 
   const tenantId = process.env.DEFAULT_TENANT_ID ?? "default";
-  const documentId = params.id;
+  const documentId = id;
 
   try {
     const result = await versionService.getVersionHistory(documentId, tenantId);

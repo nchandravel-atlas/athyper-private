@@ -22,6 +22,7 @@ packages:
   # ─────────────────────────────────────────────
   - "products/*/apps/*" # Next.js apps (neon/apps/web)
   - "products/*/auth" # Product-specific auth packages
+  - "products/*/content" # Product-specific content packages
   - "products/*/shared/*" # Product-specific shared packages
   - "products/*/themes" # Product-specific theme packages
 

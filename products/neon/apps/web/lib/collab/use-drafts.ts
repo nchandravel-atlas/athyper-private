@@ -29,7 +29,7 @@ export function useDraft(
 
     const { data, mutate } = useSWR<DraftResponse>(key, collabFetcher);
 
-    const timerRef = useRef<ReturnType<typeof setTimeout>>();
+    const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
     const saveDraft = useCallback(
         (draftText: string) => {

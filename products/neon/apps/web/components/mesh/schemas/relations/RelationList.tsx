@@ -25,8 +25,8 @@ interface RelationListProps {
     relations: RelationDefinition[];
     selectedId: string | null;
     onSelect: (id: string) => void;
-    onEdit: (relation: RelationDefinition) => void;
-    onDelete: (relation: RelationDefinition) => void;
+    onEdit?: (relation: RelationDefinition) => void;
+    onDelete?: (relation: RelationDefinition) => void;
 }
 
 export function RelationList({ relations, selectedId, onSelect, onEdit, onDelete }: RelationListProps) {
@@ -76,14 +76,20 @@ export function RelationList({ relations, selectedId, onSelect, onEdit, onDelete
                                             )}
                                             <span className="text-sm font-medium truncate">{rel.name}</span>
                                         </div>
+                                        {(onEdit || onDelete) && (
                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                            {onEdit && (
                                             <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); onEdit(rel); }}>
                                                 <Pencil className="size-3" />
                                             </Button>
+                                            )}
+                                            {onDelete && (
                                             <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(rel); }}>
                                                 <Trash2 className="size-3" />
                                             </Button>
+                                            )}
                                         </div>
+                                        )}
                                     </div>
                                     <div className="mt-1.5 space-y-1 text-xs text-muted-foreground">
                                         <div className="flex items-center gap-1">

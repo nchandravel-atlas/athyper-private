@@ -16,7 +16,8 @@ import * as contentService from "@neon/content/server";
  *
  * CSRF-protected via middleware.
  */
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const sid = await getSessionId();
   if (!sid) {
     return NextResponse.json(
@@ -29,7 +30,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   }
 
   const tenantId = process.env.DEFAULT_TENANT_ID ?? "default";
-  const attachmentId = params.id;
+  const attachmentId = id;
 
   try {
     // TODO: Check permissions via PolicyGateService

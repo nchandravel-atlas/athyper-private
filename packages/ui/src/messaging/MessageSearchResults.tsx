@@ -14,7 +14,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { Search, Loader2, MessageSquare } from "lucide-react";
 import { ScrollArea } from "../scroll-area";
-import { cn } from "../../lib/utils";
+import { cn } from "../lib/utils";
 
 export interface SearchResult {
     message: {

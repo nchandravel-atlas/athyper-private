@@ -11,8 +11,8 @@ import type {
     MessageFormat,
     CreateMessageInput,
     EditMessageInput,
-} from "../types.js";
-import { MessageValidationError } from "../types.js";
+} from "../types";
+import { MessageValidationError } from "../types";
 
 /**
  * Maximum message body length (configurable, currently 10,000 characters)
@@ -121,6 +121,7 @@ export function createMessage(
         body: input.body,
         bodyFormat: input.bodyFormat || "plain",
         clientMessageId: input.clientMessageId || null,
+        parentMessageId: input.parentMessageId || null,
     };
 }
 

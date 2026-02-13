@@ -14,12 +14,12 @@ import {
     SheetHeader,
     SheetTitle,
     SheetDescription,
-} from "../primitives/Sheet.js";
-import { ScrollArea } from "../primitives/ScrollArea.js";
-import { Separator } from "../primitives/Separator.js";
-import { NotificationList } from "./NotificationList.js";
-import { NotificationFilters } from "./NotificationFilters.js";
-import { MarkAllReadButton } from "./MarkAllReadButton.js";
+} from "../primitives/Sheet";
+import { ScrollArea } from "../primitives/ScrollArea";
+import { Separator } from "../primitives/Separator";
+import { NotificationList } from "./NotificationList";
+import { NotificationFilters } from "./NotificationFilters";
+import { MarkAllReadButton } from "./MarkAllReadButton";
 
 export interface NotificationInboxPanelProps {
     open: boolean;

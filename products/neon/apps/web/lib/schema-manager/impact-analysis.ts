@@ -19,20 +19,30 @@ export interface MigrationImpact {
     type: "add_column" | "drop_column" | "alter_column" | "add_index" | "drop_index" | "add_fk" | "drop_fk";
     table: string;
     column?: string;
+    target?: string;
     detail: string;
+    description?: string;
     reversible: boolean;
+    breaking?: boolean;
+    ddlPreview?: string;
 }
 
 export interface ApiImpact {
     type: "new_field" | "removed_field" | "type_change" | "relation_change";
     detail: string;
+    description?: string;
+    method?: string;
+    endpoint?: string;
     breaking: boolean;
 }
 
 export interface DataImpact {
     type: "backfill_required" | "data_loss_risk" | "constraint_violation";
     detail: string;
+    description?: string;
+    target?: string;
     affectedField: string;
+    estimatedRows?: number;
 }
 
 // ─── Impact Analysis ──────────────────────────────────────────

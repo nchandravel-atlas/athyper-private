@@ -136,7 +136,7 @@ export function FieldFormDialog({ open, onOpenChange, field, existingFields = []
     );
 
     const form = useForm<FieldFormValues>({
-        resolver: zodResolver(schema),
+        resolver: zodResolver(schema as any),
         defaultValues: {
             name: field?.name ?? "",
             columnName: field?.columnName ?? "",

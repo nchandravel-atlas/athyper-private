@@ -5,9 +5,9 @@
  * All functions call the runtime API and handle serialization/errors.
  */
 
-export * from "./content.js";
-export * from "./audit.js";
-export * from "./version.js";
-export * from "./link.js";
-export * from "./permissions.js";
-export * from "./acl.js";
+export * from "./content";
+export * from "./audit";
+export * from "./version";
+export * from "./link";
+export * from "./permissions";
+export * from "./acl";

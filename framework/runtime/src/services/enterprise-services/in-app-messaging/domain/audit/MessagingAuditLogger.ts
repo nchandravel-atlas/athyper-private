@@ -11,7 +11,7 @@
  * Audit events are written to the kernel audit system for long-term retention.
  */
 
-import type { MessageId, ConversationId } from "../types.js";
+import type { MessageId, ConversationId } from "../types";
 
 export type MessagingAuditEventType =
     | "message.sent"

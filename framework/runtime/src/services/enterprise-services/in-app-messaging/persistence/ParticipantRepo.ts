@@ -12,7 +12,7 @@ import type {
     ConversationId,
     MessageId,
     ParticipantRole,
-} from "../domain/types.js";
+} from "../domain/types";
 
 export interface AddParticipantInput {
     conversationId: ConversationId;
@@ -270,6 +270,25 @@ export class ParticipantRepo {
             .executeTakeFirst();
 
         return Number((result as any)?.count ?? 0);
+    }
+
+    /**
+     * List all participations for a user across conversations
+     */
+    async listForUser(
+        tenantId: string,
+        userId: string
+    ): Promise<ConversationParticipant[]> {
+        const rows = await this.db
+            .selectFrom(TABLE as any)
+            .selectAll()
+            .where("tenant_id", "=", tenantId)
+            .where("user_id", "=", userId)
+            .where("left_at", "is", null)
+            .orderBy("joined_at", "desc")
+            .execute();
+
+        return rows.map((r: any) => this.mapRow(r));
     }
 
     /**

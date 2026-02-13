@@ -21,8 +21,8 @@ interface PrincipalSearchResponse {
 export function useMentions(query: string) {
     const [users, setUsers] = useState<MentionUser[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const timerRef = useRef<ReturnType<typeof setTimeout>>();
-    const abortRef = useRef<AbortController>();
+    const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+    const abortRef = useRef<AbortController>(undefined);
 
     useEffect(() => {
         // Clear previous debounce

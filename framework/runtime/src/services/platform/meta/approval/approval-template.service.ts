@@ -153,7 +153,7 @@ export class ApprovalTemplateServiceImpl implements ApprovalTemplateService {
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("is_active", "=", true)
-      .orderBy(options?.orderBy ?? "created_at", options?.orderDir ?? "desc")
+      .orderBy((options?.orderBy ?? "created_at") as any, options?.orderDir ?? "desc")
       .limit(pageSize)
       .offset(offset)
       .execute();
@@ -699,9 +699,9 @@ export class ApprovalTemplateServiceImpl implements ApprovalTemplateService {
       throw new Error(`Template not found: ${idOrCode}`);
     }
 
-    const rows = await this.db
+    const rows = await (this.db
       .selectFrom("meta.lifecycle_transition_gate as g")
-      .innerJoin("meta.lifecycle_transition as t", "g.transition_id", "t.id")
+      .innerJoin("meta.lifecycle_transition as t", "g.transition_id", "t.id") as any)
       .innerJoin("meta.entity_lifecycle as el", "el.lifecycle_id", "t.lifecycle_id")
       .select(["t.id as transition_id", "el.entity_name", "t.operation_code"])
       .where("g.tenant_id", "=", tenantId)
@@ -709,7 +709,7 @@ export class ApprovalTemplateServiceImpl implements ApprovalTemplateService {
       .execute();
 
     return {
-      affectedTransitions: rows.map((r) => ({
+      affectedTransitions: rows.map((r: any) => ({
         transitionId: r.transition_id,
         entityName: r.entity_name,
         operationCode: r.operation_code,

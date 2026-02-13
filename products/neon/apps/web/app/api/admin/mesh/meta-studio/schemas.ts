@@ -165,7 +165,7 @@ const CONDITION_OPERATORS = [
 const conditionLeafSchema: z.ZodType<{
     field: string;
     operator: string;
-    value: unknown;
+    value?: unknown;
 }> = z.object({
     field: z.string().min(1),
     operator: z.enum(CONDITION_OPERATORS),
@@ -196,7 +196,7 @@ const baseRuleSchema = z.object({
  * Full validation rule schema (loose — accepts all rule kinds with optional extra fields).
  * Backend performs kind-specific validation.
  */
-export const validationRuleSchema = baseRuleSchema.extend({
+export const validationRuleSchema: z.ZodType<Record<string, unknown>> = baseRuleSchema.extend({
     // min_max
     min: z.number().optional(),
     max: z.number().optional(),

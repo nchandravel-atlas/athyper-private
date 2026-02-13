@@ -17,12 +17,12 @@ import type {
     CreateGroupConversationInput,
     AddParticipantsInput,
     RemoveParticipantInput,
-} from "../types.js";
+} from "../types";
 import {
     validateDirectConversationInput,
     validateGroupConversationInput,
     validateTitleUpdate,
-} from "../models/Conversation.js";
+} from "../models/Conversation";
 import {
     enforceParticipantAccess,
     enforceAddParticipantsPermission,
@@ -30,9 +30,9 @@ import {
     enforceUpdateTitlePermission,
     validateNewParticipants,
     validateAdminRemoval,
-} from "../policies/ConversationAccessPolicy.js";
-import { ConversationRepo } from "../../persistence/ConversationRepo.js";
-import { ParticipantRepo, type AddParticipantInput } from "../../persistence/ParticipantRepo.js";
+} from "../policies/ConversationAccessPolicy";
+import { ConversationRepo } from "../../persistence/ConversationRepo";
+import { ParticipantRepo, type AddParticipantInput } from "../../persistence/ParticipantRepo";
 
 export interface ConversationWithParticipants {
     conversation: Conversation;

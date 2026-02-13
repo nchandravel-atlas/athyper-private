@@ -21,7 +21,7 @@ async function getDbClient(): Promise<Kysely<DB>> {
     });
 }
 
-export async function GET(req: Request) {
+export async function GET(req: Request): Promise<Response> {
     const { context, redis } = await getApiContext();
 
     try {

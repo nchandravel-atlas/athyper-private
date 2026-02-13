@@ -5,7 +5,7 @@
  * viewing version history, and restoring previous versions.
  */
 
-import type { DocumentKind } from "./content.js";
+import type { DocumentKind } from "./content";
 
 export interface CreateNewVersionParams {
   documentId: string;

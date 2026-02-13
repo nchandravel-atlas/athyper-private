@@ -10,8 +10,8 @@ import type {
     ConversationType,
     CreateDirectConversationInput,
     CreateGroupConversationInput,
-} from "../types.js";
-import { ConversationValidationError } from "../types.js";
+} from "../types";
+import { ConversationValidationError } from "../types";
 
 /**
  * Validates direct conversation input

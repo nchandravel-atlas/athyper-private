@@ -8,7 +8,7 @@
 
 import { CheckCheck, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { cn } from "../lib/utils.js";
+import { cn } from "../lib/utils";
 
 export interface MarkAllReadButtonProps {
     onMarkAllRead: () => Promise<void>;

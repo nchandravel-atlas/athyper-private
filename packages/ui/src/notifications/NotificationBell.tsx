@@ -7,10 +7,10 @@
 "use client";
 
 import { Bell } from "lucide-react";
-import { Badge } from "../primitives/Badge.js";
-import { Button } from "../primitives/Button.js";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../primitives/Tooltip.js";
-import { cn } from "../lib/utils.js";
+import { Badge } from "../primitives/Badge";
+import { Button } from "../primitives/Button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../primitives/Tooltip";
+import { cn } from "../lib/utils";
 
 export interface NotificationBellProps {
     unreadCount?: number;

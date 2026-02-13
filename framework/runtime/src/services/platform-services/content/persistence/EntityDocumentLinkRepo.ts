@@ -9,7 +9,6 @@
  */
 
 import type { Kysely } from "kysely";
-import type { DB } from "@athyper/adapter-db";
 
 export interface CreateLinkParams {
   tenantId: string;
@@ -36,7 +35,7 @@ export interface EntityDocumentLink {
 }
 
 export class EntityDocumentLinkRepo {
-  constructor(private db: Kysely<DB>) {}
+  constructor(private db: Kysely<any>) {}
 
   /**
    * Create a link between document and entity

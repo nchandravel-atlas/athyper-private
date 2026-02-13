@@ -10,7 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Check, X, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import type { Notification } from "@athyper/api-client";
-import { cn } from "../lib/utils.js";
+import { cn } from "../lib/utils";
 
 export interface NotificationCardProps {
     notification: Notification;

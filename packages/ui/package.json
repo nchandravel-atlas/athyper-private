@@ -8,9 +8,20 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./messaging": {
+      "types": "./src/messaging/index.ts",
+      "default": "./src/messaging/index.ts"
+    },
+    "./button": {
+      "types": "./src/primitives/Button.tsx",
+      "default": "./src/primitives/Button.tsx"
+    },
+    "./content/attachments": {
+      "types": "./src/content/attachments/index.ts",
+      "default": "./src/content/attachments/index.ts"
     },
     "./package.json": "./package.json"
   },

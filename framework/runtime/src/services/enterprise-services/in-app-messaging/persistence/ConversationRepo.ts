@@ -12,7 +12,7 @@ import type {
     ConversationType,
     CreateDirectConversationInput,
     CreateGroupConversationInput,
-} from "../domain/types.js";
+} from "../domain/types";
 
 export interface ListConversationsOptions {
     type?: ConversationType;
@@ -52,15 +52,16 @@ export class ConversationRepo {
         userId: string,
         options?: ListConversationsOptions
     ): Promise<Conversation[]> {
-        let query = this.db
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Kysely join typing requires cast
+        let query: any = (this.db
             .selectFrom(TABLE as any)
             .selectAll()
             .innerJoin(
-                "core.conversation_participant as cp",
-                "cp.conversation_id",
+                "core.conversation_participant as cp" as any,
+                "cp.conversation_id" as any,
                 `${TABLE}.id` as any
-            )
-            .where(`${TABLE}.tenant_id` as any, "=", tenantId)
+            ) as any)
+            .where(`${TABLE}.tenant_id`, "=", tenantId)
             .where("cp.tenant_id", "=", tenantId)
             .where("cp.user_id", "=", userId)
             .where("cp.left_at", "is", null); // Active participants only
@@ -86,21 +87,22 @@ export class ConversationRepo {
         userId2: string
     ): Promise<Conversation | undefined> {
         // Find conversations where both users are participants
-        const row = await this.db
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Kysely join typing requires cast
+        const row = await (this.db
             .selectFrom(TABLE as any)
             .selectAll()
             .innerJoin(
-                "core.conversation_participant as cp1",
-                "cp1.conversation_id",
+                "core.conversation_participant as cp1" as any,
+                "cp1.conversation_id" as any,
                 `${TABLE}.id` as any
-            )
+            ) as any)
             .innerJoin(
                 "core.conversation_participant as cp2",
                 "cp2.conversation_id",
-                `${TABLE}.id` as any
+                `${TABLE}.id`
             )
-            .where(`${TABLE}.tenant_id` as any, "=", tenantId)
-            .where(`${TABLE}.type` as any, "=", "direct")
+            .where(`${TABLE}.tenant_id`, "=", tenantId)
+            .where(`${TABLE}.type`, "=", "direct")
             .where("cp1.tenant_id", "=", tenantId)
             .where("cp1.user_id", "=", userId1)
             .where("cp1.left_at", "is", null)
@@ -211,21 +213,22 @@ export class ConversationRepo {
         userId: string,
         type?: ConversationType
     ): Promise<number> {
-        let query = this.db
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Kysely join typing requires cast
+        let query: any = (this.db
             .selectFrom(TABLE as any)
             .select((eb: any) => eb.fn.count("id").as("count"))
             .innerJoin(
-                "core.conversation_participant as cp",
-                "cp.conversation_id",
+                "core.conversation_participant as cp" as any,
+                "cp.conversation_id" as any,
                 `${TABLE}.id` as any
-            )
-            .where(`${TABLE}.tenant_id` as any, "=", tenantId)
+            ) as any)
+            .where(`${TABLE}.tenant_id`, "=", tenantId)
             .where("cp.tenant_id", "=", tenantId)
             .where("cp.user_id", "=", userId)
             .where("cp.left_at", "is", null);
 
         if (type) {
-            query = query.where(`${TABLE}.type` as any, "=", type);
+            query = query.where(`${TABLE}.type`, "=", type);
         }
 
         const result = await query.executeTakeFirst();

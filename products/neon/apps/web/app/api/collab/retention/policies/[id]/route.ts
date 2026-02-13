@@ -8,8 +8,9 @@ import { getSessionId } from "@neon/auth/session";
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const sid = await getSessionId();
   if (!sid) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,7 +18,7 @@ export async function PATCH(
 
   try {
     const body = await req.json();
-    const policyId = params.id;
+    const policyId = id;
 
     if (typeof body.enabled !== "boolean") {
       return NextResponse.json(
@@ -56,15 +57,16 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const sid = await getSessionId();
   if (!sid) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const policyId = params.id;
+    const policyId = id;
     const backendUrl = process.env.API_MESH_URL || "http://localhost:3000";
 
     const response = await fetch(`${backendUrl}/api/collab/retention/policies/${policyId}`, {

@@ -13,7 +13,7 @@
 import { Search, X, Loader2 } from "lucide-react";
 import { Input } from "../input";
 import { Button } from "../button";
-import { cn } from "../../lib/utils";
+import { cn } from "../lib/utils";
 
 export interface MessageSearchBarProps {
     value: string;

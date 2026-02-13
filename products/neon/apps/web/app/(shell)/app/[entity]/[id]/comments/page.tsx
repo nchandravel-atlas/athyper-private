@@ -1,5 +1,16 @@
-import { StubPage } from "@/components/stubs/StubPage";
+import { CommentList } from "@/components/collab";
 
-export default function CommentsPage() {
-    return <StubPage epic={6} title="Comments" description="View and add comments on this record." route="/app/:entity/:id/comments" />;
+interface CommentsPageProps {
+    params: Promise<{ entity: string; id: string }>;
+}
+
+export default async function CommentsPage({ params }: CommentsPageProps) {
+    const { entity, id } = await params;
+
+    return (
+        <div className="mx-auto max-w-3xl p-6">
+            <h1 className="mb-6 text-2xl font-semibold tracking-tight">Comments</h1>
+            <CommentList entityType={entity} entityId={id} />
+        </div>
+    );
 }

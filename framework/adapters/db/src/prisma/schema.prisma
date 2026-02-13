@@ -44,6 +44,7 @@ model Tenant {
   comment_retention_policy        comment_retention_policy[]
   comment_sla_config              comment_sla_config[]
   comment_sla_metrics             comment_sla_metrics[]
+  comment_sla_tracking            comment_sla_tracking[]
   comment_thread_analytics        comment_thread_analytics[]
   comment_user_engagement         comment_user_engagement[]
   contact_phone                   contact_phone[]
@@ -143,11 +144,6 @@ model Tenant {
   saved_view                      saved_view[]
   search_history                  search_history[]
   user_preference                 user_preference[]
-  entity_document_link            entity_document_link[]
-  document_acl                    document_acl[]
-  attachment_access_log           attachment_access_log[]
-  attachment_comment              attachment_comment[]
-  multipart_upload                multipart_upload[]
 
   @@index([realm_key], map: "idx_tenant_realm_key")
   @@index([status], map: "idx_tenant_status_active", where: raw("(status = 'active'::text)"))
@@ -157,82 +153,84 @@ model Tenant {
 
 /// B1: Principal - Canonical athyper actor (user/service/external)
 model Principal {
-  id                                                                   String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId                                                             String                       @map("tenant_id") @db.Uuid
-  realm_key                                                            String                       @default("main")
-  principalType                                                        String                       @map("principal_type")
-  principal_code                                                       String                       @unique
-  displayName                                                          String?                      @map("display_name")
-  email                                                                String?
-  phone                                                                String?
-  given_name                                                           String?
-  family_name                                                          String?
-  preferred_name                                                       String?
-  external_id                                                          String?
-  subject_id                                                           String?
-  is_active                                                            Boolean                      @default(true)
-  is_service_account                                                   Boolean                      @default(false)
-  is_locked                                                            Boolean                      @default(false)
-  password_hash                                                        String?
-  password_updated_at                                                  DateTime?                    @db.Timestamptz(6)
-  last_login_at                                                        DateTime?                    @db.Timestamptz(6)
-  last_login_ip                                                        String?
-  idp_display_name                                                     String?
-  idp_family_name                                                      String?
-  idp_given_name                                                       String?
-  idp_email                                                            String?
-  idp_email_verified                                                   Boolean?
-  idp_phone_number                                                     String?
-  idp_phone_verified                                                   Boolean?
-  idp_picture                                                          String?
-  idp_locale                                                           String?
-  idp_timezone                                                         String?
-  createdAt                                                            DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
-  createdBy                                                            String                       @map("created_by")
-  updated_at                                                           DateTime?                    @db.Timestamptz(6)
-  updated_by                                                           String?
-  approval_comment                                                     approval_comment[]
-  approval_instance_approval_instance_decided_byToprincipal            approval_instance[]          @relation("approval_instance_decided_byToprincipal")
-  approval_instance_approval_instance_requested_byToprincipal          approval_instance[]          @relation("approval_instance_requested_byToprincipal")
-  approval_task                                                        approval_task[]
-  comment_draft                                                        comment_draft[]
-  comment_flag_comment_flag_flagger_user_idToprincipal                 comment_flag[]               @relation("comment_flag_flagger_user_idToprincipal")
-  comment_flag_comment_flag_reviewed_byToprincipal                     comment_flag[]               @relation("comment_flag_reviewed_byToprincipal")
-  comment_mention                                                      comment_mention[]
-  comment_moderation_status                                            comment_moderation_status[]
-  comment_reaction                                                     comment_reaction[]
-  comment_read_status                                                  comment_read_status[]
-  comment_response_history                                             comment_response_history[]
-  comment_sla_metrics_comment_sla_metrics_first_comment_byToprincipal  comment_sla_metrics[]        @relation("comment_sla_metrics_first_comment_byToprincipal")
-  comment_sla_metrics_comment_sla_metrics_first_response_byToprincipal comment_sla_metrics[]        @relation("comment_sla_metrics_first_response_byToprincipal")
-  comment_user_engagement                                              comment_user_engagement[]
-  entitlement                                                          entitlement[]
-  entity_comment                                                       entity_comment[]
-  groupMemberships                                                     GroupMember[]
-  idpIdentities                                                        IdpIdentity[]
-  mfa_challenge                                                        mfa_challenge[]
-  mfa_config                                                           mfa_config[]
-  password_history                                                     password_history[]
-  tenant                                                               Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  principal_locale_override                                            principal_locale_override?
-  principal_ou                                                         principal_ou[]
-  profile                                                              PrincipalProfile?
-  principal_role                                                       principal_role[]
-  principal_workspace_access                                           principal_workspace_access[]
-  security_event                                                       security_event[]
-  trusted_device                                                       trusted_device[]
-  workflow_instance_workflow_instance_completed_byToprincipal          workflow_instance[]          @relation("workflow_instance_completed_byToprincipal")
-  workflow_instance_workflow_instance_initiated_byToprincipal          workflow_instance[]          @relation("workflow_instance_initiated_byToprincipal")
-  workflow_transition                                                  workflow_transition[]
-  employee                                                             employee[]
-  dashboard_widget                                                     dashboard_widget[]
-  notification_notification_recipient_idToprincipal                    notification[]               @relation("notification_recipient_idToprincipal")
-  notification_notification_sender_idToprincipal                       notification[]               @relation("notification_sender_idToprincipal")
-  notification_preference                                              notification_preference[]
-  recent_activity                                                      recent_activity[]
-  saved_view                                                           saved_view[]
-  search_history                                                       search_history[]
-  user_preference                                                      user_preference[]
+  id                                                                     String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                                                               String                       @map("tenant_id") @db.Uuid
+  realm_key                                                              String                       @default("main")
+  principalType                                                          String                       @map("principal_type")
+  principal_code                                                         String                       @unique
+  displayName                                                            String?                      @map("display_name")
+  email                                                                  String?
+  phone                                                                  String?
+  given_name                                                             String?
+  family_name                                                            String?
+  preferred_name                                                         String?
+  external_id                                                            String?
+  subject_id                                                             String?
+  is_active                                                              Boolean                      @default(true)
+  is_service_account                                                     Boolean                      @default(false)
+  is_locked                                                              Boolean                      @default(false)
+  password_hash                                                          String?
+  password_updated_at                                                    DateTime?                    @db.Timestamptz(6)
+  last_login_at                                                          DateTime?                    @db.Timestamptz(6)
+  last_login_ip                                                          String?
+  idp_display_name                                                       String?
+  idp_family_name                                                        String?
+  idp_given_name                                                         String?
+  idp_email                                                              String?
+  idp_email_verified                                                     Boolean?
+  idp_phone_number                                                       String?
+  idp_phone_verified                                                     Boolean?
+  idp_picture                                                            String?
+  idp_locale                                                             String?
+  idp_timezone                                                           String?
+  createdAt                                                              DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy                                                              String                       @map("created_by")
+  updated_at                                                             DateTime?                    @db.Timestamptz(6)
+  updated_by                                                             String?
+  approval_comment                                                       approval_comment[]
+  approval_instance_approval_instance_decided_byToprincipal              approval_instance[]          @relation("approval_instance_decided_byToprincipal")
+  approval_instance_approval_instance_requested_byToprincipal            approval_instance[]          @relation("approval_instance_requested_byToprincipal")
+  approval_task                                                          approval_task[]
+  comment_draft                                                          comment_draft[]
+  comment_flag_comment_flag_flagger_user_idToprincipal                   comment_flag[]               @relation("comment_flag_flagger_user_idToprincipal")
+  comment_flag_comment_flag_reviewed_byToprincipal                       comment_flag[]               @relation("comment_flag_reviewed_byToprincipal")
+  comment_mention                                                        comment_mention[]
+  comment_moderation_status                                              comment_moderation_status[]
+  comment_reaction                                                       comment_reaction[]
+  comment_read_status                                                    comment_read_status[]
+  comment_response_history                                               comment_response_history[]
+  comment_sla_metrics_comment_sla_metrics_first_comment_byToprincipal    comment_sla_metrics[]        @relation("comment_sla_metrics_first_comment_byToprincipal")
+  comment_sla_metrics_comment_sla_metrics_first_response_byToprincipal   comment_sla_metrics[]        @relation("comment_sla_metrics_first_response_byToprincipal")
+  comment_sla_tracking_comment_sla_tracking_first_comment_byToprincipal  comment_sla_tracking[]       @relation("comment_sla_tracking_first_comment_byToprincipal")
+  comment_sla_tracking_comment_sla_tracking_first_response_byToprincipal comment_sla_tracking[]       @relation("comment_sla_tracking_first_response_byToprincipal")
+  comment_user_engagement                                                comment_user_engagement[]
+  entitlement                                                            entitlement[]
+  entity_comment                                                         entity_comment[]
+  groupMemberships                                                       GroupMember[]
+  idpIdentities                                                          IdpIdentity[]
+  mfa_challenge                                                          mfa_challenge[]
+  mfa_config                                                             mfa_config[]
+  password_history                                                       password_history[]
+  tenant                                                                 Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  principal_locale_override                                              principal_locale_override?
+  principal_ou                                                           principal_ou[]
+  profile                                                                PrincipalProfile?
+  principal_role                                                         principal_role[]
+  principal_workspace_access                                             principal_workspace_access[]
+  security_event                                                         security_event[]
+  trusted_device                                                         trusted_device[]
+  workflow_instance_workflow_instance_completed_byToprincipal            workflow_instance[]          @relation("workflow_instance_completed_byToprincipal")
+  workflow_instance_workflow_instance_initiated_byToprincipal            workflow_instance[]          @relation("workflow_instance_initiated_byToprincipal")
+  workflow_transition                                                    workflow_transition[]
+  employee                                                               employee[]
+  dashboard_widget                                                       dashboard_widget[]
+  notification_notification_recipient_idToprincipal                      notification[]               @relation("notification_recipient_idToprincipal")
+  notification_notification_sender_idToprincipal                         notification[]               @relation("notification_sender_idToprincipal")
+  notification_preference                                                notification_preference[]
+  recent_activity                                                        recent_activity[]
+  saved_view                                                             saved_view[]
+  search_history                                                         search_history[]
+  user_preference                                                        user_preference[]
 
   @@unique([tenantId, external_id], map: "principal_tenant_external_uniq")
   @@index([principal_code], map: "idx_principal_code")
@@ -668,68 +666,26 @@ model approval_task {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model attachment {
-  id                          String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id                   String                     @db.Uuid
-  owner_entity                String?
-  owner_entity_id             String?
-  file_name                   String
-  content_type                String?
-  size_bytes                  BigInt?
-  storage_bucket              String
-  storage_key                 String
-  is_virus_scanned            Boolean                    @default(false)
-  retention_until             DateTime?                  @db.Timestamptz(6)
-  metadata                    Json?
-  created_at                  DateTime                   @default(now()) @db.Timestamptz(6)
-  updated_at                  DateTime                   @default(now()) @db.Timestamptz(6)
-  created_by                  String
-  comment_type                String?
-  comment_id                  String?                    @db.Uuid
-
-  // Content management fields
-  kind                        String                     @default("attachment")
-  sha256                      String?
-  original_filename           String?
-  uploaded_by                 String?
-  shard                       Int?
-  version_no                  Int                        @default(1)
-  is_current                  Boolean                    @default(true)
-  parent_attachment_id        String?                    @db.Uuid
-  replaced_at                 DateTime?                  @db.Timestamptz(6)
-  replaced_by                 String?
-
-  // Preview/thumbnail fields
-  thumbnail_key               String?
-  preview_key                 String?
-  preview_generated_at        DateTime?                  @db.Timestamptz(6)
-  preview_generation_failed   Boolean                    @default(false)
-
-  // Expiration fields
-  expires_at                  DateTime?                  @db.Timestamptz(6)
-  auto_delete_on_expiry       Boolean                    @default(false)
-
-  // Deduplication field
-  reference_count             Int                        @default(1)
-
-  // Relations
-  tenant                      Tenant                     @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  parent                      attachment?                @relation("Versions", fields: [parent_attachment_id], references: [id])
-  versions                    attachment[]               @relation("Versions")
-  entity_links                entity_document_link[]
-  document_acls               document_acl[]
-  access_logs                 attachment_access_log[]
-  comments                    attachment_comment[]
-  multipart_uploads           multipart_upload[]
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String    @db.Uuid
+  owner_entity     String?
+  owner_entity_id  String?
+  file_name        String
+  content_type     String?
+  size_bytes       BigInt?
+  storage_bucket   String
+  storage_key      String
+  is_virus_scanned Boolean   @default(false)
+  retention_until  DateTime? @db.Timestamptz(6)
+  metadata         Json?
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  created_by       String
+  comment_type     String?
+  comment_id       String?   @db.Uuid
+  tenant           Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([tenant_id, owner_entity, owner_entity_id], map: "idx_attachment_owner")
   @@index([comment_type, comment_id], map: "idx_attachment_comment", where: raw("((comment_type IS NOT NULL) AND (comment_id IS NOT NULL))"))
-  @@index([tenant_id, kind, created_at(sort: Desc)])
-  @@index([parent_attachment_id])
-  @@index([tenant_id, sha256])
-  @@index([tenant_id, owner_entity, owner_entity_id, is_current])
-  @@index([tenant_id, created_at], where: raw("preview_key IS NULL AND preview_generation_failed = false AND content_type LIKE 'image/%'"), map: "idx_attachment_preview_pending")
-  @@index([tenant_id, expires_at], where: raw("expires_at IS NOT NULL AND is_current = true"), map: "idx_attachment_expired")
-  @@index([sha256, reference_count], where: raw("sha256 IS NOT NULL AND reference_count > 0"), map: "idx_attachment_reference_count")
   @@schema("core")
 }
 
@@ -3581,6 +3537,7 @@ model comment_sla_config {
   tenant              Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenant_id, entity_type], map: "comment_sla_config_unique")
+  @@index([tenant_id, enabled], map: "idx_comment_sla_config_active", where: raw("(enabled = true)"))
   @@schema("core")
 }
 
@@ -3662,111 +3619,27 @@ model comment_user_engagement {
   @@schema("core")
 }
 
-// ============================================================================
-// Content Management Enhancement Models
-// ============================================================================
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_sla_tracking {
+  id                                                          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                                                   String     @db.Uuid
+  entity_type                                                 String
+  entity_id                                                   String     @db.Uuid
+  first_comment_at                                            DateTime   @db.Timestamptz(6)
+  first_comment_by                                            String?    @db.Uuid
+  first_response_at                                           DateTime?  @db.Timestamptz(6)
+  first_response_by                                           String?    @db.Uuid
+  first_response_time_seconds                                 Int?
+  sla_target_seconds                                          Int?
+  is_sla_met                                                  Boolean?
+  created_at                                                  DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at                                                  DateTime?  @db.Timestamptz(6)
+  principal_comment_sla_tracking_first_comment_byToprincipal  Principal? @relation("comment_sla_tracking_first_comment_byToprincipal", fields: [first_comment_by], references: [id], onUpdate: NoAction)
+  principal_comment_sla_tracking_first_response_byToprincipal Principal? @relation("comment_sla_tracking_first_response_byToprincipal", fields: [first_response_by], references: [id], onUpdate: NoAction)
+  tenant                                                      Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-model entity_document_link {
-  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id     String     @db.Uuid
-  entity_type   String
-  entity_id     String     @db.Uuid
-  attachment_id String     @db.Uuid
-  link_kind     String     @default("related")
-  display_order Int        @default(0)
-  metadata      Json?
-  created_at    DateTime   @default(now()) @db.Timestamptz(6)
-  created_by    String
-
-  tenant        Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  attachment    attachment @relation(fields: [attachment_id], references: [id], onDelete: Cascade)
-
-  @@unique([tenant_id, entity_type, entity_id, attachment_id])
-  @@index([tenant_id, entity_type, entity_id, link_kind])
-  @@schema("core")
-}
-
-model document_acl {
-  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id     String     @db.Uuid
-  attachment_id String     @db.Uuid
-  principal_id  String?    @db.Uuid
-  role_id       String?    @db.Uuid
-  permission    String
-  granted       Boolean    @default(true)
-  granted_by    String
-  granted_at    DateTime   @default(now()) @db.Timestamptz(6)
-  expires_at    DateTime?  @db.Timestamptz(6)
-
-  tenant        Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  attachment    attachment @relation(fields: [attachment_id], references: [id], onDelete: Cascade)
-
-  @@index([attachment_id, permission])
-  @@schema("core")
-}
-
-model attachment_access_log {
-  id            BigInt     @id @default(autoincrement())
-  tenant_id     String     @db.Uuid
-  attachment_id String     @db.Uuid
-  actor_id      String
-  action        String
-  ip_address    String?
-  user_agent    String?
-  accessed_at   DateTime   @default(now()) @db.Timestamptz(6)
-
-  tenant        Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  attachment    attachment @relation(fields: [attachment_id], references: [id])
-
-  @@index([tenant_id, accessed_at(sort: Desc)], map: "idx_access_log_tenant_time")
-  @@index([attachment_id, accessed_at(sort: Desc)], map: "idx_access_log_attachment")
-  @@index([tenant_id, actor_id, accessed_at(sort: Desc)], map: "idx_access_log_actor")
-  @@schema("core")
-}
-
-model attachment_comment {
-  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id     String              @db.Uuid
-  attachment_id String              @db.Uuid
-  parent_id     String?             @db.Uuid
-  author_id     String
-  content       String
-  mentions      Json?
-  edited_at     DateTime?           @db.Timestamptz(6)
-  edited_by     String?
-  deleted_at    DateTime?           @db.Timestamptz(6)
-  deleted_by    String?
-  created_at    DateTime            @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime            @default(now()) @db.Timestamptz(6)
-
-  tenant        Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  attachment    attachment          @relation(fields: [attachment_id], references: [id], onDelete: Cascade)
-  parent        attachment_comment? @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
-  replies       attachment_comment[] @relation("CommentReplies")
-
-  @@index([tenant_id, attachment_id, created_at(sort: Desc)], where: raw("deleted_at IS NULL"), map: "idx_comment_attachment")
-  @@index([parent_id, created_at], where: raw("parent_id IS NOT NULL AND deleted_at IS NULL"), map: "idx_comment_parent")
-  @@index([tenant_id, author_id, created_at(sort: Desc)], where: raw("deleted_at IS NULL"), map: "idx_comment_author")
-  @@schema("core")
-}
-
-model multipart_upload {
-  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id     String     @db.Uuid
-  attachment_id String     @db.Uuid
-  s3_upload_id  String     @unique
-  total_parts   Int
-  completed_parts Int      @default(0)
-  part_etags    Json?
-  status        String
-  initiated_at  DateTime   @default(now()) @db.Timestamptz(6)
-  completed_at  DateTime?  @db.Timestamptz(6)
-  expires_at    DateTime   @db.Timestamptz(6)
-
-  tenant        Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  attachment    attachment @relation(fields: [attachment_id], references: [id], onDelete: Cascade)
-
-  @@index([attachment_id])
-  @@index([tenant_id, status, expires_at], where: raw("status IN ('initiated', 'uploading')"), map: "idx_multipart_status")
+  @@unique([tenant_id, entity_type, entity_id], map: "comment_sla_tracking_uniq")
+  @@index([tenant_id, is_sla_met, first_comment_at(sort: Desc)], map: "idx_comment_sla_tracking_breached", where: raw("(is_sla_met = false)"))
+  @@index([tenant_id, first_comment_at(sort: Desc)], map: "idx_comment_sla_tracking_pending", where: raw("(first_response_at IS NULL)"))
   @@schema("core")
 }

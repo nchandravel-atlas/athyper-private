@@ -293,6 +293,37 @@ export type LifecycleDB = DB & {
     actor_id: string | null;
     correlation_id: string | null;
   };
+
+  // ===== Lifecycle Timer (Timer Service) =====
+
+  "meta.lifecycle_timer_policy": {
+    id: string;
+    tenant_id: string;
+    code: string;
+    name: string;
+    rules: unknown; // jsonb
+    created_at: Date;
+    created_by: string;
+  };
+
+  "core.lifecycle_timer_schedule": {
+    id: string;
+    tenant_id: string;
+    entity_name: string;
+    entity_id: string;
+    lifecycle_id: string;
+    state_id: string;
+    timer_type: string;
+    transition_id: string | null;
+    scheduled_at: Date;
+    fire_at: Date;
+    job_id: string;
+    policy_id: string | null;
+    policy_snapshot: unknown; // jsonb
+    status: string;
+    created_at: Date;
+    created_by: string;
+  };
 };
 
 /**

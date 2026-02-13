@@ -41,6 +41,8 @@ import type {
   EntityVersion,
   HealthCheckResult,
   LifecycleState,
+  LifecycleTimerSchedule,
+  LifecycleTimerType,
   LifecycleTransitionRequest,
   LifecycleTransitionResult,
   ListOptions,
@@ -51,6 +53,8 @@ import type {
   TemplateValidationResult,
   ValidationResult,
 } from "./types.js";
+
+import type { JobQueue } from "../jobs/types.js";
 
 import type {
   ActionExecutionRequest,

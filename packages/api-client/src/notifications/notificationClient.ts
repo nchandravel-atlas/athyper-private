@@ -11,6 +11,12 @@ import type {
     UnreadCountResult,
 } from "./types";
 
+type ApiResponse<T = unknown> = {
+    success: boolean;
+    data?: T;
+    error?: { code: string; message: string };
+};
+
 export class NotificationApiError extends Error {
     constructor(
         public code: string,
@@ -44,7 +50,7 @@ export async function listNotifications(
         credentials: "include",
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse<ListNotificationsResult>;
 
     if (!res.ok || !data.success) {
         throw new NotificationApiError(
@@ -54,7 +60,7 @@ export async function listNotifications(
         );
     }
 
-    return data.data;
+    return data.data as ListNotificationsResult;
 }
 
 /**
@@ -69,7 +75,7 @@ export async function getUnreadCount(): Promise<UnreadCountResult> {
         credentials: "include",
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse<UnreadCountResult>;
 
     if (!res.ok || !data.success) {
         throw new NotificationApiError(
@@ -79,7 +85,7 @@ export async function getUnreadCount(): Promise<UnreadCountResult> {
         );
     }
 
-    return data.data;
+    return data.data as UnreadCountResult;
 }
 
 /**
@@ -94,7 +100,7 @@ export async function markAsRead(notificationId: string): Promise<void> {
         credentials: "include",
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse;
 
     if (!res.ok || !data.success) {
         throw new NotificationApiError(
@@ -116,7 +122,7 @@ export async function markAllAsRead(): Promise<void> {
         credentials: "include",
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse;
 
     if (!res.ok || !data.success) {
         throw new NotificationApiError(
@@ -139,7 +145,7 @@ export async function dismissNotification(notificationId: string): Promise<void>
         credentials: "include",
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse;
 
     if (!res.ok || !data.success) {
         throw new NotificationApiError(

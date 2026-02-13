@@ -11,6 +11,8 @@
  * that all META Engine components must adhere to.
  */
 
+import type { ConditionGroup } from "./validation-rules.js";
+
 // ============================================================================
 // Field Types and Definitions
 // ============================================================================

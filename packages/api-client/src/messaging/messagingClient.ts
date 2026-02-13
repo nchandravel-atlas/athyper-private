@@ -60,6 +60,14 @@ export interface MessageSearchResult {
     headline: string;
 }
 
+// ─── API Response ────────────────────────────────────────────────────
+
+type ApiResponse<T = unknown> = {
+    success: boolean;
+    data?: T;
+    error?: { code: string; message: string };
+};
+
 // ─── API Client ──────────────────────────────────────────────────────
 
 class MessagingApiError extends Error {
@@ -87,7 +95,7 @@ export async function listConversations(query?: {
         credentials: "include",
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse<{ conversations: Conversation[] }>;
 
     if (!res.ok || !data.success) {
         throw new MessagingApiError(
@@ -97,7 +105,7 @@ export async function listConversations(query?: {
         );
     }
 
-    return data.data.conversations;
+    return (data.data as { conversations: Conversation[] }).conversations;
 }
 
 export async function createConversation(input: {
@@ -113,7 +121,7 @@ export async function createConversation(input: {
         body: JSON.stringify(input),
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse<ConversationWithParticipants>;
 
     if (!res.ok || !data.success) {
         throw new MessagingApiError(
@@ -123,7 +131,7 @@ export async function createConversation(input: {
         );
     }
 
-    return data.data;
+    return data.data as ConversationWithParticipants;
 }
 
 export async function getConversation(id: string): Promise<ConversationWithParticipants> {
@@ -131,7 +139,7 @@ export async function getConversation(id: string): Promise<ConversationWithParti
         credentials: "include",
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse<ConversationWithParticipants>;
 
     if (!res.ok || !data.success) {
         throw new MessagingApiError(
@@ -141,7 +149,7 @@ export async function getConversation(id: string): Promise<ConversationWithParti
         );
     }
 
-    return data.data;
+    return data.data as ConversationWithParticipants;
 }
 
 export async function listMessages(
@@ -156,7 +164,7 @@ export async function listMessages(
         credentials: "include",
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse<{ messages: Message[] }>;
 
     if (!res.ok || !data.success) {
         throw new MessagingApiError(
@@ -166,7 +174,7 @@ export async function listMessages(
         );
     }
 
-    return data.data.messages;
+    return (data.data as { messages: Message[] }).messages;
 }
 
 export async function sendMessage(
@@ -185,7 +193,7 @@ export async function sendMessage(
         body: JSON.stringify(input),
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse<MessageWithDeliveries>;
 
     if (!res.ok || !data.success) {
         throw new MessagingApiError(
@@ -195,7 +203,7 @@ export async function sendMessage(
         );
     }
 
-    return data.data;
+    return data.data as MessageWithDeliveries;
 }
 
 export async function editMessage(
@@ -209,7 +217,7 @@ export async function editMessage(
         body: JSON.stringify({ body }),
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse<{ message: Message }>;
 
     if (!res.ok || !data.success) {
         throw new MessagingApiError(
@@ -219,7 +227,7 @@ export async function editMessage(
         );
     }
 
-    return data.data.message;
+    return (data.data as { message: Message }).message;
 }
 
 export async function deleteMessage(messageId: string): Promise<void> {
@@ -228,7 +236,7 @@ export async function deleteMessage(messageId: string): Promise<void> {
         credentials: "include",
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse;
 
     if (!res.ok || !data.success) {
         throw new MessagingApiError(
@@ -250,7 +258,7 @@ export async function markMessageAsRead(
         body: JSON.stringify({ conversationId }),
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse;
 
     if (!res.ok || !data.success) {
         throw new MessagingApiError(
@@ -272,7 +280,7 @@ export async function listThreadReplies(
         credentials: "include",
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse<{ replies: Message[]; count: number }>;
 
     if (!res.ok || !data.success) {
         throw new MessagingApiError(
@@ -282,7 +290,7 @@ export async function listThreadReplies(
         );
     }
 
-    return data.data;
+    return data.data as { replies: Message[]; count: number };
 }
 
 export async function searchMessages(query: {
@@ -301,7 +309,7 @@ export async function searchMessages(query: {
         credentials: "include",
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as ApiResponse<{ results: MessageSearchResult[]; count: number }>;
 
     if (!res.ok || !data.success) {
         throw new MessagingApiError(
@@ -311,5 +319,5 @@ export async function searchMessages(query: {
         );
     }
 
-    return data.data;
+    return data.data as { results: MessageSearchResult[]; count: number };
 }

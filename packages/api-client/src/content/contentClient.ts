@@ -14,6 +14,12 @@ import type {
   ListAttachmentsQuery,
 } from "./types";
 
+type ApiResponse<T = unknown> = {
+  success: boolean;
+  data?: T;
+  error?: { code: string; message: string };
+};
+
 export class ContentApiError extends Error {
   constructor(
     public code: string,
@@ -40,7 +46,7 @@ export async function initiateUpload(input: InitiateUploadInput): Promise<Initia
     credentials: "include",
   });
 
-  const data = await res.json();
+  const data = (await res.json()) as ApiResponse<InitiateUploadResult>;
 
   if (!res.ok || !data.success) {
     throw new ContentApiError(
@@ -50,7 +56,7 @@ export async function initiateUpload(input: InitiateUploadInput): Promise<Initia
     );
   }
 
-  return data.data;
+  return data.data as InitiateUploadResult;
 }
 
 /**
@@ -67,7 +73,7 @@ export async function completeUpload(input: CompleteUploadInput): Promise<void> 
     credentials: "include",
   });
 
-  const data = await res.json();
+  const data = (await res.json()) as ApiResponse;
 
   if (!res.ok || !data.success) {
     throw new ContentApiError(
@@ -91,7 +97,7 @@ export async function getDownloadUrl(attachmentId: string): Promise<DownloadUrlR
     credentials: "include",
   });
 
-  const data = await res.json();
+  const data = (await res.json()) as ApiResponse<DownloadUrlResult>;
 
   if (!res.ok || !data.success) {
     throw new ContentApiError(
@@ -101,7 +107,7 @@ export async function getDownloadUrl(attachmentId: string): Promise<DownloadUrlR
     );
   }
 
-  return data.data;
+  return data.data as DownloadUrlResult;
 }
 
 /**
@@ -116,7 +122,7 @@ export async function deleteAttachment(attachmentId: string): Promise<void> {
     credentials: "include",
   });
 
-  const data = await res.json();
+  const data = (await res.json()) as ApiResponse;
 
   if (!res.ok || !data.success) {
     throw new ContentApiError(
@@ -149,7 +155,7 @@ export async function listByEntity(query: ListAttachmentsQuery): Promise<Attachm
     credentials: "include",
   });
 
-  const data = await res.json();
+  const data = (await res.json()) as ApiResponse<Attachment[]>;
 
   if (!res.ok || !data.success) {
     throw new ContentApiError(
@@ -159,7 +165,7 @@ export async function listByEntity(query: ListAttachmentsQuery): Promise<Attachm
     );
   }
 
-  return data.data;
+  return data.data as Attachment[];
 }
 
 /**

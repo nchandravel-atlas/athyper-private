@@ -17,8 +17,9 @@
  * 4. Manual transition → cancelTimers() (prevent stale execution)
  */
 
-import type { JobQueue, Job, HealthCheckResult } from "@athyper/core";
+import type { JobQueue, Job } from "@athyper/core";
 import type {
+  HealthCheckResult,
   LifecycleTimerService,
   LifecycleTimerSchedule,
   LifecycleTimerPolicy,

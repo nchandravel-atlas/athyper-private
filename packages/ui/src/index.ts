@@ -14,3 +14,6 @@ export * from "./primitives/Switch.js";
 export * from "./primitives/Tabs.js";
 export * from "./primitives/Textarea.js";
 export * from "./primitives/Tooltip.js";
+
+// Domain components
+export * from "./notifications/index.js";

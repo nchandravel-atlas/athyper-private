@@ -16,3 +16,7 @@ export function createApiClient(opts: ApiClientOptions) {
     }
   };
 }
+
+// Export sub-modules
+export * from "./notifications";
+export * from "./content";

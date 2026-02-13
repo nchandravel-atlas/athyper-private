@@ -7,6 +7,7 @@
 import { registerTabPlugin } from "./plugin-registry";
 import { LifecycleTab } from "@/components/entity-page/LifecycleTab";
 import { ApprovalsTab } from "@/components/entity-page/ApprovalsTab";
+import { documentsTabPlugin } from "./plugins/documents-plugin";
 
 let registered = false;
 
@@ -23,4 +24,6 @@ export function registerBuiltInPlugins(): void {
     code: "approvals",
     component: ApprovalsTab,
   });
+
+  registerTabPlugin(documentsTabPlugin);
 }

@@ -46,6 +46,74 @@ export function createPrincipalsRoutes(
   const { db, logger, getTenantId } = deps;
 
   /**
+   * GET /principals/search
+   * Search principals for autocomplete (optimized for @mentions)
+   */
+  router.get(
+    "/principals/search",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const tenantId = getTenantId(req);
+        const search = req.query.search as string | undefined;
+        const limit = Math.min(
+          Math.max(parseInt(String(req.query.limit || "10"), 10), 1),
+          50
+        );
+
+        // Validate search query
+        if (!search || search.trim().length < 2) {
+          return res.status(400).json({
+            error: "INVALID_REQUEST",
+            message: "Search term must be at least 2 characters",
+          });
+        }
+
+        const searchPattern = `%${search.trim()}%`;
+
+        // Query active principals
+        const results = await db
+          .selectFrom("core.principal")
+          .select([
+            "id",
+            "username",
+            "display_name as displayName",
+            "email",
+          ])
+          .where("tenant_id", "=", tenantId)
+          .where("is_active", "=", true)
+          .where((eb) =>
+            eb.or([
+              eb("username", "ilike", searchPattern),
+              eb("display_name", "ilike", searchPattern),
+              eb("email", "ilike", searchPattern),
+            ])
+          )
+          .orderBy("username", "asc")
+          .limit(limit)
+          .execute();
+
+        return res.json({
+          ok: true,
+          data: results.map((p) => ({
+            id: p.id,
+            username: p.username,
+            displayName: p.displayName || p.username,
+            email: p.email,
+          })),
+          meta: {
+            total: results.length,
+            limit,
+            query: search.trim(),
+          },
+        });
+      } catch (error) {
+        logger.error("Failed to search principals", { error });
+        return next(error);
+      }
+    }
+  );
+
+  /**
    * GET /principals
    * List principals for tenant
    */

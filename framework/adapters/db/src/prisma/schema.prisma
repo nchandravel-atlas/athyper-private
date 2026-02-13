@@ -32,6 +32,20 @@ model Tenant {
   audit_dlq                       audit_dlq[]
   audit_hash_anchor               audit_hash_anchor[]
   audit_log                       audit_log[]
+  comment_analytics_daily         comment_analytics_daily[]
+  comment_draft                   comment_draft[]
+  comment_flag                    comment_flag[]
+  comment_mention                 comment_mention[]
+  comment_moderation_status       comment_moderation_status[]
+  comment_reaction                comment_reaction[]
+  comment_read_status             comment_read_status[]
+  comment_response_history        comment_response_history[]
+  comment_retention_log           comment_retention_log[]
+  comment_retention_policy        comment_retention_policy[]
+  comment_sla_config              comment_sla_config[]
+  comment_sla_metrics             comment_sla_metrics[]
+  comment_thread_analytics        comment_thread_analytics[]
+  comment_user_engagement         comment_user_engagement[]
   contact_phone                   contact_phone[]
   contact_point                   contact_point[]
   doc_brand_profile               doc_brand_profile[]
@@ -45,6 +59,7 @@ model Tenant {
   document                        document[]
   email_otp_instance              email_otp_instance[]
   entitlement                     entitlement[]
+  entity_comment                  entity_comment[]
   entity_tag                      entity_tag[]
   feature_flag                    feature_flag[]
   field_access_log                field_access_log[]
@@ -53,6 +68,7 @@ model Tenant {
   job                             job[]
   job_run                         job_run[]
   lifecycle                       core_lifecycle[]
+  lifecycle_timer_schedule        lifecycle_timer_schedule[]
   lifecycle_version               lifecycle_version[]
   mfa_challenge                   mfa_challenge[]
   mfa_config                      mfa_config[]
@@ -127,6 +143,11 @@ model Tenant {
   saved_view                      saved_view[]
   search_history                  search_history[]
   user_preference                 user_preference[]
+  entity_document_link            entity_document_link[]
+  document_acl                    document_acl[]
+  attachment_access_log           attachment_access_log[]
+  attachment_comment              attachment_comment[]
+  multipart_upload                multipart_upload[]
 
   @@index([realm_key], map: "idx_tenant_realm_key")
   @@index([status], map: "idx_tenant_status_active", where: raw("(status = 'active'::text)"))
@@ -136,70 +157,82 @@ model Tenant {
 
 /// B1: Principal - Canonical athyper actor (user/service/external)
 model Principal {
-  id                                                          String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId                                                    String                       @map("tenant_id") @db.Uuid
-  realm_key                                                   String                       @default("main")
-  principalType                                               String                       @map("principal_type")
-  principal_code                                              String                       @unique
-  displayName                                                 String?                      @map("display_name")
-  email                                                       String?
-  phone                                                       String?
-  given_name                                                  String?
-  family_name                                                 String?
-  preferred_name                                              String?
-  external_id                                                 String?
-  subject_id                                                  String?
-  is_active                                                   Boolean                      @default(true)
-  is_service_account                                          Boolean                      @default(false)
-  is_locked                                                   Boolean                      @default(false)
-  password_hash                                               String?
-  password_updated_at                                         DateTime?                    @db.Timestamptz(6)
-  last_login_at                                               DateTime?                    @db.Timestamptz(6)
-  last_login_ip                                               String?
-  idp_display_name                                            String?
-  idp_family_name                                             String?
-  idp_given_name                                              String?
-  idp_email                                                   String?
-  idp_email_verified                                          Boolean?
-  idp_phone_number                                            String?
-  idp_phone_verified                                          Boolean?
-  idp_picture                                                 String?
-  idp_locale                                                  String?
-  idp_timezone                                                String?
-  createdAt                                                   DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
-  createdBy                                                   String                       @map("created_by")
-  updated_at                                                  DateTime?                    @db.Timestamptz(6)
-  updated_by                                                  String?
-  approval_comment                                            approval_comment[]
-  approval_instance_approval_instance_decided_byToprincipal   approval_instance[]          @relation("approval_instance_decided_byToprincipal")
-  approval_instance_approval_instance_requested_byToprincipal approval_instance[]          @relation("approval_instance_requested_byToprincipal")
-  approval_task                                               approval_task[]
-  entitlement                                                 entitlement[]
-  groupMemberships                                            GroupMember[]
-  idpIdentities                                               IdpIdentity[]
-  mfa_challenge                                               mfa_challenge[]
-  mfa_config                                                  mfa_config[]
-  password_history                                            password_history[]
-  tenant                                                      Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  principal_locale_override                                   principal_locale_override?
-  principal_ou                                                principal_ou[]
-  profile                                                     PrincipalProfile?
-  principal_role                                              principal_role[]
-  principal_workspace_access                                  principal_workspace_access[]
-  security_event                                              security_event[]
-  trusted_device                                              trusted_device[]
-  workflow_instance_workflow_instance_completed_byToprincipal workflow_instance[]          @relation("workflow_instance_completed_byToprincipal")
-  workflow_instance_workflow_instance_initiated_byToprincipal workflow_instance[]          @relation("workflow_instance_initiated_byToprincipal")
-  workflow_transition                                         workflow_transition[]
-  employee                                                    employee[]
-  dashboard_widget                                            dashboard_widget[]
-  notification_notification_recipient_idToprincipal           notification[]               @relation("notification_recipient_idToprincipal")
-  notification_notification_sender_idToprincipal              notification[]               @relation("notification_sender_idToprincipal")
-  notification_preference                                     notification_preference[]
-  recent_activity                                             recent_activity[]
-  saved_view                                                  saved_view[]
-  search_history                                              search_history[]
-  user_preference                                             user_preference[]
+  id                                                                   String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                                                             String                       @map("tenant_id") @db.Uuid
+  realm_key                                                            String                       @default("main")
+  principalType                                                        String                       @map("principal_type")
+  principal_code                                                       String                       @unique
+  displayName                                                          String?                      @map("display_name")
+  email                                                                String?
+  phone                                                                String?
+  given_name                                                           String?
+  family_name                                                          String?
+  preferred_name                                                       String?
+  external_id                                                          String?
+  subject_id                                                           String?
+  is_active                                                            Boolean                      @default(true)
+  is_service_account                                                   Boolean                      @default(false)
+  is_locked                                                            Boolean                      @default(false)
+  password_hash                                                        String?
+  password_updated_at                                                  DateTime?                    @db.Timestamptz(6)
+  last_login_at                                                        DateTime?                    @db.Timestamptz(6)
+  last_login_ip                                                        String?
+  idp_display_name                                                     String?
+  idp_family_name                                                      String?
+  idp_given_name                                                       String?
+  idp_email                                                            String?
+  idp_email_verified                                                   Boolean?
+  idp_phone_number                                                     String?
+  idp_phone_verified                                                   Boolean?
+  idp_picture                                                          String?
+  idp_locale                                                           String?
+  idp_timezone                                                         String?
+  createdAt                                                            DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy                                                            String                       @map("created_by")
+  updated_at                                                           DateTime?                    @db.Timestamptz(6)
+  updated_by                                                           String?
+  approval_comment                                                     approval_comment[]
+  approval_instance_approval_instance_decided_byToprincipal            approval_instance[]          @relation("approval_instance_decided_byToprincipal")
+  approval_instance_approval_instance_requested_byToprincipal          approval_instance[]          @relation("approval_instance_requested_byToprincipal")
+  approval_task                                                        approval_task[]
+  comment_draft                                                        comment_draft[]
+  comment_flag_comment_flag_flagger_user_idToprincipal                 comment_flag[]               @relation("comment_flag_flagger_user_idToprincipal")
+  comment_flag_comment_flag_reviewed_byToprincipal                     comment_flag[]               @relation("comment_flag_reviewed_byToprincipal")
+  comment_mention                                                      comment_mention[]
+  comment_moderation_status                                            comment_moderation_status[]
+  comment_reaction                                                     comment_reaction[]
+  comment_read_status                                                  comment_read_status[]
+  comment_response_history                                             comment_response_history[]
+  comment_sla_metrics_comment_sla_metrics_first_comment_byToprincipal  comment_sla_metrics[]        @relation("comment_sla_metrics_first_comment_byToprincipal")
+  comment_sla_metrics_comment_sla_metrics_first_response_byToprincipal comment_sla_metrics[]        @relation("comment_sla_metrics_first_response_byToprincipal")
+  comment_user_engagement                                              comment_user_engagement[]
+  entitlement                                                          entitlement[]
+  entity_comment                                                       entity_comment[]
+  groupMemberships                                                     GroupMember[]
+  idpIdentities                                                        IdpIdentity[]
+  mfa_challenge                                                        mfa_challenge[]
+  mfa_config                                                           mfa_config[]
+  password_history                                                     password_history[]
+  tenant                                                               Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  principal_locale_override                                            principal_locale_override?
+  principal_ou                                                         principal_ou[]
+  profile                                                              PrincipalProfile?
+  principal_role                                                       principal_role[]
+  principal_workspace_access                                           principal_workspace_access[]
+  security_event                                                       security_event[]
+  trusted_device                                                       trusted_device[]
+  workflow_instance_workflow_instance_completed_byToprincipal          workflow_instance[]          @relation("workflow_instance_completed_byToprincipal")
+  workflow_instance_workflow_instance_initiated_byToprincipal          workflow_instance[]          @relation("workflow_instance_initiated_byToprincipal")
+  workflow_transition                                                  workflow_transition[]
+  employee                                                             employee[]
+  dashboard_widget                                                     dashboard_widget[]
+  notification_notification_recipient_idToprincipal                    notification[]               @relation("notification_recipient_idToprincipal")
+  notification_notification_sender_idToprincipal                       notification[]               @relation("notification_sender_idToprincipal")
+  notification_preference                                              notification_preference[]
+  recent_activity                                                      recent_activity[]
+  saved_view                                                           saved_view[]
+  search_history                                                       search_history[]
+  user_preference                                                      user_preference[]
 
   @@unique([tenantId, external_id], map: "principal_tenant_external_uniq")
   @@index([principal_code], map: "idx_principal_code")
@@ -525,6 +558,13 @@ model approval_comment {
   comment_text         String
   created_at           DateTime          @default(now()) @db.Timestamptz(6)
   created_by           String
+  visibility           String            @default("public")
+  deleted_at           DateTime?         @db.Timestamptz(6)
+  deleted_by           String?
+  archived_at          DateTime?         @db.Timestamptz(6)
+  archived_by          String?
+  retention_until      DateTime?         @db.Timestamptz(6)
+  retention_policy_id  String?           @db.Uuid
   approval_instance    approval_instance @relation(fields: [approval_instance_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   approval_task        approval_task?    @relation(fields: [approval_task_id], references: [id], onUpdate: NoAction)
   principal            Principal         @relation(fields: [commenter_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -532,6 +572,9 @@ model approval_comment {
 
   @@index([commenter_id, created_at(sort: Desc)], map: "idx_approval_comment_commenter")
   @@index([approval_instance_id, created_at], map: "idx_approval_comment_instance")
+  @@index([tenant_id, approval_instance_id, visibility, created_at(sort: Desc)], map: "idx_approval_comment_visibility", where: raw("(deleted_at IS NULL)"))
+  @@index([tenant_id, archived_at], map: "idx_approval_comment_archived", where: raw("(archived_at IS NOT NULL)"))
+  @@index([tenant_id, retention_until], map: "idx_approval_comment_retention", where: raw("((retention_until IS NOT NULL) AND (deleted_at IS NULL))"))
   @@schema("core")
 }
 
@@ -625,23 +668,68 @@ model approval_task {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model attachment {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id        String    @db.Uuid
-  owner_entity     String?
-  owner_entity_id  String?
-  file_name        String
-  content_type     String?
-  size_bytes       BigInt?
-  storage_bucket   String
-  storage_key      String
-  is_virus_scanned Boolean   @default(false)
-  retention_until  DateTime? @db.Timestamptz(6)
-  metadata         Json?
-  created_at       DateTime  @default(now()) @db.Timestamptz(6)
-  created_by       String
-  tenant           Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                          String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                   String                     @db.Uuid
+  owner_entity                String?
+  owner_entity_id             String?
+  file_name                   String
+  content_type                String?
+  size_bytes                  BigInt?
+  storage_bucket              String
+  storage_key                 String
+  is_virus_scanned            Boolean                    @default(false)
+  retention_until             DateTime?                  @db.Timestamptz(6)
+  metadata                    Json?
+  created_at                  DateTime                   @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime                   @default(now()) @db.Timestamptz(6)
+  created_by                  String
+  comment_type                String?
+  comment_id                  String?                    @db.Uuid
+
+  // Content management fields
+  kind                        String                     @default("attachment")
+  sha256                      String?
+  original_filename           String?
+  uploaded_by                 String?
+  shard                       Int?
+  version_no                  Int                        @default(1)
+  is_current                  Boolean                    @default(true)
+  parent_attachment_id        String?                    @db.Uuid
+  replaced_at                 DateTime?                  @db.Timestamptz(6)
+  replaced_by                 String?
+
+  // Preview/thumbnail fields
+  thumbnail_key               String?
+  preview_key                 String?
+  preview_generated_at        DateTime?                  @db.Timestamptz(6)
+  preview_generation_failed   Boolean                    @default(false)
+
+  // Expiration fields
+  expires_at                  DateTime?                  @db.Timestamptz(6)
+  auto_delete_on_expiry       Boolean                    @default(false)
+
+  // Deduplication field
+  reference_count             Int                        @default(1)
+
+  // Relations
+  tenant                      Tenant                     @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  parent                      attachment?                @relation("Versions", fields: [parent_attachment_id], references: [id])
+  versions                    attachment[]               @relation("Versions")
+  entity_links                entity_document_link[]
+  document_acls               document_acl[]
+  access_logs                 attachment_access_log[]
+  comments                    attachment_comment[]
+  multipart_uploads           multipart_upload[]
 
   @@index([tenant_id, owner_entity, owner_entity_id], map: "idx_attachment_owner")
+  @@index([comment_type, comment_id], map: "idx_attachment_comment", where: raw("((comment_type IS NOT NULL) AND (comment_id IS NOT NULL))"))
+  @@index([tenant_id, kind, created_at(sort: Desc)])
+  @@index([parent_attachment_id])
+  @@index([tenant_id, sha256])
+  @@index([tenant_id, owner_entity, owner_entity_id, is_current])
+  @@index([tenant_id, created_at], where: raw("preview_key IS NULL AND preview_generation_failed = false AND content_type LIKE 'image/%'"), map: "idx_attachment_preview_pending")
+  @@index([tenant_id, expires_at], where: raw("expires_at IS NOT NULL AND is_current = true"), map: "idx_attachment_expired")
+  @@index([sha256, reference_count], where: raw("sha256 IS NOT NULL AND reference_count > 0"), map: "idx_attachment_reference_count")
   @@schema("core")
 }
 
@@ -1612,20 +1700,20 @@ model approval_template {
   name                    String
   behaviors               Json?
   escalation_style        String?
-  version_no              Int                       @default(1)
-  is_active               Boolean                   @default(true)
-  compiled_json           Json?
-  compiled_hash           String?
-  updated_at              DateTime?                 @db.Timestamptz(6)
-  updated_by              String?
   created_at              DateTime                  @default(now()) @db.Timestamptz(6)
   created_by              String
+  version_no              Int                       @default(1)
+  is_active               Boolean                   @default(true)
+  updated_at              DateTime?                 @db.Timestamptz(6)
+  updated_by              String?
+  compiled_json           Json?
+  compiled_hash           String?
   tenant                  Tenant                    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   approval_template_rule  approval_template_rule[]
   approval_template_stage approval_template_stage[]
 
   @@unique([tenant_id, code, version_no], map: "approval_template_code_version_uniq")
-  @@index([tenant_id, code, is_active], map: "idx_approval_template_active")
+  @@index([tenant_id, code, is_active], map: "idx_approval_template_active", where: raw("(is_active = true)"))
   @@schema("meta")
 }
 
@@ -1820,28 +1908,29 @@ model entity_version {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model field {
-  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id         String         @db.Uuid
-  entity_version_id String         @db.Uuid
-  name              String
-  column_name       String?
-  data_type         String
-  ui_type           String?
-  is_required       Boolean        @default(false)
-  is_unique         Boolean        @default(false)
-  is_searchable     Boolean        @default(false)
-  is_filterable     Boolean        @default(false)
-  default_value     Json?
-  validation        Json?
-  lookup_config     Json?
-  sort_order        Int            @default(0)
-  is_active         Boolean        @default(true)
-  created_at        DateTime       @default(now()) @db.Timestamptz(6)
-  created_by        String
-  updated_at        DateTime?      @db.Timestamptz(6)
-  updated_by        String?
-  entity_version    entity_version @relation(fields: [entity_version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tenant            Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String         @db.Uuid
+  entity_version_id  String         @db.Uuid
+  name               String
+  column_name        String?
+  data_type          String
+  ui_type            String?
+  is_required        Boolean        @default(false)
+  is_unique          Boolean        @default(false)
+  is_searchable      Boolean        @default(false)
+  is_filterable      Boolean        @default(false)
+  default_value      Json?
+  validation         Json?
+  lookup_config      Json?
+  sort_order         Int            @default(0)
+  is_active          Boolean        @default(true)
+  created_at         DateTime       @default(now()) @db.Timestamptz(6)
+  created_by         String
+  updated_at         DateTime?      @db.Timestamptz(6)
+  updated_by         String?
+  validation_version Int            @default(1)
+  entity_version     entity_version @relation(fields: [entity_version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenant             Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenant_id, entity_version_id, name], map: "field_name_uniq")
   @@index([tenant_id, entity_version_id], map: "idx_field_entity_version")
@@ -1907,20 +1996,21 @@ model index_def {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model meta_lifecycle {
-  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id            String                 @db.Uuid
-  code                 String
-  name                 String
-  description          String?
-  version_no           Int                    @default(1)
-  is_active            Boolean                @default(true)
-  config               Json?
-  created_at           DateTime               @default(now()) @db.Timestamptz(6)
-  created_by           String
-  entity_lifecycle     entity_lifecycle[]
-  tenant               Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  lifecycle_state      lifecycle_state[]
-  lifecycle_transition lifecycle_transition[]
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                String                     @db.Uuid
+  code                     String
+  name                     String
+  description              String?
+  version_no               Int                        @default(1)
+  is_active                Boolean                    @default(true)
+  config                   Json?
+  created_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  created_by               String
+  lifecycle_timer_schedule lifecycle_timer_schedule[]
+  entity_lifecycle         entity_lifecycle[]
+  tenant                   Tenant                     @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lifecycle_state          lifecycle_state[]
+  lifecycle_transition     lifecycle_transition[]
 
   @@unique([tenant_id, code, version_no], map: "lifecycle_code_uniq")
   @@map("lifecycle")
@@ -1929,20 +2019,21 @@ model meta_lifecycle {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model lifecycle_state {
-  id                                                                       String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id                                                                String                 @db.Uuid
-  lifecycle_id                                                             String                 @db.Uuid
+  id                                                                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                                                                String                     @db.Uuid
+  lifecycle_id                                                             String                     @db.Uuid
   code                                                                     String
   name                                                                     String
-  is_terminal                                                              Boolean                @default(false)
-  sort_order                                                               Int                    @default(0)
+  is_terminal                                                              Boolean                    @default(false)
+  sort_order                                                               Int                        @default(0)
   config                                                                   Json?
-  created_at                                                               DateTime               @default(now()) @db.Timestamptz(6)
+  created_at                                                               DateTime                   @default(now()) @db.Timestamptz(6)
   created_by                                                               String
-  lifecycle                                                                meta_lifecycle         @relation(fields: [lifecycle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tenant                                                                   Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  lifecycle_transition_lifecycle_transition_from_state_idTolifecycle_state lifecycle_transition[] @relation("lifecycle_transition_from_state_idTolifecycle_state")
-  lifecycle_transition_lifecycle_transition_to_state_idTolifecycle_state   lifecycle_transition[] @relation("lifecycle_transition_to_state_idTolifecycle_state")
+  lifecycle_timer_schedule                                                 lifecycle_timer_schedule[]
+  lifecycle                                                                meta_lifecycle             @relation(fields: [lifecycle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenant                                                                   Tenant                     @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lifecycle_transition_lifecycle_transition_from_state_idTolifecycle_state lifecycle_transition[]     @relation("lifecycle_transition_from_state_idTolifecycle_state")
+  lifecycle_transition_lifecycle_transition_to_state_idTolifecycle_state   lifecycle_transition[]     @relation("lifecycle_transition_to_state_idTolifecycle_state")
 
   @@unique([tenant_id, lifecycle_id, code], map: "lifecycle_state_code_uniq")
   @@schema("meta")
@@ -1950,14 +2041,15 @@ model lifecycle_state {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model lifecycle_timer_policy {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id  String   @db.Uuid
-  code       String
-  name       String
-  rules      Json
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  created_by String
-  tenant     Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                String                     @db.Uuid
+  code                     String
+  name                     String
+  rules                    Json
+  created_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  created_by               String
+  lifecycle_timer_schedule lifecycle_timer_schedule[]
+  tenant                   Tenant                     @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenant_id, code], map: "lifecycle_timer_policy_code_uniq")
   @@schema("meta")
@@ -1975,6 +2067,7 @@ model lifecycle_transition {
   config                                                              Json?
   created_at                                                          DateTime                    @default(now()) @db.Timestamptz(6)
   created_by                                                          String
+  lifecycle_timer_schedule                                            lifecycle_timer_schedule[]
   lifecycle_state_lifecycle_transition_from_state_idTolifecycle_state lifecycle_state             @relation("lifecycle_transition_from_state_idTolifecycle_state", fields: [from_state_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   lifecycle                                                           meta_lifecycle              @relation(fields: [lifecycle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tenant                                                              Tenant                      @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -3197,4 +3290,483 @@ model audit_policy {
   @@unique([tenant_id, event_category], map: "audit_policy_uniq")
   @@index([tenant_id, event_category], map: "idx_audit_policy_tenant")
   @@schema("meta")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_mention {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String    @db.Uuid
+  comment_type      String
+  comment_id        String    @db.Uuid
+  mentioned_user_id String    @db.Uuid
+  mention_text      String
+  position          Int
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  principal         Principal @relation(fields: [mentioned_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenant            Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([comment_type, comment_id], map: "idx_comment_mention_comment")
+  @@index([mentioned_user_id, created_at(sort: Desc)], map: "idx_comment_mention_user")
+  @@schema("core")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model entity_comment {
+  id                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id            String           @db.Uuid
+  entity_type          String
+  entity_id            String           @db.Uuid
+  commenter_id         String           @db.Uuid
+  comment_text         String
+  parent_comment_id    String?          @db.Uuid
+  thread_depth         Int              @default(0)
+  deleted_at           DateTime?        @db.Timestamptz(6)
+  deleted_by           String?
+  created_at           DateTime         @default(now()) @db.Timestamptz(6)
+  created_by           String
+  updated_at           DateTime?        @db.Timestamptz(6)
+  updated_by           String?
+  visibility           String           @default("public")
+  archived_at          DateTime?        @db.Timestamptz(6)
+  archived_by          String?
+  retention_until      DateTime?        @db.Timestamptz(6)
+  retention_policy_id  String?          @db.Uuid
+  comment_draft        comment_draft[]
+  principal            Principal        @relation(fields: [commenter_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  entity_comment       entity_comment?  @relation("entity_commentToentity_comment", fields: [parent_comment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  other_entity_comment entity_comment[] @relation("entity_commentToentity_comment")
+  tenant               Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([commenter_id, created_at(sort: Desc)], map: "idx_entity_comment_commenter", where: raw("(deleted_at IS NULL)"))
+  @@index([tenant_id, entity_type, entity_id, created_at(sort: Desc)], map: "idx_entity_comment_entity", where: raw("(deleted_at IS NULL)"))
+  @@index([parent_comment_id, created_at], map: "idx_entity_comment_parent", where: raw("((parent_comment_id IS NOT NULL) AND (deleted_at IS NULL))"))
+  @@index([tenant_id, entity_type, entity_id, visibility, created_at(sort: Desc)], map: "idx_entity_comment_visibility", where: raw("(deleted_at IS NULL)"))
+  @@index([tenant_id, archived_at], map: "idx_entity_comment_archived", where: raw("(archived_at IS NOT NULL)"))
+  @@index([tenant_id, retention_until], map: "idx_entity_comment_retention", where: raw("((retention_until IS NOT NULL) AND (deleted_at IS NULL))"))
+  @@schema("core")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model lifecycle_timer_schedule {
+  id                     String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id              String                  @db.Uuid
+  entity_name            String
+  entity_id              String
+  lifecycle_id           String                  @db.Uuid
+  state_id               String                  @db.Uuid
+  timer_type             String
+  transition_id          String?                 @db.Uuid
+  scheduled_at           DateTime                @default(now()) @db.Timestamptz(6)
+  fire_at                DateTime                @db.Timestamptz(6)
+  job_id                 String
+  policy_id              String?                 @db.Uuid
+  policy_snapshot        Json
+  status                 String                  @default("scheduled")
+  created_at             DateTime                @default(now()) @db.Timestamptz(6)
+  created_by             String
+  lifecycle              meta_lifecycle          @relation(fields: [lifecycle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lifecycle_timer_policy lifecycle_timer_policy? @relation(fields: [policy_id], references: [id], onUpdate: NoAction)
+  lifecycle_state        lifecycle_state         @relation(fields: [state_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenant                 Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lifecycle_transition   lifecycle_transition?   @relation(fields: [transition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([tenant_id, entity_name, entity_id], map: "idx_lifecycle_timer_schedule_entity")
+  @@index([tenant_id, status, fire_at], map: "idx_lifecycle_timer_schedule_fire_at")
+  @@index([job_id], map: "idx_lifecycle_timer_schedule_job_id")
+  @@index([tenant_id, state_id, status], map: "idx_lifecycle_timer_schedule_state")
+  @@schema("core")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_draft {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String          @db.Uuid
+  user_id           String          @db.Uuid
+  entity_type       String
+  entity_id         String          @db.Uuid
+  parent_comment_id String?         @db.Uuid
+  draft_text        String
+  visibility        String          @default("public")
+  created_at        DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime        @default(now()) @db.Timestamptz(6)
+  entity_comment    entity_comment? @relation(fields: [parent_comment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenant            Tenant          @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  principal         Principal       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenant_id, user_id, entity_type, entity_id, parent_comment_id], map: "comment_draft_unique")
+  @@index([tenant_id, entity_type, entity_id], map: "idx_comment_draft_entity")
+  @@index([tenant_id, user_id, updated_at(sort: Desc)], map: "idx_comment_draft_user")
+  @@schema("core")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_reaction {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String    @db.Uuid
+  comment_type  String
+  comment_id    String    @db.Uuid
+  user_id       String    @db.Uuid
+  reaction_type String
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  tenant        Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  principal     Principal @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenant_id, comment_type, comment_id, user_id, reaction_type], map: "comment_reaction_unique")
+  @@index([tenant_id, comment_type, comment_id], map: "idx_comment_reaction_comment")
+  @@index([tenant_id, user_id, created_at(sort: Desc)], map: "idx_comment_reaction_user")
+  @@schema("core")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_read_status {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id    String    @db.Uuid
+  comment_type String
+  comment_id   String    @db.Uuid
+  user_id      String    @db.Uuid
+  read_at      DateTime  @default(now()) @db.Timestamptz(6)
+  tenant       Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  principal    Principal @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenant_id, comment_type, comment_id, user_id], map: "comment_read_status_unique")
+  @@index([tenant_id, comment_type, comment_id], map: "idx_comment_read_status_comment")
+  @@index([tenant_id, user_id, read_at(sort: Desc)], map: "idx_comment_read_status_user")
+  @@schema("core")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_analytics_daily {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String   @db.Uuid
+  date               DateTime @db.Date
+  entity_type        String?
+  total_comments     Int      @default(0)
+  total_replies      Int      @default(0)
+  unique_commenters  Int      @default(0)
+  total_reactions    Int      @default(0)
+  total_flags        Int      @default(0)
+  avg_comment_length Int?
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @default(now()) @db.Timestamptz(6)
+  tenant             Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenant_id, date, entity_type], map: "comment_analytics_daily_unique")
+  @@index([tenant_id, date(sort: Desc)], map: "idx_comment_analytics_daily_date")
+  @@schema("core")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_flag {
+  id                                                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                                         String     @db.Uuid
+  comment_type                                      String
+  comment_id                                        String     @db.Uuid
+  flagger_user_id                                   String     @db.Uuid
+  flag_reason                                       String
+  flag_details                                      String?
+  status                                            String     @default("pending")
+  reviewed_by                                       String?    @db.Uuid
+  reviewed_at                                       DateTime?  @db.Timestamptz(6)
+  resolution                                        String?
+  created_at                                        DateTime   @default(now()) @db.Timestamptz(6)
+  principal_comment_flag_flagger_user_idToprincipal Principal  @relation("comment_flag_flagger_user_idToprincipal", fields: [flagger_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  principal_comment_flag_reviewed_byToprincipal     Principal? @relation("comment_flag_reviewed_byToprincipal", fields: [reviewed_by], references: [id], onUpdate: NoAction)
+  tenant                                            Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenant_id, comment_type, comment_id, flagger_user_id], map: "comment_flag_unique")
+  @@index([tenant_id, comment_type, comment_id, status], map: "idx_comment_flag_comment")
+  @@index([tenant_id, status, created_at(sort: Desc)], map: "idx_comment_flag_pending", where: raw("(status = 'pending'::text)"))
+  @@schema("core")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_moderation_status {
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id       String     @db.Uuid
+  comment_type    String
+  comment_id      String     @db.Uuid
+  is_hidden       Boolean    @default(false)
+  hidden_reason   String?
+  hidden_at       DateTime?  @db.Timestamptz(6)
+  hidden_by       String?    @db.Uuid
+  flag_count      Int        @default(0)
+  last_flagged_at DateTime?  @db.Timestamptz(6)
+  created_at      DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime   @default(now()) @db.Timestamptz(6)
+  principal       Principal? @relation(fields: [hidden_by], references: [id], onUpdate: NoAction)
+  tenant          Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenant_id, comment_type, comment_id], map: "comment_moderation_unique")
+  @@index([tenant_id, flag_count(sort: Desc), last_flagged_at(sort: Desc)], map: "idx_comment_moderation_flags", where: raw("(flag_count > 0)"))
+  @@index([tenant_id, is_hidden, updated_at(sort: Desc)], map: "idx_comment_moderation_hidden", where: raw("(is_hidden = true)"))
+  @@schema("core")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_response_history {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String    @db.Uuid
+  entity_type           String
+  entity_id             String    @db.Uuid
+  comment_id            String    @db.Uuid
+  parent_comment_id     String?   @db.Uuid
+  commenter_id          String    @db.Uuid
+  response_time_seconds Int?
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  principal             Principal @relation(fields: [commenter_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenant                Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenant_id, comment_id], map: "comment_response_history_unique")
+  @@index([tenant_id, entity_type, entity_id, created_at(sort: Desc)], map: "idx_comment_response_history_entity")
+  @@schema("core")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_retention_log {
+  id                       String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                String                    @db.Uuid
+  comment_type             String
+  comment_id               String                    @db.Uuid
+  action                   String
+  policy_id                String?                   @db.Uuid
+  executed_by              String
+  executed_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  comment_snapshot         Json?
+  comment_retention_policy comment_retention_policy? @relation(fields: [policy_id], references: [id], onUpdate: NoAction)
+  tenant                   Tenant                    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([tenant_id, comment_type, comment_id, executed_at(sort: Desc)], map: "idx_comment_retention_log_comment")
+  @@index([tenant_id, policy_id, executed_at(sort: Desc)], map: "idx_comment_retention_log_policy", where: raw("(policy_id IS NOT NULL)"))
+  @@schema("core")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_retention_policy {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String                  @db.Uuid
+  policy_name           String
+  entity_type           String?
+  retention_days        Int
+  action                String                  @default("archive")
+  enabled               Boolean                 @default(true)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  comment_retention_log comment_retention_log[]
+  tenant                Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([tenant_id, enabled], map: "idx_comment_retention_policy_active", where: raw("(enabled = true)"))
+  @@schema("core")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_sla_config {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String   @db.Uuid
+  entity_type         String
+  sla_target_seconds  Int
+  enabled             Boolean  @default(true)
+  business_hours_only Boolean  @default(false)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @db.Timestamptz(6)
+  tenant              Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenant_id, entity_type], map: "comment_sla_config_unique")
+  @@schema("core")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_sla_metrics {
+  id                                                         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                                                  String     @db.Uuid
+  entity_type                                                String
+  entity_id                                                  String     @db.Uuid
+  first_comment_at                                           DateTime   @db.Timestamptz(6)
+  first_comment_by                                           String     @db.Uuid
+  first_response_at                                          DateTime?  @db.Timestamptz(6)
+  first_response_by                                          String?    @db.Uuid
+  first_response_time_seconds                                Int?
+  total_comments                                             Int        @default(1)
+  total_responses                                            Int        @default(0)
+  avg_response_time_seconds                                  Int?
+  max_response_time_seconds                                  Int?
+  sla_target_seconds                                         Int?
+  is_sla_breached                                            Boolean    @default(false)
+  created_at                                                 DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at                                                 DateTime   @default(now()) @db.Timestamptz(6)
+  principal_comment_sla_metrics_first_comment_byToprincipal  Principal  @relation("comment_sla_metrics_first_comment_byToprincipal", fields: [first_comment_by], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  principal_comment_sla_metrics_first_response_byToprincipal Principal? @relation("comment_sla_metrics_first_response_byToprincipal", fields: [first_response_by], references: [id], onUpdate: NoAction)
+  tenant                                                     Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenant_id, entity_type, entity_id], map: "comment_sla_metrics_unique")
+  @@index([tenant_id, is_sla_breached, first_comment_at(sort: Desc)], map: "idx_comment_sla_breached", where: raw("(is_sla_breached = true)"))
+  @@index([tenant_id, first_comment_at(sort: Desc)], map: "idx_comment_sla_pending", where: raw("(first_response_at IS NULL)"))
+  @@index([tenant_id, first_response_time_seconds], map: "idx_comment_sla_response_time")
+  @@schema("core")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comment_thread_analytics {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String   @db.Uuid
+  entity_type         String
+  entity_id           String   @db.Uuid
+  total_comments      Int      @default(0)
+  unique_participants Int      @default(0)
+  total_reactions     Int      @default(0)
+  thread_depth        Int      @default(0)
+  first_comment_at    DateTime @db.Timestamptz(6)
+  last_comment_at     DateTime @db.Timestamptz(6)
+  is_active           Boolean  @default(true)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @db.Timestamptz(6)
+  tenant              Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenant_id, entity_type, entity_id], map: "comment_thread_analytics_unique")
+  @@index([tenant_id, is_active, total_comments(sort: Desc)], map: "idx_comment_thread_analytics_active", where: raw("(is_active = true)"))
+  @@index([tenant_id, last_comment_at(sort: Desc)], map: "idx_comment_thread_analytics_recent")
+  @@schema("core")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains an index with non-default null sort order and requires additional setup for migrations. Visit https://pris.ly/d/default-index-null-ordering for more info.
+model comment_user_engagement {
+  id                        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                 String    @db.Uuid
+  user_id                   String    @db.Uuid
+  period_start              DateTime  @db.Date
+  period_end                DateTime  @db.Date
+  total_comments            Int       @default(0)
+  total_replies             Int       @default(0)
+  total_reactions_given     Int       @default(0)
+  total_reactions_received  Int       @default(0)
+  total_mentions_received   Int       @default(0)
+  avg_response_time_seconds Int?
+  engagement_score          Int?
+  created_at                DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime  @default(now()) @db.Timestamptz(6)
+  tenant                    Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  principal                 Principal @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenant_id, user_id, period_start, period_end], map: "comment_user_engagement_unique")
+  @@index([tenant_id, engagement_score(sort: Desc), period_start(sort: Desc)], map: "idx_comment_user_engagement_score")
+  @@schema("core")
+}
+
+// ============================================================================
+// Content Management Enhancement Models
+// ============================================================================
+
+model entity_document_link {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String     @db.Uuid
+  entity_type   String
+  entity_id     String     @db.Uuid
+  attachment_id String     @db.Uuid
+  link_kind     String     @default("related")
+  display_order Int        @default(0)
+  metadata      Json?
+  created_at    DateTime   @default(now()) @db.Timestamptz(6)
+  created_by    String
+
+  tenant        Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  attachment    attachment @relation(fields: [attachment_id], references: [id], onDelete: Cascade)
+
+  @@unique([tenant_id, entity_type, entity_id, attachment_id])
+  @@index([tenant_id, entity_type, entity_id, link_kind])
+  @@schema("core")
+}
+
+model document_acl {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String     @db.Uuid
+  attachment_id String     @db.Uuid
+  principal_id  String?    @db.Uuid
+  role_id       String?    @db.Uuid
+  permission    String
+  granted       Boolean    @default(true)
+  granted_by    String
+  granted_at    DateTime   @default(now()) @db.Timestamptz(6)
+  expires_at    DateTime?  @db.Timestamptz(6)
+
+  tenant        Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  attachment    attachment @relation(fields: [attachment_id], references: [id], onDelete: Cascade)
+
+  @@index([attachment_id, permission])
+  @@schema("core")
+}
+
+model attachment_access_log {
+  id            BigInt     @id @default(autoincrement())
+  tenant_id     String     @db.Uuid
+  attachment_id String     @db.Uuid
+  actor_id      String
+  action        String
+  ip_address    String?
+  user_agent    String?
+  accessed_at   DateTime   @default(now()) @db.Timestamptz(6)
+
+  tenant        Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  attachment    attachment @relation(fields: [attachment_id], references: [id])
+
+  @@index([tenant_id, accessed_at(sort: Desc)], map: "idx_access_log_tenant_time")
+  @@index([attachment_id, accessed_at(sort: Desc)], map: "idx_access_log_attachment")
+  @@index([tenant_id, actor_id, accessed_at(sort: Desc)], map: "idx_access_log_actor")
+  @@schema("core")
+}
+
+model attachment_comment {
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String              @db.Uuid
+  attachment_id String              @db.Uuid
+  parent_id     String?             @db.Uuid
+  author_id     String
+  content       String
+  mentions      Json?
+  edited_at     DateTime?           @db.Timestamptz(6)
+  edited_by     String?
+  deleted_at    DateTime?           @db.Timestamptz(6)
+  deleted_by    String?
+  created_at    DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime            @default(now()) @db.Timestamptz(6)
+
+  tenant        Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  attachment    attachment          @relation(fields: [attachment_id], references: [id], onDelete: Cascade)
+  parent        attachment_comment? @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies       attachment_comment[] @relation("CommentReplies")
+
+  @@index([tenant_id, attachment_id, created_at(sort: Desc)], where: raw("deleted_at IS NULL"), map: "idx_comment_attachment")
+  @@index([parent_id, created_at], where: raw("parent_id IS NOT NULL AND deleted_at IS NULL"), map: "idx_comment_parent")
+  @@index([tenant_id, author_id, created_at(sort: Desc)], where: raw("deleted_at IS NULL"), map: "idx_comment_author")
+  @@schema("core")
+}
+
+model multipart_upload {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String     @db.Uuid
+  attachment_id String     @db.Uuid
+  s3_upload_id  String     @unique
+  total_parts   Int
+  completed_parts Int      @default(0)
+  part_etags    Json?
+  status        String
+  initiated_at  DateTime   @default(now()) @db.Timestamptz(6)
+  completed_at  DateTime?  @db.Timestamptz(6)
+  expires_at    DateTime   @db.Timestamptz(6)
+
+  tenant        Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  attachment    attachment @relation(fields: [attachment_id], references: [id], onDelete: Cascade)
+
+  @@index([attachment_id])
+  @@index([tenant_id, status, expires_at], where: raw("status IN ('initiated', 'uploading')"), map: "idx_multipart_status")
+  @@schema("core")
 }

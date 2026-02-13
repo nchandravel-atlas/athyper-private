@@ -244,6 +244,19 @@ export const RuntimeConfigSchema = z.object({
             deliveryDays: z.coerce.number().int().positive().default(30),
         }).default({}),
     }).default({}),
+
+    collab: z.object({
+        enabled: Bool.default(true),
+        maxCommentLength: z.coerce.number().int().min(100).max(10000).default(5000),
+        maxThreadDepth: z.coerce.number().int().min(0).max(10).default(5),
+        mentionsEnabled: Bool.default(true),
+        attachmentsEnabled: Bool.default(true),
+        timelineEnabled: Bool.default(true),
+        rateLimits: z.object({
+            commentsPerMinute: z.coerce.number().int().positive().default(10),
+            mentionsPerComment: z.coerce.number().int().positive().default(20),
+        }).default({}),
+    }).default({}),
 });
 
 export type RuntimeConfig = z.infer<typeof RuntimeConfigSchema>;

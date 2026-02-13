@@ -6,7 +6,8 @@
 // Left: SidebarTrigger + Separator + SearchDialog
 // Right: Notification/Help/AI icons + WorkbenchSwitcher + TenantSwitcher
 
-import { Bell, CircleHelp, Sparkles } from "lucide-react";
+import { CircleHelp, Sparkles } from "lucide-react";
+import { useState } from "react";
 
 import { LocaleSwitcher } from "@/components/shell/LocaleSwitcher";
 import { TenantSwitcher } from "@/components/shell/TenantSwitcher";
@@ -17,7 +18,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { NotificationBell, NotificationInboxPanel } from "@athyper/ui";
 import { useMessages } from "@/lib/i18n/messages-context";
+import { useNotifications } from "@/lib/notifications/useNotifications";
+import { useNotificationStream } from "@/lib/notifications/useNotificationStream";
+import { useUnreadCount } from "@/lib/notifications/useUnreadCount";
 import { cn } from "@/lib/utils";
 
 interface ShellHeaderProps {
@@ -26,6 +31,35 @@ interface ShellHeaderProps {
 
 export function ShellHeader({ workbench }: ShellHeaderProps) {
     const { t } = useMessages();
+    const [inboxOpen, setInboxOpen] = useState(false);
+
+    // Fetch notifications data
+    const { count: unreadCount, refresh: refreshCount } = useUnreadCount();
+    const {
+        notifications,
+        isLoading,
+        markRead,
+        markAllRead,
+        dismiss,
+        refresh: refreshNotifications,
+    } = useNotifications({ limit: 50 });
+
+    // Subscribe to real-time notification events via SSE
+    useNotificationStream({
+        onNotificationNew: () => {
+            // New notification received - refresh count and list
+            refreshCount();
+            refreshNotifications();
+        },
+        onNotificationRead: () => {
+            // Notification marked as read - refresh count
+            refreshCount();
+        },
+        onNotificationDismissed: () => {
+            // Notification dismissed - refresh count
+            refreshCount();
+        },
+    });
 
     return (
         <header
@@ -48,14 +82,31 @@ export function ShellHeader({ workbench }: ShellHeaderProps) {
 
                 {/* Right section: Icons + Switchers */}
                 <div className="flex items-center gap-1">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8">
-                                <Bell className="size-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>{t("common.header.notifications")}</TooltipContent>
-                    </Tooltip>
+                    {/* Notifications */}
+                    <NotificationBell
+                        unreadCount={unreadCount}
+                        onClick={() => setInboxOpen(true)}
+                        tooltipContent={t("common.header.notifications")}
+                    />
+
+                    <NotificationInboxPanel
+                        open={inboxOpen}
+                        onOpenChange={setInboxOpen}
+                        notifications={notifications}
+                        isLoading={isLoading}
+                        unreadCount={unreadCount}
+                        onMarkRead={markRead}
+                        onMarkAllRead={markAllRead}
+                        onDismiss={dismiss}
+                        onNotificationClick={(notification) => {
+                            // Mark as read when clicked
+                            if (!notification.isRead) {
+                                markRead(notification.id);
+                            }
+                            // Close panel
+                            setInboxOpen(false);
+                        }}
+                    />
 
                     <Tooltip>
                         <TooltipTrigger asChild>

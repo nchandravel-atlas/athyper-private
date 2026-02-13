@@ -35,7 +35,15 @@
       "Bash(cat:*)",
       "Bash(grep:*)",
       "Bash(pnpm run kysely:codegen:*)",
-      "Bash(pnpm run build:*)"
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm db:migrate:*)",
+      "Bash(pnpm mesh:up:*)",
+      "Bash(docker compose:*)",
+      "Bash(npx prisma format:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(DATABASE_ADMIN_URL=\"postgresql://athyper:TZ42bVKC5N@localhost:5432/athyper\" pnpm db:provision:*)",
+      "Bash(npx prisma validate:*)",
+      "Bash(pnpm add:*)"
     ],
     "additionalDirectories": [
       "d:\\Development\\athyper-private",

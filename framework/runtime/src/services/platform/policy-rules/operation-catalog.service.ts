@@ -52,9 +52,14 @@ const STANDARD_OPERATIONS: Array<{
   { namespace: "DELEGATION", code: "REVOKE_DELEGATION", name: "Revoke Delegation", description: "Revoke delegated authority", sortOrder: 20 },
 
   // Collaboration operations
-  { namespace: "COLLAB", code: "SHARE", name: "Share", description: "Share with others", sortOrder: 10 },
-  { namespace: "COLLAB", code: "COMMENT", name: "Comment", description: "Add comments", sortOrder: 20 },
-  { namespace: "COLLAB", code: "MENTION", name: "Mention", description: "Mention users", sortOrder: 30 },
+  { namespace: "COLLAB", code: "COMMENT_CREATE", name: "Create Comment", description: "Add comments to records", sortOrder: 10 },
+  { namespace: "COLLAB", code: "COMMENT_READ", name: "Read Comments", description: "View comments on records", sortOrder: 20 },
+  { namespace: "COLLAB", code: "COMMENT_UPDATE", name: "Update Comment", description: "Edit own comments", sortOrder: 30 },
+  { namespace: "COLLAB", code: "COMMENT_DELETE", name: "Delete Comment", description: "Delete own comments", sortOrder: 40 },
+  { namespace: "COLLAB", code: "COMMENT_MODERATE", name: "Moderate Comments", description: "Edit/delete any comment (admin)", sortOrder: 50 },
+  { namespace: "COLLAB", code: "MENTION", name: "Mention Users", description: "Use @mentions in comments", sortOrder: 60 },
+  { namespace: "COLLAB", code: "ATTACH", name: "Attach Files", description: "Attach files to comments", sortOrder: 70 },
+  { namespace: "COLLAB", code: "TIMELINE_VIEW", name: "View Timeline", description: "View activity timeline", sortOrder: 80 },
 ];
 
 /**

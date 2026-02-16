@@ -2,14 +2,13 @@
 /**
  * db:publish — Single-click Schema Change Lifecycle
  *
- * Orchestrates the full Prisma → Kysely → Zod → Contracts pipeline:
+ * Orchestrates the full Prisma → Kysely pipeline:
  *
  *   1. Validate   — prisma validate
  *   2. Diff/Plan  — prisma migrate diff (preview SQL, no apply)
  *   3. Migrate    — prisma migrate dev --name <auto> (create + apply)
- *   4. Generate   — prisma generate (Prisma Client + Zod + Kysely)
- *   5. Sync       — copy generated → packages/contracts/generated/prisma/
- *   6. Report     — summary of changes
+ *   4. Generate   — prisma generate (Kysely types)
+ *   5. Report     — summary of changes
  *
  * Flags:
  *   --dry-run       Stop after step 2 (validate + diff only)
@@ -22,19 +21,11 @@
  */
 
 import {
-  CONTRACTS_GEN_DIR,
   DB_DIR,
-  KYSELY_DST,
-  KYSELY_SRC,
   MIGRATIONS_DIR,
   SCHEMA_PATH,
-  ZOD_DST,
-  ZOD_SRC,
-  ensureDir,
   run,
   runCapture,
-  syncFolder,
-  writeEntryPoints,
 } from "./lib.js";
 
 // ---------------------------------------------------------------------------
@@ -143,7 +134,7 @@ async function stepDiff(): Promise<StepResult> {
       durationMs: Date.now() - t0,
       detail: diffSql.trim() ? "changes_detected" : "no_changes",
     };
-  } catch (err) {
+  } catch {
     // prisma migrate diff exits non-zero when there ARE changes in some modes.
     // We treat this as informational, not a failure.
     console.log("Diff completed (changes pending).");
@@ -191,7 +182,7 @@ async function stepMigrate(opts: PublishOptions): Promise<StepResult> {
 }
 
 async function stepGenerate(): Promise<StepResult> {
-  banner(4, "Generate (Prisma Client + Zod + Kysely)");
+  banner(4, "Generate (Kysely types)");
   const t0 = Date.now();
 
   await run("pnpm", ["prisma", "generate"], {
@@ -202,24 +193,8 @@ async function stepGenerate(): Promise<StepResult> {
   return { step: 4, name: "generate", status: "ok", durationMs: Date.now() - t0 };
 }
 
-async function stepSync(): Promise<StepResult> {
-  banner(5, "Sync contracts");
-  const t0 = Date.now();
-
-  await ensureDir(CONTRACTS_GEN_DIR);
-  await syncFolder(ZOD_SRC, ZOD_DST);
-  await syncFolder(KYSELY_SRC, KYSELY_DST);
-  await writeEntryPoints();
-
-  console.log("Contracts synced:");
-  console.log(`  Zod:    ${ZOD_SRC} → ${ZOD_DST}`);
-  console.log(`  Kysely: ${KYSELY_SRC} → ${KYSELY_DST}`);
-
-  return { step: 5, name: "sync", status: "ok", durationMs: Date.now() - t0 };
-}
-
 function stepReport(results: StepResult[]): void {
-  banner(6, "Report");
+  banner(5, "Report");
 
   const totalMs = results.reduce((sum, r) => sum + r.durationMs, 0);
 
@@ -274,10 +249,7 @@ async function main(): Promise<void> {
   // Step 4 — Generate
   results.push(await stepGenerate());
 
-  // Step 5 — Sync contracts
-  results.push(await stepSync());
-
-  // Step 6 — Report
+  // Step 5 — Report
   stepReport(results);
 }
 

@@ -121,11 +121,11 @@ describe("Immutability Guard (strengthened specifications)", () => {
 
   it("spec: retention role has DELETE grant on 5 audit tables", () => {
     const tables = [
-      "core.workflow_audit_event",
-      "core.audit_log",
-      "core.permission_decision_log",
-      "core.field_access_log",
-      "core.security_event",
+      "audit.workflow_audit_event",
+      "audit.audit_log",
+      "audit.permission_decision_log",
+      "audit.field_access_log",
+      "sec.security_event",
     ];
     expect(tables).toHaveLength(5);
   });
@@ -136,10 +136,10 @@ describe("Immutability Guard (strengthened specifications)", () => {
 describe("Row-Level Security (specifications)", () => {
   it("spec: RLS enabled on 4 audit tables", () => {
     const rlsTables = [
-      "core.workflow_audit_event",
-      "core.audit_outbox",
-      "core.audit_hash_anchor",
-      "core.audit_dlq",
+      "audit.workflow_audit_event",
+      "core.outbox",
+      "audit.audit_hash_anchor",
+      "audit.audit_dlq",
     ];
     expect(rlsTables).toHaveLength(4);
   });

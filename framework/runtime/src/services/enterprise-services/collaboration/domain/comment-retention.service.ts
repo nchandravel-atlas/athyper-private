@@ -56,7 +56,7 @@ export class CommentRetentionService {
     const now = new Date();
 
     const row = await this.db
-      .insertInto("core.comment_retention_policy")
+      .insertInto("collab.comment_retention_policy")
       .values({
         id,
         tenant_id: tenantId,
@@ -97,7 +97,7 @@ export class CommentRetentionService {
    */
   async getActivePolicies(tenantId: string): Promise<RetentionPolicy[]> {
     const rows = await this.db
-      .selectFrom("core.comment_retention_policy")
+      .selectFrom("collab.comment_retention_policy")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("enabled", "=", true)
@@ -166,7 +166,7 @@ export class CommentRetentionService {
 
     // Build query
     let query = this.db
-      .updateTable("core.entity_comment")
+      .updateTable("collab.entity_comment")
       .set({
         archived_at: now,
         archived_by: 'system',
@@ -215,7 +215,7 @@ export class CommentRetentionService {
 
     // Build query
     let query = this.db
-      .deleteFrom("core.entity_comment")
+      .deleteFrom("collab.entity_comment")
       .where("tenant_id", "=", tenantId)
       .where("created_at", "<", cutoffDate)
       .where("deleted_at", "is", null);
@@ -231,7 +231,7 @@ export class CommentRetentionService {
       await this.auditWriter.write({
         ts: now.toISOString(),
         type: "comment.retention.hard_deleted",
-        level: "warning",
+        level: "warn",
         actor: { kind: "system", id: "retention-service" },
         meta: {
           tenantId,
@@ -263,7 +263,7 @@ export class CommentRetentionService {
     restoredBy: string
   ): Promise<void> {
     await this.db
-      .updateTable("core.entity_comment")
+      .updateTable("collab.entity_comment")
       .set({
         archived_at: null,
         archived_by: null,
@@ -296,20 +296,20 @@ export class CommentRetentionService {
   async getRetentionStats(tenantId: string): Promise<RetentionStats> {
     const [totalResult, archivedResult, deletedResult] = await Promise.all([
       this.db
-        .selectFrom("core.entity_comment")
+        .selectFrom("collab.entity_comment")
         .select(({ fn }) => fn.count<number>("id").as("count"))
         .where("tenant_id", "=", tenantId)
         .executeTakeFirst(),
 
       this.db
-        .selectFrom("core.entity_comment")
+        .selectFrom("collab.entity_comment")
         .select(({ fn }) => fn.count<number>("id").as("count"))
         .where("tenant_id", "=", tenantId)
         .where("archived_at", "is not", null)
         .executeTakeFirst(),
 
       this.db
-        .selectFrom("core.entity_comment")
+        .selectFrom("collab.entity_comment")
         .select(({ fn }) => fn.count<number>("id").as("count"))
         .where("tenant_id", "=", tenantId)
         .where("deleted_at", "is not", null)
@@ -340,7 +340,7 @@ export class CommentRetentionService {
     const now = new Date();
 
     const result = await this.db
-      .updateTable("core.entity_comment")
+      .updateTable("collab.entity_comment")
       .set({
         archived_at: now,
         archived_by: archivedBy,
@@ -370,5 +370,132 @@ export class CommentRetentionService {
     }
 
     return count;
+  }
+
+  /**
+   * List all retention policies for a tenant (including disabled)
+   */
+  async listPolicies(tenantId: string): Promise<RetentionPolicy[]> {
+    const rows = await this.db
+      .selectFrom("collab.comment_retention_policy")
+      .selectAll()
+      .where("tenant_id", "=", tenantId)
+      .execute();
+
+    return rows.map((row) => ({
+      id: row.id,
+      tenantId: row.tenant_id,
+      policyName: row.policy_name,
+      entityType: row.entity_type ?? undefined,
+      retentionDays: row.retention_days,
+      action: row.action as any,
+      enabled: row.enabled,
+    }));
+  }
+
+  /**
+   * Update a retention policy
+   */
+  async updatePolicy(
+    tenantId: string,
+    policyId: string,
+    updates: { enabled?: boolean }
+  ): Promise<void> {
+    await this.db
+      .updateTable("collab.comment_retention_policy")
+      .set({
+        enabled: updates.enabled,
+        updated_at: new Date(),
+      } as any)
+      .where("id", "=", policyId)
+      .where("tenant_id", "=", tenantId)
+      .execute();
+  }
+
+  /**
+   * Delete a retention policy
+   */
+  async deletePolicy(tenantId: string, policyId: string): Promise<void> {
+    await this.db
+      .deleteFrom("collab.comment_retention_policy")
+      .where("id", "=", policyId)
+      .where("tenant_id", "=", tenantId)
+      .execute();
+  }
+
+  /**
+   * List archived comments
+   */
+  async listArchivedComments(
+    tenantId: string,
+    options?: { limit?: number; offset?: number }
+  ): Promise<any[]> {
+    const { limit = 50, offset = 0 } = options ?? {};
+
+    const rows = await this.db
+      .selectFrom("collab.entity_comment")
+      .selectAll()
+      .where("tenant_id", "=", tenantId)
+      .where("archived_at", "is not", null)
+      .orderBy("archived_at", "desc")
+      .limit(limit)
+      .offset(offset)
+      .execute();
+
+    return rows;
+  }
+
+  /**
+   * Find comments eligible for retention processing
+   */
+  async findCommentsForRetention(
+    tenantId: string,
+    entityType: string,
+    cutoffDate: Date
+  ): Promise<Array<{ id: string }>> {
+    const rows = await this.db
+      .selectFrom("collab.entity_comment")
+      .select("id")
+      .where("tenant_id", "=", tenantId)
+      .where("entity_type", "=", entityType)
+      .where("created_at", "<", cutoffDate)
+      .where("archived_at", "is", null)
+      .where("deleted_at", "is", null)
+      .execute();
+
+    return rows;
+  }
+
+  /**
+   * Archive a single comment
+   */
+  async archiveComment(
+    tenantId: string,
+    commentId: string,
+    archivedBy: string
+  ): Promise<void> {
+    await this.db
+      .updateTable("collab.entity_comment")
+      .set({
+        archived_at: new Date(),
+        archived_by: archivedBy,
+      } as any)
+      .where("id", "=", commentId)
+      .where("tenant_id", "=", tenantId)
+      .execute();
+  }
+
+  /**
+   * Hard delete a single comment
+   */
+  async hardDeleteComment(
+    tenantId: string,
+    commentId: string
+  ): Promise<void> {
+    await this.db
+      .deleteFrom("collab.entity_comment")
+      .where("id", "=", commentId)
+      .where("tenant_id", "=", tenantId)
+      .execute();
   }
 }

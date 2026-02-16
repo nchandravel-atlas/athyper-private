@@ -24,9 +24,6 @@
             "path": "framework/adapters/telemetry"
         },
         {
-            "path": "packages/contracts"
-        },
-        {
             "path": "packages/api-client"
         },
         {

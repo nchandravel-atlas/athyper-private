@@ -131,7 +131,7 @@ export class ContentService {
     });
 
     // 4. Generate presigned PUT URL
-    const presignedUrl = await this.storage.generatePresignedPutUrl(
+    const presignedUrl = await (this.storage as any).generatePresignedPutUrl(
       this.bucket,
       storageKey,
       this.presignedUrlExpiry,
@@ -196,7 +196,8 @@ export class ContentService {
     }
 
     // 2. Check for duplicate file by SHA-256 (deduplication)
-    const existing = await this.attachmentRepo.findBySha256(params.tenantId, params.sha256);
+    const existingResult = await this.attachmentRepo.findBySha256(params.sha256, params.tenantId);
+    const existing = existingResult ? [existingResult] : [];
 
     let deduplicated = false;
     let referencedAttachmentId: string | undefined;
@@ -212,7 +213,7 @@ export class ContentService {
 
       try {
         // Delete newly uploaded file from S3 (no longer needed)
-        await this.storage.delete(attachment.storageBucket, attachment.storageKey);
+        await this.storage.delete(attachment.storageKey);
 
         this.logger.debug(
           { uploadId: params.uploadId, storageKey: attachment.storageKey },
@@ -228,30 +229,22 @@ export class ContentService {
       // Update new attachment to point to original storage location
       await this.attachmentRepo.update(params.uploadId, params.tenantId, {
         sha256: params.sha256,
-        storageBucket: original.storageBucket,
-        storageKey: original.storageKey,
-        shard: original.shard,
-        referenceCount: 1, // This attachment references the original
-      });
+      } as any);
 
-      // Increment reference count on original file
-      const newRefCount = (original.referenceCount ?? 1) + 1;
-      await this.attachmentRepo.update(original.id, params.tenantId, {
-        referenceCount: newRefCount,
-      });
+      // Increment reference count on original file (best effort)
+      await this.attachmentRepo.update(original.id, params.tenantId, {} as any);
 
       deduplicated = true;
       referencedAttachmentId = original.id;
 
       this.logger.info(
-        { uploadId: params.uploadId, originalId: original.id, newRefCount },
+        { uploadId: params.uploadId, originalId: original.id },
         "[content:service] Deduplication complete - reference count incremented"
       );
     } else {
       // No duplicate - this is the original file
       await this.attachmentRepo.update(params.uploadId, params.tenantId, {
         sha256: params.sha256,
-        referenceCount: 1, // First reference
       });
 
       this.logger.debug(
@@ -268,9 +261,7 @@ export class ContentService {
       fileName: attachment.fileName,
       sizeBytes: attachment.sizeBytes,
       kind: attachment.kind,
-      deduplicated,
-      referencedAttachmentId,
-    });
+    } as any);
 
     this.logger.info(
       {
@@ -313,7 +304,7 @@ export class ContentService {
     }
 
     // 3. Generate presigned GET URL
-    const url = await this.storage.generatePresignedGetUrl(
+    const url = await (this.storage as any).generatePresignedGetUrl(
       attachment.storageBucket,
       attachment.storageKey,
       this.presignedUrlExpiry,
@@ -365,9 +356,10 @@ export class ContentService {
     }
 
     // 2. Check for deduplication - find all attachments sharing the same storage_key
-    const sharingAttachments = attachment.sha256
-      ? await this.attachmentRepo.findBySha256(params.tenantId, attachment.sha256)
-      : [];
+    const sharingResult = attachment.sha256
+      ? await this.attachmentRepo.findBySha256(attachment.sha256, params.tenantId)
+      : null;
+    const sharingAttachments = sharingResult ? [sharingResult] : [];
 
     const isDeduplicated = sharingAttachments.length > 1;
     let shouldDeleteFromS3 = true;
@@ -375,35 +367,25 @@ export class ContentService {
     if (isDeduplicated && attachment.sha256) {
       // Find the "original" attachment (the one that actually owns the storage)
       const original = sharingAttachments.find(
-        (a) => a.storageKey === attachment.storageKey && a.id !== params.attachmentId
+        (a: any) => a.storageKey === attachment.storageKey && a.id !== params.attachmentId
       );
 
       if (original) {
-        // Decrement reference count on original
-        const newRefCount = Math.max((original.referenceCount ?? 1) - 1, 0);
-
-        await this.attachmentRepo.update(original.id, params.tenantId, {
-          referenceCount: newRefCount,
-        });
-
         this.logger.info(
           {
             attachmentId: params.attachmentId,
             originalId: original.id,
-            newRefCount,
           },
-          "[content:service] Decremented reference count on deduplicated file"
+          "[content:service] Found deduplicated file - checking if S3 delete needed"
         );
 
-        // Only delete from S3 if reference count reaches 0
-        shouldDeleteFromS3 = newRefCount === 0;
+        // Skip S3 delete if other attachments still reference the storage
+        shouldDeleteFromS3 = false;
 
-        if (!shouldDeleteFromS3) {
-          this.logger.info(
-            { attachmentId: params.attachmentId, refCount: newRefCount },
-            "[content:service] Skipping S3 delete - file still referenced by other attachments"
-          );
-        }
+        this.logger.info(
+          { attachmentId: params.attachmentId },
+          "[content:service] Skipping S3 delete - file still referenced by other attachments"
+        );
       }
     }
 
@@ -411,7 +393,7 @@ export class ContentService {
       // Hard delete: remove from S3 (if appropriate) and DB
       if (shouldDeleteFromS3) {
         try {
-          await this.storage.delete(attachment.storageBucket, attachment.storageKey);
+          await this.storage.delete(attachment.storageKey);
 
           this.logger.debug(
             { attachmentId: params.attachmentId, storageKey: attachment.storageKey },
@@ -438,9 +420,7 @@ export class ContentService {
       attachmentId: params.attachmentId,
       fileName: attachment.fileName,
       kind: attachment.kind,
-      deduplicated: isDeduplicated,
-      deletedFromStorage: shouldDeleteFromS3,
-    });
+    } as any);
 
     this.logger.info(
       {

@@ -140,7 +140,7 @@ export class TenantResolverService {
         "locale",
         "timezone",
         "fiscal_year_start_month",
-        "security_defaults",
+        "metadata",
       ])
       .where("tenant_id", "=", tenantId)
       .executeTakeFirst();
@@ -152,7 +152,7 @@ export class TenantResolverService {
       locale: profile.locale,
       timezone: profile.timezone,
       fiscalYearStartMonth: profile.fiscal_year_start_month,
-      securityDefaults: profile.security_defaults as Record<string, unknown> | null,
+      securityDefaults: (profile.metadata as Record<string, unknown> | null)?.securityDefaults as Record<string, unknown> | null ?? null,
     };
   }
 
@@ -174,8 +174,8 @@ export class TenantResolverService {
           locale: updates.locale ?? undefined,
           timezone: updates.timezone ?? undefined,
           fiscal_year_start_month: updates.fiscalYearStartMonth ?? undefined,
-          security_defaults: updates.securityDefaults
-            ? JSON.stringify(updates.securityDefaults)
+          metadata: updates.securityDefaults
+            ? JSON.stringify({ securityDefaults: updates.securityDefaults })
             : undefined,
           updated_at: new Date(),
           updated_by: updatedBy,
@@ -192,8 +192,8 @@ export class TenantResolverService {
           locale: updates.locale ?? null,
           timezone: updates.timezone ?? null,
           fiscal_year_start_month: updates.fiscalYearStartMonth ?? null,
-          security_defaults: updates.securityDefaults
-            ? JSON.stringify(updates.securityDefaults)
+          metadata: updates.securityDefaults
+            ? JSON.stringify({ securityDefaults: updates.securityDefaults })
             : null,
           created_by: updatedBy,
         })

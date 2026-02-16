@@ -208,11 +208,15 @@ export class ContentAuditEmitter {
   ): Promise<void> {
     try {
       await this.auditWriter.write({
-        eventType,
-        tenantId: context.tenantId,
-        actorId: context.actorId,
-        timestamp: new Date(),
-        details: {
+        ts: new Date().toISOString(),
+        type: eventType,
+        level: "info",
+        actor: {
+          kind: "user",
+          id: context.actorId,
+          tenantKey: context.tenantId,
+        },
+        meta: {
           ...details,
           ipAddress: context.ipAddress,
           userAgent: context.userAgent,

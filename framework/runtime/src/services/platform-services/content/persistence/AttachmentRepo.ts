@@ -11,6 +11,8 @@
 import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 
+const TABLE = "doc.attachment" as keyof DB & string;
+
 export interface CreateAttachmentParams {
   id: string;
   tenantId: string;
@@ -72,7 +74,7 @@ export class AttachmentRepo {
     const now = new Date();
 
     const result = await this.db
-      .insertInto("core.attachment as attachment")
+      .insertInto(TABLE as any)
       .values({
         id: params.id,
         tenant_id: params.tenantId,
@@ -81,7 +83,7 @@ export class AttachmentRepo {
         kind: params.kind,
         file_name: params.fileName,
         content_type: params.contentType,
-        size_bytes: BigInt(params.sizeBytes),
+        size_bytes: String(params.sizeBytes),
         storage_bucket: params.storageBucket,
         storage_key: params.storageKey,
         sha256: params.sha256 ?? null,
@@ -105,10 +107,10 @@ export class AttachmentRepo {
    */
   async getById(id: string, tenantId: string): Promise<Attachment | null> {
     const result = await this.db
-      .selectFrom("core.attachment as attachment")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("attachment.id", "=", id)
-      .where("attachment.tenant_id", "=", tenantId)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .executeTakeFirst();
 
     return result ? this.mapToAttachment(result) : null;
@@ -128,10 +130,10 @@ export class AttachmentRepo {
     if (params.isCurrent !== undefined) updateData.is_current = params.isCurrent;
 
     const result = await this.db
-      .updateTable("core.attachment as attachment")
+      .updateTable(TABLE as any)
       .set(updateData)
-      .where("attachment.id", "=", id)
-      .where("attachment.tenant_id", "=", tenantId)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .returningAll()
       .executeTakeFirstOrThrow();
 
@@ -143,15 +145,15 @@ export class AttachmentRepo {
    */
   async delete(id: string, tenantId: string, deletedBy: string): Promise<void> {
     await this.db
-      .updateTable("core.attachment as attachment")
+      .updateTable(TABLE as any)
       .set({
         is_current: false,
         replaced_at: new Date(),
         replaced_by: deletedBy,
         updated_at: new Date(),
       })
-      .where("attachment.id", "=", id)
-      .where("attachment.tenant_id", "=", tenantId)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .execute();
   }
 
@@ -160,9 +162,9 @@ export class AttachmentRepo {
    */
   async hardDelete(id: string, tenantId: string): Promise<void> {
     await this.db
-      .deleteFrom("core.attachment as attachment")
-      .where("attachment.id", "=", id)
-      .where("attachment.tenant_id", "=", tenantId)
+      .deleteFrom(TABLE as any)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .execute();
   }
 
@@ -176,21 +178,21 @@ export class AttachmentRepo {
     options?: { kind?: string; currentOnly?: boolean },
   ): Promise<Attachment[]> {
     let query = this.db
-      .selectFrom("core.attachment as attachment")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("attachment.tenant_id", "=", tenantId)
-      .where("attachment.owner_entity", "=", entityType)
-      .where("attachment.owner_entity_id", "=", entityId);
+      .where("tenant_id", "=", tenantId)
+      .where("owner_entity", "=", entityType)
+      .where("owner_entity_id", "=", entityId);
 
     if (options?.kind) {
-      query = query.where("attachment.kind", "=", options.kind);
+      query = query.where("kind", "=", options.kind);
     }
 
     if (options?.currentOnly !== false) {
-      query = query.where("attachment.is_current", "=", true);
+      query = query.where("is_current", "=", true);
     }
 
-    query = query.orderBy("attachment.created_at", "desc");
+    query = query.orderBy("created_at", "desc");
 
     const results = await query.execute();
     return results.map((r) => this.mapToAttachment(r));
@@ -210,16 +212,16 @@ export class AttachmentRepo {
 
     // Get all versions in the chain
     const results = await this.db
-      .selectFrom("core.attachment as attachment")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("attachment.tenant_id", "=", tenantId)
+      .where("tenant_id", "=", tenantId)
       .where((eb) =>
         eb.or([
-          eb("attachment.id", "=", rootId),
-          eb("attachment.parent_attachment_id", "=", rootId),
+          eb("id", "=", rootId),
+          eb("parent_attachment_id", "=", rootId),
         ]),
       )
-      .orderBy("attachment.version_no", "asc")
+      .orderBy("version_no", "asc")
       .execute();
 
     return results.map((r) => this.mapToAttachment(r));
@@ -230,11 +232,11 @@ export class AttachmentRepo {
    */
   async findBySha256(sha256: string, tenantId: string): Promise<Attachment | null> {
     const result = await this.db
-      .selectFrom("core.attachment as attachment")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("attachment.tenant_id", "=", tenantId)
-      .where("attachment.sha256", "=", sha256)
-      .where("attachment.is_current", "=", true)
+      .where("tenant_id", "=", tenantId)
+      .where("sha256", "=", sha256)
+      .where("is_current", "=", true)
       .executeTakeFirst();
 
     return result ? this.mapToAttachment(result) : null;
@@ -245,15 +247,15 @@ export class AttachmentRepo {
    */
   async markNotCurrent(id: string, tenantId: string, replacedBy: string): Promise<void> {
     await this.db
-      .updateTable("core.attachment as attachment")
+      .updateTable(TABLE as any)
       .set({
         is_current: false,
         replaced_at: new Date(),
         replaced_by: replacedBy,
         updated_at: new Date(),
       })
-      .where("attachment.id", "=", id)
-      .where("attachment.tenant_id", "=", tenantId)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .execute();
   }
 
@@ -272,16 +274,16 @@ export class AttachmentRepo {
     // Find the current version in the chain
     const rootId = doc.parentAttachmentId;
     const result = await this.db
-      .selectFrom("core.attachment as attachment")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("attachment.tenant_id", "=", tenantId)
+      .where("tenant_id", "=", tenantId)
       .where((eb) =>
         eb.or([
-          eb("attachment.id", "=", rootId),
-          eb("attachment.parent_attachment_id", "=", rootId),
+          eb("id", "=", rootId),
+          eb("parent_attachment_id", "=", rootId),
         ]),
       )
-      .where("attachment.is_current", "=", true)
+      .where("is_current", "=", true)
       .executeTakeFirst();
 
     return result ? this.mapToAttachment(result) : null;
@@ -296,11 +298,11 @@ export class AttachmentRepo {
     limit: number,
   ): Promise<Attachment[]> {
     const results = await this.db
-      .selectFrom("core.attachment as attachment")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("attachment.tenant_id", "=", tenantId)
-      .where("attachment.sha256", "is", null)
-      .where("attachment.created_at", "<", olderThan)
+      .where("tenant_id", "=", tenantId)
+      .where("sha256", "is", null)
+      .where("created_at", "<", olderThan)
       .limit(limit)
       .execute();
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { gridPositionSchema, layoutItemSchema, dashboardLayoutSchema } from "./layout.schema";
+import { gridPositionSchema, layoutItemSchema, dashboardLayoutSchema } from "./layout.schema.js";
 
 describe("gridPositionSchema", () => {
     it("accepts a valid grid position", () => {

@@ -4,6 +4,9 @@
  * Storage implementation for field-level security policies and audit logs.
  */
 
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
+
 import type {
   CreateFieldSecurityPolicyInput,
   FieldAccessAuditEntry,
@@ -12,8 +15,6 @@ import type {
   ListFieldSecurityPoliciesOptions,
   UpdateFieldSecurityPolicyInput,
 } from "./types.js";
-import type { DB } from "@athyper/adapter-db";
-import type { Kysely } from "kysely";
 
 // ============================================================================
 // Repository Interface
@@ -408,7 +409,7 @@ export class DatabaseFieldSecurityRepository implements IFieldSecurityRepository
 
   async logAccess(entry: FieldAccessAuditEntry): Promise<void> {
     await this.db
-      .insertInto("core.field_access_log" as any)
+      .insertInto("audit.field_access_log" as any)
       .values({
         entity_key: entry.entityKey,
         record_id: entry.recordId,
@@ -430,7 +431,7 @@ export class DatabaseFieldSecurityRepository implements IFieldSecurityRepository
     if (entries.length === 0) return;
 
     await this.db
-      .insertInto("core.field_access_log" as any)
+      .insertInto("audit.field_access_log" as any)
       .values(
         entries.map((entry) => ({
           entity_key: entry.entityKey,
@@ -456,7 +457,7 @@ export class DatabaseFieldSecurityRepository implements IFieldSecurityRepository
     options?: GetAccessLogOptions
   ): Promise<FieldAccessAuditEntry[]> {
     let query = this.db
-      .selectFrom("core.field_access_log" as any)
+      .selectFrom("audit.field_access_log" as any)
       .selectAll()
       .where("entity_key", "=", entityKey)
       .where("tenant_id", "=", tenantId);

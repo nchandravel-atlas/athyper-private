@@ -1,7 +1,7 @@
 /**
  * Comment Draft Repository
  *
- * Kysely-based repository for core.comment_draft table.
+ * Kysely-based repository for collab.comment_draft table.
  * Handles auto-save draft operations.
  */
 
@@ -41,7 +41,7 @@ export class CommentDraftRepository {
     const id = crypto.randomUUID();
 
     const row = await this.db
-      .insertInto("core.comment_draft")
+      .insertInto("collab.comment_draft")
       .values({
         id,
         tenant_id: req.tenantId,
@@ -74,7 +74,7 @@ export class CommentDraftRepository {
    */
   async load(req: LoadDraftRequest): Promise<CommentDraft | undefined> {
     const row = await this.db
-      .selectFrom("core.comment_draft")
+      .selectFrom("collab.comment_draft")
       .selectAll()
       .where("tenant_id", "=", req.tenantId)
       .where("user_id", "=", req.userId)
@@ -97,7 +97,7 @@ export class CommentDraftRepository {
    */
   async delete(req: LoadDraftRequest): Promise<void> {
     await this.db
-      .deleteFrom("core.comment_draft")
+      .deleteFrom("collab.comment_draft")
       .where("tenant_id", "=", req.tenantId)
       .where("user_id", "=", req.userId)
       .where("entity_type", "=", req.entityType)
@@ -119,7 +119,7 @@ export class CommentDraftRepository {
     limit: number = 10
   ): Promise<CommentDraft[]> {
     const rows = await this.db
-      .selectFrom("core.comment_draft")
+      .selectFrom("collab.comment_draft")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("user_id", "=", userId)
@@ -140,7 +140,7 @@ export class CommentDraftRepository {
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
     const result = await this.db
-      .deleteFrom("core.comment_draft")
+      .deleteFrom("collab.comment_draft")
       .where("updated_at", "<", cutoffDate)
       .execute();
 

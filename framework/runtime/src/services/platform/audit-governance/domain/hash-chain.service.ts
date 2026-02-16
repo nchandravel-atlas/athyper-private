@@ -13,9 +13,9 @@
 
 import { createHash } from "crypto";
 
+import type { DB } from "@athyper/adapter-db";
 import type { Kysely } from "kysely";
 
-import type { DB } from "@athyper/adapter-db";
 import type { AuditEvent } from "../../workflow-engine/audit/types.js";
 
 // ============================================================================
@@ -25,7 +25,7 @@ import type { AuditEvent } from "../../workflow-engine/audit/types.js";
 /** Genesis hash for the first event in a tenant's chain */
 export const GENESIS_HASH = "GENESIS_0000000000000000000000000000000000000000000000000000000000000000";
 
-const ANCHOR_TABLE = "core.audit_hash_anchor" as keyof DB & string;
+const ANCHOR_TABLE = "audit.audit_hash_anchor" as keyof DB & string;
 
 // ============================================================================
 // Types
@@ -93,7 +93,7 @@ export class AuditHashChainService {
   async initFromDb(db: Kysely<DB>, tenantId: string): Promise<void> {
     // Try to get the latest hash from the audit events table
     const latest = await db
-      .selectFrom("core.workflow_audit_event" as any)
+      .selectFrom("audit.workflow_audit_event" as any)
       .select(["hash_curr"])
       .where("tenant_id", "=", tenantId)
       .where("hash_curr", "is not", null)
@@ -193,7 +193,7 @@ export class AuditHashChainService {
     dayEnd.setHours(23, 59, 59, 999);
 
     const countResult = await db
-      .selectFrom("core.workflow_audit_event" as any)
+      .selectFrom("audit.workflow_audit_event" as any)
       .select(db.fn.countAll().as("count"))
       .where("tenant_id", "=", tenantId)
       .where("event_timestamp", ">=", dayStart)

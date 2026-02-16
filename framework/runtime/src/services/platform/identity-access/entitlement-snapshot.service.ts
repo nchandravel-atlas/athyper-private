@@ -4,13 +4,15 @@
  * B6: Effective Entitlement Snapshot Cache
  * Server-side "fast path" for principal entitlements
  *
- * After resolving principal + roles + groups + OU attributes:
- * - Generate JSON entitlement snapshot
- * - Store in core.entitlement_snapshot with TTL
- * - Invalidate on changes (role_binding, group_member, principal_attribute)
+ * Schema changes:
+ * - core.entitlement_snapshot table removed; core.entitlement exists but is for individual records
+ * - Snapshot generation is now compute-only (in-memory cache via Map with TTL)
+ * - OU membership no longer has path/depth; attributes removed entirely
  *
- * Tables:
- * - core.entitlement_snapshot
+ * After resolving principal + roles + groups + OU:
+ * - Generate JSON entitlement snapshot
+ * - Cache in-memory with TTL
+ * - Invalidate on changes (principal_role, group_member, principal_ou)
  */
 
 import type { GroupSyncService } from "./group-sync.service.js";
@@ -28,7 +30,6 @@ export type EntitlementSnapshot = {
   roles: Array<{
     code: string;
     name: string;
-    scopeMode: string;
   }>;
   groups: Array<{
     code: string;
@@ -36,10 +37,8 @@ export type EntitlementSnapshot = {
   }>;
   ouMembership?: {
     nodeId: string;
-    path: string;
     name: string;
   };
-  attributes: Record<string, string>;
   generatedAt: Date;
   expiresAt: Date;
 };
@@ -50,15 +49,32 @@ export type EntitlementSnapshot = {
 const DEFAULT_TTL_SECONDS = 3600;
 
 /**
+ * Cache entry
+ */
+type CacheEntry = {
+  snapshot: EntitlementSnapshot;
+  expiresAt: Date;
+};
+
+/**
  * Entitlement Snapshot Service
  */
 export class EntitlementSnapshotService {
+  private readonly cache = new Map<string, CacheEntry>();
+
   constructor(
     private readonly db: Kysely<DB>,
     private readonly roleBindingService: RoleBindingService,
     private readonly groupSyncService: GroupSyncService,
     private readonly ouMembershipService: OUMembershipService
   ) {}
+
+  /**
+   * Cache key for principal+tenant
+   */
+  private cacheKey(principalId: string, tenantId: string): string {
+    return `${tenantId}:${principalId}`;
+  }
 
   /**
    * Generate entitlement snapshot for principal
@@ -80,15 +96,6 @@ export class EntitlementSnapshotService {
     // 3. Get OU membership
     const ouNode = await this.ouMembershipService.getPrincipalOU(principalId);
 
-    // 4. Get all attributes
-    const attributesArray = await this.ouMembershipService.getPrincipalAttributes(
-      principalId
-    );
-    const attributes: Record<string, string> = {};
-    for (const attr of attributesArray) {
-      attributes[attr.key] = attr.value;
-    }
-
     const now = new Date();
     const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
 
@@ -98,7 +105,6 @@ export class EntitlementSnapshotService {
       roles: rolesWithBindings.map((r) => ({
         code: r.code,
         name: r.name,
-        scopeMode: r.scopeMode,
       })),
       groups: groups.map((g) => ({
         code: g.code,
@@ -107,72 +113,29 @@ export class EntitlementSnapshotService {
       ouMembership: ouNode
         ? {
             nodeId: ouNode.id,
-            path: ouNode.path,
             name: ouNode.name,
           }
         : undefined,
-      attributes,
       generatedAt: now,
       expiresAt,
     };
 
-    // Store snapshot
-    await this.storeSnapshot(principalId, tenantId, snapshot, expiresAt);
-
-    return snapshot;
-  }
-
-  /**
-   * Store snapshot in database
-   */
-  private async storeSnapshot(
-    principalId: string,
-    tenantId: string,
-    snapshot: EntitlementSnapshot,
-    expiresAt: Date
-  ): Promise<void> {
-    const snapshotJson = JSON.stringify(snapshot);
-
-    // Check if exists
-    const existing = await this.db
-      .selectFrom("core.entitlement_snapshot")
-      .select("id")
-      .where("tenant_id", "=", tenantId)
-      .where("principal_id", "=", principalId)
-      .executeTakeFirst();
-
-    if (existing) {
-      // Update
-      await this.db
-        .updateTable("core.entitlement_snapshot")
-        .set({
-          snapshot: snapshotJson,
-          expires_at: expiresAt,
-        })
-        .where("id", "=", existing.id)
-        .execute();
-    } else {
-      // Insert
-      await this.db
-        .insertInto("core.entitlement_snapshot")
-        .values({
-          id: crypto.randomUUID(),
-          tenant_id: tenantId,
-          principal_id: principalId,
-          snapshot: snapshotJson,
-          expires_at: expiresAt,
-        })
-        .execute();
-    }
+    // Store snapshot in memory cache
+    this.cache.set(this.cacheKey(principalId, tenantId), {
+      snapshot,
+      expiresAt,
+    });
 
     console.log(
       JSON.stringify({
-        msg: "entitlement_snapshot_stored",
+        msg: "entitlement_snapshot_generated",
         principalId,
         tenantId,
         expiresAt: expiresAt.toISOString(),
       })
     );
+
+    return snapshot;
   }
 
   /**
@@ -184,17 +147,11 @@ export class EntitlementSnapshotService {
     ttlSeconds: number = DEFAULT_TTL_SECONDS
   ): Promise<EntitlementSnapshot> {
     const now = new Date();
+    const key = this.cacheKey(principalId, tenantId);
 
     // Check cache
-    const cached = await this.db
-      .selectFrom("core.entitlement_snapshot")
-      .select(["snapshot", "expires_at"])
-      .where("tenant_id", "=", tenantId)
-      .where("principal_id", "=", principalId)
-      .where("expires_at", ">", now)
-      .executeTakeFirst();
-
-    if (cached) {
+    const cached = this.cache.get(key);
+    if (cached && cached.expiresAt > now) {
       console.log(
         JSON.stringify({
           msg: "entitlement_snapshot_cache_hit",
@@ -202,7 +159,7 @@ export class EntitlementSnapshotService {
           tenantId,
         })
       );
-      return cached.snapshot as EntitlementSnapshot;
+      return cached.snapshot;
     }
 
     // Cache miss - generate new
@@ -225,27 +182,21 @@ export class EntitlementSnapshotService {
     tenantId: string
   ): Promise<EntitlementSnapshot | undefined> {
     const now = new Date();
+    const key = this.cacheKey(principalId, tenantId);
 
-    const cached = await this.db
-      .selectFrom("core.entitlement_snapshot")
-      .select("snapshot")
-      .where("tenant_id", "=", tenantId)
-      .where("principal_id", "=", principalId)
-      .where("expires_at", ">", now)
-      .executeTakeFirst();
+    const cached = this.cache.get(key);
+    if (cached && cached.expiresAt > now) {
+      return cached.snapshot;
+    }
 
-    return cached?.snapshot as EntitlementSnapshot | undefined;
+    return undefined;
   }
 
   /**
    * Invalidate snapshot (force regeneration on next access)
    */
   async invalidateSnapshot(principalId: string, tenantId: string): Promise<void> {
-    await this.db
-      .deleteFrom("core.entitlement_snapshot")
-      .where("tenant_id", "=", tenantId)
-      .where("principal_id", "=", principalId)
-      .execute();
+    this.cache.delete(this.cacheKey(principalId, tenantId));
 
     console.log(
       JSON.stringify({
@@ -281,28 +232,31 @@ export class EntitlementSnapshotService {
   }
 
   /**
-   * Check if principal is in OU subtree
+   * Check if principal is in a specific OU
    */
-  async isInOUSubtree(
+  async isInOU(
     principalId: string,
     tenantId: string,
-    ouPath: string
+    ouNodeId: string
   ): Promise<boolean> {
     const snapshot = await this.getOrGenerateSnapshot(principalId, tenantId);
     if (!snapshot.ouMembership) return false;
-    return snapshot.ouMembership.path.startsWith(ouPath);
+    return snapshot.ouMembership.nodeId === ouNodeId;
   }
 
   /**
-   * Cleanup expired snapshots
+   * Cleanup expired cache entries
    */
   async cleanupExpiredSnapshots(): Promise<number> {
-    const result = await this.db
-      .deleteFrom("core.entitlement_snapshot")
-      .where("expires_at", "<", new Date())
-      .executeTakeFirst();
+    const now = new Date();
+    let count = 0;
 
-    const count = Number(result.numDeletedRows);
+    for (const [key, entry] of this.cache) {
+      if (entry.expiresAt < now) {
+        this.cache.delete(key);
+        count++;
+      }
+    }
 
     console.log(
       JSON.stringify({

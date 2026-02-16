@@ -4757,7 +4757,20 @@ where code in ('ASSET', 'ASSETREMS', 'ASSETFM')
   and workspace_id is null;
 
 -- ============================================================================
--- §21  Persona i18n Labels
+-- §21  Notification Channels (default channels)
+-- ============================================================================
+insert into meta.notification_channel (id, code, name, sort_order, created_by)
+values
+  (gen_random_uuid(), 'IN_APP',   'In-App',           0, 'seed'),
+  (gen_random_uuid(), 'EMAIL',    'Email',             1, 'seed'),
+  (gen_random_uuid(), 'TEAMS',    'Microsoft Teams',   2, 'seed'),
+  (gen_random_uuid(), 'WHATSAPP', 'WhatsApp',          3, 'seed'),
+  (gen_random_uuid(), 'SMS',      'SMS',               4, 'seed'),
+  (gen_random_uuid(), 'WEBHOOK',  'Webhook',           5, 'seed')
+on conflict (code) do nothing;
+
+-- ============================================================================
+-- §22  Persona i18n Labels
 -- ============================================================================
 
 -- ============================================================================

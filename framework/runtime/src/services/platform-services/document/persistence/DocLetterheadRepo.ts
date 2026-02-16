@@ -7,7 +7,7 @@ import type { DB } from "@athyper/adapter-db";
 import type { DocLetterhead } from "../domain/models/DocLetterhead.js";
 import type { LetterheadId } from "../domain/types.js";
 
-const TABLE = "core.doc_letterhead" as keyof DB & string;
+const TABLE = "doc.letterhead" as keyof DB & string;
 
 export interface CreateLetterheadInput {
     tenantId: string;

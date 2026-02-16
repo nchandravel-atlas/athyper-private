@@ -11,6 +11,8 @@
 import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 
+const TABLE = "doc.attachment_access_log" as keyof DB & string;
+
 export interface CreateAccessLogParams {
   tenantId: string;
   attachmentId: string;
@@ -51,7 +53,7 @@ export class AccessLogRepo {
     // Fire and forget for performance - don't wait for result
     // Use raw SQL for maximum performance
     await this.db
-      .insertInto("core.attachment_access_log as log")
+      .insertInto(TABLE as any)
       .values({
         tenant_id: params.tenantId,
         attachment_id: params.attachmentId,
@@ -82,7 +84,7 @@ export class AccessLogRepo {
     }));
 
     await this.db
-      .insertInto("core.attachment_access_log as log")
+      .insertInto(TABLE as any)
       .values(values)
       .execute();
   }
@@ -92,32 +94,32 @@ export class AccessLogRepo {
    */
   async query(params: AccessLogQuery): Promise<AccessLog[]> {
     let query = this.db
-      .selectFrom("core.attachment_access_log as log")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("log.tenant_id", "=", params.tenantId);
+      .where("tenant_id", "=", params.tenantId);
 
     if (params.attachmentId) {
-      query = query.where("log.attachment_id", "=", params.attachmentId);
+      query = query.where("attachment_id", "=", params.attachmentId);
     }
 
     if (params.actorId) {
-      query = query.where("log.actor_id", "=", params.actorId);
+      query = query.where("actor_id", "=", params.actorId);
     }
 
     if (params.action) {
-      query = query.where("log.action", "=", params.action);
+      query = query.where("action", "=", params.action);
     }
 
     if (params.startDate) {
-      query = query.where("log.accessed_at", ">=", params.startDate);
+      query = query.where("accessed_at", ">=", params.startDate);
     }
 
     if (params.endDate) {
-      query = query.where("log.accessed_at", "<=", params.endDate);
+      query = query.where("accessed_at", "<=", params.endDate);
     }
 
     query = query
-      .orderBy("log.accessed_at", "desc")
+      .orderBy("accessed_at", "desc")
       .limit(params.limit ?? 100);
 
     const results = await query.execute();
@@ -132,14 +134,14 @@ export class AccessLogRepo {
     attachmentId: string,
   ): Promise<{ action: string; count: number }[]> {
     const results = await this.db
-      .selectFrom("core.attachment_access_log as log")
+      .selectFrom(TABLE as any)
       .select([
-        "log.action",
-        (eb) => eb.fn.count<number>("log.id").as("count"),
+        "action",
+        (eb) => eb.fn.count<number>("id").as("count"),
       ])
-      .where("log.tenant_id", "=", tenantId)
-      .where("log.attachment_id", "=", attachmentId)
-      .groupBy("log.action")
+      .where("tenant_id", "=", tenantId)
+      .where("attachment_id", "=", attachmentId)
+      .groupBy("action")
       .execute();
 
     return results.map((r) => ({
@@ -157,11 +159,11 @@ export class AccessLogRepo {
     limit = 50,
   ): Promise<AccessLog[]> {
     const results = await this.db
-      .selectFrom("core.attachment_access_log as log")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("log.tenant_id", "=", tenantId)
-      .where("log.actor_id", "=", actorId)
-      .orderBy("log.accessed_at", "desc")
+      .where("tenant_id", "=", tenantId)
+      .where("actor_id", "=", actorId)
+      .orderBy("accessed_at", "desc")
       .limit(limit)
       .execute();
 
@@ -177,9 +179,9 @@ export class AccessLogRepo {
     batchSize = 10000,
   ): Promise<number> {
     const result = await this.db
-      .deleteFrom("core.attachment_access_log as log")
-      .where("log.tenant_id", "=", tenantId)
-      .where("log.accessed_at", "<", beforeDate)
+      .deleteFrom(TABLE as any)
+      .where("tenant_id", "=", tenantId)
+      .where("accessed_at", "<", beforeDate)
       .limit(batchSize)
       .execute();
 
@@ -191,9 +193,9 @@ export class AccessLogRepo {
    */
   async getCount(tenantId: string): Promise<number> {
     const result = await this.db
-      .selectFrom("core.attachment_access_log as log")
-      .select((eb) => eb.fn.count<number>("log.id").as("count"))
-      .where("log.tenant_id", "=", tenantId)
+      .selectFrom(TABLE as any)
+      .select((eb) => eb.fn.count<number>("id").as("count"))
+      .where("tenant_id", "=", tenantId)
       .executeTakeFirst();
 
     return result?.count ?? 0;

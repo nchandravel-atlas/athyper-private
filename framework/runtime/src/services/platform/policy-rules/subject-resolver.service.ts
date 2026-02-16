@@ -98,11 +98,11 @@ export class SubjectResolverService {
       ouMembership: entitlement.ouMembership
         ? {
             nodeId: entitlement.ouMembership.nodeId,
-            path: entitlement.ouMembership.path,
-            code: entitlement.ouMembership.name, // Using name as code placeholder
+            path: entitlement.ouMembership.name, // Using name as path placeholder
+            code: entitlement.ouMembership.name,
           }
         : undefined,
-      attributes: entitlement.attributes,
+      attributes: {},
       generatedAt: new Date(),
     };
   }
@@ -149,29 +149,19 @@ export class SubjectResolverService {
       if (ou) {
         ouMembership = {
           nodeId: ou.id,
-          path: ou.path,
+          path: ou.code, // OUNodeInfo has no path — use code as placeholder
           code: ou.code,
         };
       }
-      const attrs = await this.ouMembershipService.getPrincipalAttributes(principalId);
-      for (const attr of attrs) {
-        attributes[attr.key] = attr.value;
-      }
     } else {
-      // Fallback: query directly
-      const directAttrs = await this.getAttributesDirectly(principalId);
-      for (const attr of directAttrs) {
-        attributes[attr.key] = attr.value;
-        if (attr.key === "ou_node_id") {
-          const ou = await this.getOUNodeDirectly(attr.value);
-          if (ou) {
-            ouMembership = {
-              nodeId: ou.id,
-              path: ou.path,
-              code: ou.code,
-            };
-          }
-        }
+      // Fallback: query OU membership directly
+      const ou = await this.getOUMembershipDirectly(principalId);
+      if (ou) {
+        ouMembership = {
+          nodeId: ou.id,
+          path: ou.path,
+          code: ou.code,
+        };
       }
     }
 
@@ -216,19 +206,14 @@ export class SubjectResolverService {
   ): Promise<string[]> {
     const now = new Date();
 
-    // Direct bindings
     const directRoles = await this.db
-      .selectFrom("core.role_binding as rb")
-      .innerJoin("core.role as r", "r.id", "rb.role_id")
+      .selectFrom("core.principal_role as pr")
+      .innerJoin("core.role as r", "r.id", "pr.role_id")
       .select("r.code")
-      .where("rb.tenant_id", "=", tenantId)
-      .where("rb.principal_id", "=", principalId)
-      .where("r.is_active", "=", true)
+      .where("pr.tenant_id", "=", tenantId)
+      .where("pr.principal_id", "=", principalId)
       .where((eb) =>
-        eb.or([eb("rb.valid_from", "is", null), eb("rb.valid_from", "<=", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("rb.valid_until", "is", null), eb("rb.valid_until", ">", now)])
+        eb.or([eb("pr.expires_at", "is", null), eb("pr.expires_at", ">", now)])
       )
       .execute();
 
@@ -242,62 +227,37 @@ export class SubjectResolverService {
     principalId: string,
     tenantId: string
   ): Promise<string[]> {
-    const now = new Date();
-
     const groups = await this.db
       .selectFrom("core.group_member as gm")
-      .innerJoin("core.group as g", "g.id", "gm.group_id")
+      .innerJoin("core.principal_group as g", "g.id", "gm.group_id")
       .select("g.code")
       .where("gm.tenant_id", "=", tenantId)
       .where("gm.principal_id", "=", principalId)
-      .where("g.is_active", "=", true)
-      .where((eb) =>
-        eb.or([eb("gm.valid_from", "is", null), eb("gm.valid_from", "<=", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("gm.valid_until", "is", null), eb("gm.valid_until", ">", now)])
-      )
       .execute();
 
     return groups.map((g) => g.code);
   }
 
   /**
-   * Get attributes directly from database
+   * Get OU membership directly from database via principal_ou → organizational_unit
    */
-  private async getAttributesDirectly(
+  private async getOUMembershipDirectly(
     principalId: string
-  ): Promise<Array<{ key: string; value: string }>> {
-    const now = new Date();
-
-    const attrs = await this.db
-      .selectFrom("core.principal_attribute")
-      .select(["attr_key", "attr_value"])
-      .where("principal_id", "=", principalId)
-      .where((eb) =>
-        eb.or([eb("valid_from", "is", null), eb("valid_from", "<=", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("valid_until", "is", null), eb("valid_until", ">", now)])
-      )
-      .execute();
-
-    return attrs.map((a) => ({ key: a.attr_key, value: a.attr_value }));
-  }
-
-  /**
-   * Get OU node directly from database
-   */
-  private async getOUNodeDirectly(
-    nodeId: string
   ): Promise<{ id: string; path: string; code: string } | undefined> {
     const result = await this.db
-      .selectFrom("core.ou_node")
-      .select(["id", "path", "code"])
-      .where("id", "=", nodeId)
+      .selectFrom("core.principal_ou as po")
+      .innerJoin("core.organizational_unit as ou", "ou.id", "po.ou_id")
+      .select(["ou.id", "ou.code"])
+      .where("po.principal_id", "=", principalId)
       .executeTakeFirst();
 
-    return result;
+    if (!result) return undefined;
+
+    return {
+      id: result.id,
+      path: result.code,
+      code: result.code,
+    };
   }
 
   /**

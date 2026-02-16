@@ -22,7 +22,6 @@ export { createIAMServices, type IAMServices } from "./iam-factory.service.js";
 export type {
   IdpIdentityInfo,
   PrincipalResult,
-  PrincipalStatus,
   PrincipalType,
 } from "./identity-mapper.service.js";
 
@@ -48,7 +47,6 @@ export type {
 
 export type {
   OUNodeInfo,
-  PrincipalAttributeInfo,
 } from "./ou-membership.service.js";
 
 export type { EntitlementSnapshot } from "./entitlement-snapshot.service.js";

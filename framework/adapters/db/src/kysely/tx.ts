@@ -1,6 +1,7 @@
 // framework/adapters/db/src/kysely/tx.ts
-import type { DB } from "../../generated/kysely/types.js";
 import type { Kysely, Transaction } from "kysely";
+
+import type { DB } from "../generated/kysely/types.js";
 
 /**
  * Execute a function within a database transaction.

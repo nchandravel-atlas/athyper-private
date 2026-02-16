@@ -7,7 +7,7 @@ import { ReadinessHandler } from "./readiness.handler";
 import { LivenessHandler } from "./liveness.handler";
 
 import type { Container } from "../../../../kernel/container";
-import type { RuntimeModule } from "../../../registry";
+import type { RuntimeModule } from "../../../types.js";
 import type { RouteRegistry } from "../registries/routes.registry.js";
 
 export const module: RuntimeModule = {

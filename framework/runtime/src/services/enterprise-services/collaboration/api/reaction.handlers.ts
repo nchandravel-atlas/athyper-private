@@ -4,7 +4,7 @@
  * HTTP handlers for emoji reactions on comments.
  */
 
-import type { HttpHandlerContext } from "../../../platform/foundation/http/types.js";
+import type { HttpHandlerContext } from "./handlers.js";
 import type { ReactionService } from "../domain/reaction.service.js";
 import type { ReactionType } from "../types.js";
 import { TOKENS } from "../../../../kernel/tokens.js";
@@ -20,7 +20,7 @@ export class ToggleReactionHandler {
   async handle(ctx: HttpHandlerContext) {
     const service = await ctx.container.resolve<ReactionService>(TOKENS.collabReactionService);
     const tenantId = ctx.tenant.tenantId;
-    const userId = ctx.session.principalId;
+    const userId = ctx.auth.userId || ctx.auth.subject || "anonymous";
     const commentId = ctx.request.params.id;
     const { reactionType } = ctx.request.body;
 
@@ -61,7 +61,7 @@ export class GetReactionsHandler {
   async handle(ctx: HttpHandlerContext) {
     const service = await ctx.container.resolve<ReactionService>(TOKENS.collabReactionService);
     const tenantId = ctx.tenant.tenantId;
-    const userId = ctx.session.principalId;
+    const userId = ctx.auth.userId || ctx.auth.subject || "anonymous";
     const commentId = ctx.request.params.id;
 
     const reactions = await service.getReactions(
@@ -87,7 +87,7 @@ export class ToggleApprovalReactionHandler {
   async handle(ctx: HttpHandlerContext) {
     const service = await ctx.container.resolve<ReactionService>(TOKENS.collabReactionService);
     const tenantId = ctx.tenant.tenantId;
-    const userId = ctx.session.principalId;
+    const userId = ctx.auth.userId || ctx.auth.subject || "anonymous";
     const commentId = ctx.request.params.id;
     const { reactionType } = ctx.request.body;
 

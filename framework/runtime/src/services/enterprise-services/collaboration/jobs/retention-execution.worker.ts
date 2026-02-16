@@ -13,7 +13,7 @@
 import type { Logger } from "../../../../kernel/logger.js";
 import type { Container } from "../../../../kernel/container.js";
 import type { CommentRetentionService } from "../domain/comment-retention.service.js";
-import type { AuditWriter } from "../../../platform/foundation/security/audit-writer.js";
+import type { AuditWriter } from "../../../../kernel/audit.js";
 import { TOKENS } from "../../../../kernel/tokens.js";
 
 /**
@@ -47,7 +47,7 @@ export async function registerRetentionExecutionWorker(container: Container) {
 
   try {
     // Check if job queue is available
-    const jobQueue = await container.resolve(TOKENS.jobQueue);
+    const jobQueue = await container.resolve(TOKENS.jobQueue) as any;
     if (!jobQueue) {
       logger.warn("[collab] Job queue not available, retention policies will not be executed automatically");
       return;
@@ -161,15 +161,16 @@ export async function registerRetentionExecutionWorker(container: Container) {
 
         // Emit audit event for retention execution
         await auditWriter.write({
-          tenantId,
-          source: "collab",
-          eventType: "retention_execution",
-          severity: "info",
-          summary: `Retention execution completed: ${result.commentsArchived} archived, ${result.commentsDeleted} deleted`,
-          details: JSON.stringify(result),
-          occurredAt: new Date(),
-          actorType: "system",
-          actorDisplayName: "Retention Scheduler",
+          ts: new Date().toISOString(),
+          type: "retention_execution",
+          level: "info",
+          actor: { kind: "system", id: "retention-scheduler" },
+          meta: {
+            tenantId,
+            source: "collab",
+            summary: `Retention execution completed: ${result.commentsArchived} archived, ${result.commentsDeleted} deleted`,
+            details: result,
+          },
         });
 
         await job.updateProgress(100);
@@ -217,16 +218,16 @@ async function executePolicy(
   policy: {
     id: string;
     policyName: string;
-    entityType: string;
+    entityType?: string;
     retentionDays: number;
-    action: "archive" | "delete" | "keep_forever";
+    action: string;
   },
   dryRun: boolean
 ): Promise<{ commentsArchived: number; commentsDeleted: number }> {
   const result = { commentsArchived: 0, commentsDeleted: 0 };
 
-  // Skip "keep_forever" policies
-  if (policy.action === "keep_forever") {
+  // Skip "keep" / "keep_forever" policies
+  if (policy.action === "keep_forever" || policy.action === "keep") {
     return result;
   }
 
@@ -250,7 +251,7 @@ async function executePolicy(
   // Find comments matching retention criteria
   const affectedComments = await retentionService.findCommentsForRetention(
     tenantId,
-    policy.entityType,
+    policy.entityType || "*",
     cutoffDate
   );
 
@@ -276,7 +277,7 @@ async function executePolicy(
     // Dry run: just count what would be affected
     if (policy.action === "archive") {
       result.commentsArchived = affectedComments.length;
-    } else if (policy.action === "delete") {
+    } else if (policy.action === "delete" || policy.action === "hard_delete") {
       result.commentsDeleted = affectedComments.length;
     }
     return result;
@@ -301,7 +302,7 @@ async function executePolicy(
         );
       }
     }
-  } else if (policy.action === "delete") {
+  } else if (policy.action === "delete" || policy.action === "hard_delete") {
     // Hard delete comments (already archived + grace period passed)
     for (const comment of affectedComments) {
       try {

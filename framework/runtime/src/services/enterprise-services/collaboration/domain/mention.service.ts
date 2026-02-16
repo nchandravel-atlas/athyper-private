@@ -5,7 +5,8 @@
  * Supports both @username and @{uuid} formats.
  */
 
-import type { Database } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
+import type { DB } from "@athyper/adapter-db";
 import type { Logger } from "../../../../kernel/logger.js";
 import type { MentionRepository } from "../persistence/mention.repository.js";
 
@@ -36,7 +37,7 @@ export class MentionService {
 
   constructor(
     private readonly repo: MentionRepository,
-    private readonly db: Database,
+    private readonly db: Kysely<DB>,
     private readonly logger: Logger,
     private readonly config?: {
       maxMentionsPerComment?: number;
@@ -106,7 +107,7 @@ export class MentionService {
       .selectFrom("core.principal")
       .select("id")
       .where("tenant_id", "=", tenantId)
-      .where("username", "=", username)
+      .where("principal_code", "=", username)
       .where("is_active", "=", true)
       .executeTakeFirst();
 

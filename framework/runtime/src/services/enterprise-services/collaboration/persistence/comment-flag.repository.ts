@@ -56,7 +56,7 @@ export class CommentFlagRepository {
 
     // Check if user already flagged this comment
     const existing = await this.db
-      .selectFrom("core.comment_flag")
+      .selectFrom("collab.comment_flag")
       .select("id")
       .where("tenant_id", "=", req.tenantId)
       .where("comment_type", "=", req.commentType)
@@ -70,7 +70,7 @@ export class CommentFlagRepository {
 
     // Create flag
     const row = await this.db
-      .insertInto("core.comment_flag")
+      .insertInto("collab.comment_flag")
       .values({
         id,
         tenant_id: req.tenantId,
@@ -100,7 +100,7 @@ export class CommentFlagRepository {
     commentId: string
   ): Promise<CommentFlag[]> {
     const rows = await this.db
-      .selectFrom("core.comment_flag")
+      .selectFrom("collab.comment_flag")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
@@ -120,7 +120,7 @@ export class CommentFlagRepository {
     offset: number = 0
   ): Promise<CommentFlag[]> {
     const rows = await this.db
-      .selectFrom("core.comment_flag")
+      .selectFrom("collab.comment_flag")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("status", "=", "pending")
@@ -137,7 +137,7 @@ export class CommentFlagRepository {
    */
   async countPendingFlags(tenantId: string): Promise<number> {
     const result = await this.db
-      .selectFrom("core.comment_flag")
+      .selectFrom("collab.comment_flag")
       .select(({ fn }) => fn.count<number>("id").as("count"))
       .where("tenant_id", "=", tenantId)
       .where("status", "=", "pending")
@@ -157,7 +157,7 @@ export class CommentFlagRepository {
     const now = new Date();
 
     await this.db
-      .updateTable("core.comment_flag")
+      .updateTable("collab.comment_flag")
       .set({
         status: req.action === 'dismiss' ? 'dismissed' : 'actioned',
         reviewed_by: req.reviewedBy,
@@ -178,7 +178,7 @@ export class CommentFlagRepository {
     commentId: string
   ): Promise<CommentModerationStatus | undefined> {
     const row = await this.db
-      .selectFrom("core.comment_moderation_status")
+      .selectFrom("collab.comment_moderation_status")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
@@ -203,7 +203,7 @@ export class CommentFlagRepository {
     const now = new Date();
 
     await this.db
-      .insertInto("core.comment_moderation_status")
+      .insertInto("collab.comment_moderation_status")
       .values({
         id: crypto.randomUUID(),
         tenant_id: tenantId,
@@ -238,7 +238,7 @@ export class CommentFlagRepository {
     commentId: string
   ): Promise<void> {
     await this.db
-      .updateTable("core.comment_moderation_status")
+      .updateTable("collab.comment_moderation_status")
       .set({
         is_hidden: false,
         hidden_reason: null,
@@ -263,7 +263,7 @@ export class CommentFlagRepository {
     const now = new Date();
 
     await this.db
-      .insertInto("core.comment_moderation_status")
+      .insertInto("collab.comment_moderation_status")
       .values({
         id: crypto.randomUUID(),
         tenant_id: tenantId,
@@ -277,10 +277,10 @@ export class CommentFlagRepository {
       })
       .onConflict((oc) =>
         oc.columns(['tenant_id', 'comment_type', 'comment_id']).doUpdateSet({
-          flag_count: this.db.raw('core.comment_moderation_status.flag_count + 1'),
+          flag_count: (eb: any) => eb.raw('collab.comment_moderation_status.flag_count + 1'),
           last_flagged_at: now,
           updated_at: now,
-        })
+        } as any)
       )
       .execute();
   }

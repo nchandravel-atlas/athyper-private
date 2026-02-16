@@ -1,5 +1,5 @@
 /**
- * NotificationChannelRepo — Kysely repo for meta.notification_channel
+ * NotificationChannelRepo — Kysely repo for notify.notification_channel
  */
 
 import type { Kysely } from "kysely";
@@ -17,7 +17,7 @@ export interface ChannelDef {
     createdBy: string;
 }
 
-const TABLE = "meta.notification_channel" as keyof DB & string;
+const TABLE = "notify.notification_channel" as keyof DB & string;
 
 export class NotificationChannelRepo {
     constructor(private readonly db: Kysely<DB>) {}

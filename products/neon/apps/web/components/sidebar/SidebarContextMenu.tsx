@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
-import { duplicateDashboard, updateDashboard } from "../../lib/dashboard/dashboard-client";
+import { duplicateDashboard, updateDashboard } from "@/lib/dashboard/dashboard-client";
 
 interface SidebarContextMenuProps {
     dashboardId: string;

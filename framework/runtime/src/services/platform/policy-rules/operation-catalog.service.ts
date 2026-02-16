@@ -78,26 +78,54 @@ export class OperationCatalogService {
   async seedStandardOperations(createdBy: string = "system"): Promise<number> {
     let seeded = 0;
 
-    for (const op of STANDARD_OPERATIONS) {
-      const existing = await this.db
-        .selectFrom("meta.operation")
+    // Ensure operation categories exist
+    const categoryIds = new Map<string, string>();
+    const namespaces = [...new Set(STANDARD_OPERATIONS.map((op) => op.namespace))];
+
+    for (const ns of namespaces) {
+      let cat = await this.db
+        .selectFrom("core.operation_category")
         .select("id")
-        .where("namespace", "=", op.namespace)
+        .where("code", "=", ns)
+        .executeTakeFirst();
+
+      if (!cat) {
+        const catId = crypto.randomUUID();
+        await this.db
+          .insertInto("core.operation_category")
+          .values({
+            id: catId,
+            code: ns,
+            name: ns,
+            created_by: createdBy,
+          })
+          .execute();
+        categoryIds.set(ns, catId);
+      } else {
+        categoryIds.set(ns, cat.id);
+      }
+    }
+
+    for (const op of STANDARD_OPERATIONS) {
+      const categoryId = categoryIds.get(op.namespace)!;
+
+      const existing = await this.db
+        .selectFrom("core.operation")
+        .select("id")
+        .where("category_id", "=", categoryId)
         .where("code", "=", op.code)
         .executeTakeFirst();
 
       if (!existing) {
         await this.db
-          .insertInto("meta.operation")
+          .insertInto("core.operation")
           .values({
             id: crypto.randomUUID(),
-            namespace: op.namespace,
+            category_id: categoryId,
             code: op.code,
             name: op.name,
             description: op.description,
             sort_order: op.sortOrder,
-            source_type: "system",
-            is_active: true,
             created_by: createdBy,
           })
           .execute();
@@ -125,16 +153,15 @@ export class OperationCatalogService {
     if (this.cacheLoaded) return;
 
     const operations = await this.db
-      .selectFrom("meta.operation")
+      .selectFrom("core.operation as op")
+      .innerJoin("core.operation_category as cat", "cat.id", "op.category_id")
       .select([
-        "id",
-        "namespace",
-        "code",
-        "name",
-        "description",
-        "is_active",
+        "op.id",
+        "cat.code as namespace",
+        "op.code",
+        "op.name",
+        "op.description",
       ])
-      .where("is_active", "=", true)
       .execute();
 
     this.operationCache.clear();
@@ -149,7 +176,7 @@ export class OperationCatalogService {
         fullCode,
         name: op.name,
         description: op.description ?? undefined,
-        isActive: op.is_active,
+        isActive: true,
       };
       this.operationCache.set(fullCode, info);
       this.operationByIdCache.set(op.id, info);
@@ -225,17 +252,36 @@ export class OperationCatalogService {
     const id = crypto.randomUUID();
     const fullCode = `${request.namespace}.${request.code}` as OperationCode;
 
+    // Find or create category
+    let cat = await this.db
+      .selectFrom("core.operation_category")
+      .select("id")
+      .where("code", "=", request.namespace)
+      .executeTakeFirst();
+
+    if (!cat) {
+      const catId = crypto.randomUUID();
+      await this.db
+        .insertInto("core.operation_category")
+        .values({
+          id: catId,
+          code: request.namespace,
+          name: request.namespace,
+          created_by: request.createdBy,
+        })
+        .execute();
+      cat = { id: catId };
+    }
+
     await this.db
-      .insertInto("meta.operation")
+      .insertInto("core.operation")
       .values({
         id,
-        namespace: request.namespace,
+        category_id: cat.id,
         code: request.code,
         name: request.name,
         description: request.description,
         sort_order: request.sortOrder,
-        source_type: "custom",
-        is_active: true,
         created_by: request.createdBy,
       })
       .execute();

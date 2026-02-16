@@ -5,19 +5,20 @@
  * Logs authorization decisions for compliance and debugging
  *
  * Features:
- * - Writes to permission_decision_log table
- * - Optionally writes to meta.meta_audit for compliance
+ * - Writes to audit.permission_decision_log table
+ * - Optionally writes to audit.audit_log for compliance
  * - Supports batch logging for performance
  * - Includes correlation IDs for request tracing
  */
+
+import type { DB } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
 
 import type {
   AuthorizationDecision,
   AuthorizationRequest,
   SubjectSnapshot,
 } from "./types.js";
-import type { DB } from "@athyper/adapter-db";
-import type { Kysely } from "kysely";
 
 /**
  * Decision log entry
@@ -153,7 +154,7 @@ export class DecisionLoggerService {
       );
 
       await this.db
-        .insertInto("core.permission_decision_log")
+        .insertInto("audit.permission_decision_log")
         .values(decisionLogs)
         .execute();
 
@@ -164,7 +165,7 @@ export class DecisionLoggerService {
         );
 
         await this.db
-          .insertInto("meta.meta_audit")
+          .insertInto("audit.audit_log")
           .values(auditLogs)
           .execute();
       }
@@ -200,7 +201,7 @@ export class DecisionLoggerService {
     const entry = this.buildDecisionLogEntry(request, decision, subject);
 
     await this.db
-      .insertInto("core.permission_decision_log")
+      .insertInto("audit.permission_decision_log")
       .values(entry)
       .execute();
   }
@@ -215,7 +216,7 @@ export class DecisionLoggerService {
     const entry = this.buildAuditLogEntry(request, decision);
 
     await this.db
-      .insertInto("meta.meta_audit")
+      .insertInto("audit.audit_log")
       .values(entry)
       .execute();
   }
@@ -269,35 +270,38 @@ export class DecisionLoggerService {
     decision: AuthorizationDecision
   ): {
     id: string;
-    event_id: string;
-    event_type: string;
-    user_id: string;
     tenant_id: string;
-    realm_id: string;
+    actor_id: string | null;
+    actor_type: string;
     action: string;
-    resource: string;
-    details: unknown | null;
-    result: string;
-    error_message: string | null;
+    entity_name: string | null;
+    entity_id: string | null;
+    entity_version_id: string | null;
+    correlation_id: string | null;
+    ip_address: string | null;
+    user_agent: string | null;
+    payload: unknown | null;
   } {
     return {
       id: crypto.randomUUID(),
-      event_id: crypto.randomUUID(),
-      event_type: "authorization",
-      user_id: request.principalId,
       tenant_id: request.tenantId,
-      realm_id: request.context?.realmId as string ?? "default",
+      actor_id: request.principalId,
+      actor_type: "user",
       action: request.operationCode,
-      resource: `${request.resource.entityCode}${request.resource.recordId ? `:${request.resource.recordId}` : ""}`,
-      details: {
-        entityVersionId: request.resource.entityVersionId,
+      entity_name: request.resource.entityCode ?? null,
+      entity_id: request.resource.recordId ?? null,
+      entity_version_id: request.resource.entityVersionId ?? null,
+      correlation_id: request.context?.correlationId as string ?? null,
+      ip_address: null,
+      user_agent: null,
+      payload: {
+        effect: decision.effect,
         moduleCode: request.resource.moduleCode,
         matchedRuleId: decision.matchedRuleId,
         matchedPolicyVersionId: decision.matchedPolicyVersionId,
         evaluationTimeMs: decision.evaluationTimeMs,
+        reason: decision.effect === "deny" ? decision.reason : undefined,
       },
-      result: decision.effect,
-      error_message: decision.effect === "deny" ? decision.reason : null,
     };
   }
 
@@ -346,7 +350,7 @@ export class DecisionLoggerService {
     limit: number = 100
   ): Promise<DecisionLogEntry[]> {
     const results = await this.db
-      .selectFrom("core.permission_decision_log")
+      .selectFrom("audit.permission_decision_log")
       .select([
         "id",
         "tenant_id",
@@ -394,7 +398,7 @@ export class DecisionLoggerService {
     correlationId: string
   ): Promise<DecisionLogEntry[]> {
     const results = await this.db
-      .selectFrom("core.permission_decision_log")
+      .selectFrom("audit.permission_decision_log")
       .select([
         "id",
         "tenant_id",
@@ -447,7 +451,7 @@ export class DecisionLoggerService {
   }> {
     // Get counts by operation and effect
     const results = await this.db
-      .selectFrom("core.permission_decision_log")
+      .selectFrom("audit.permission_decision_log")
       .select(["operation_code", "effect"])
       .select((eb) => eb.fn.count<number>("id").as("count"))
       .where("tenant_id", "=", tenantId)

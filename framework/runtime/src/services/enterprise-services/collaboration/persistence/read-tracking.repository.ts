@@ -8,7 +8,15 @@
 import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type { CommentReadStatus, MarkAsReadRequest } from "../types.js";
-import type { MemoryCache } from "@athyper/adapter-memorycache";
+
+/**
+ * Cache interface for read tracking.
+ * Accepts any object with get/set (e.g. RedisClient or MemoryCache).
+ */
+interface ReadTrackingCache {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string, ...args: any[]): Promise<any>;
+}
 
 /**
  * Database row type (snake_case)
@@ -28,7 +36,7 @@ interface CommentReadStatusRow {
 export class ReadTrackingRepository {
   constructor(
     private readonly db: Kysely<DB>,
-    private readonly cache?: MemoryCache
+    private readonly cache?: ReadTrackingCache
   ) {}
 
   /**
@@ -41,7 +49,7 @@ export class ReadTrackingRepository {
 
     // Write to PostgreSQL (upsert)
     await this.db
-      .insertInto("core.comment_read_status")
+      .insertInto("collab.comment_read_status")
       .values({
         id: crypto.randomUUID(),
         tenant_id: req.tenantId,
@@ -60,7 +68,7 @@ export class ReadTrackingRepository {
     // Write to Redis (if available)
     if (this.cache) {
       const key = `comment_read:${req.userId}:${req.commentId}`;
-      await this.cache.set(key, now.toISOString(), { ttl: 90 * 24 * 60 * 60 }); // 90 days
+      await this.cache.set(key, now.toISOString(), "EX", 90 * 24 * 60 * 60); // 90 days
     }
   }
 
@@ -88,7 +96,7 @@ export class ReadTrackingRepository {
     }));
 
     await this.db
-      .insertInto("core.comment_read_status")
+      .insertInto("collab.comment_read_status")
       .values(values)
       .onConflict((oc) =>
         oc
@@ -130,7 +138,7 @@ export class ReadTrackingRepository {
 
     // Fallback: Check PostgreSQL
     const row = await this.db
-      .selectFrom("core.comment_read_status")
+      .selectFrom("collab.comment_read_status")
       .select("id")
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
@@ -158,7 +166,7 @@ export class ReadTrackingRepository {
 
     // Query PostgreSQL for read comments
     const readRows = await this.db
-      .selectFrom("core.comment_read_status")
+      .selectFrom("collab.comment_read_status")
       .select("comment_id")
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
@@ -192,7 +200,7 @@ export class ReadTrackingRepository {
     // This requires joining with comment tables to get total count
     // For entity_comment:
     let totalCommentsQuery = this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .select(({ fn }) => fn.count<number>("id").as("count"))
       .where("tenant_id", "=", tenantId)
       .where("deleted_at", "is", null);
@@ -209,8 +217,8 @@ export class ReadTrackingRepository {
 
     // Count read comments
     let readCommentsQuery = this.db
-      .selectFrom("core.comment_read_status as crs")
-      .innerJoin("core.entity_comment as ec", (join) =>
+      .selectFrom("collab.comment_read_status as crs")
+      .innerJoin("collab.entity_comment as ec", (join) =>
         join
           .onRef("crs.comment_id", "=", "ec.id")
           .on("crs.comment_type", "=", commentType)
@@ -242,7 +250,7 @@ export class ReadTrackingRepository {
     commentId: string
   ): Promise<void> {
     await this.db
-      .deleteFrom("core.comment_read_status")
+      .deleteFrom("collab.comment_read_status")
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
       .where("comment_id", "=", commentId)

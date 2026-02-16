@@ -45,7 +45,7 @@ pnpm runtime:start:watch              # Start kernel (watch mode)
 | Environment | Domain | Config |
 |-------------|--------|--------|
 | Local | `*.athyper.local` | `mesh/env/local.env.example` |
-| Staging | `*-t.athyper.com` | `mesh/env/staging.env.example` |
+| Staging | `*-stg.athyper.com` | `mesh/env/staging.env.example` |
 | Production | `*.athyper.com` | `mesh/env/production.env.example` |
 
 See [Environments](./ENVIRONMENTS.md) for complete setup.
@@ -73,19 +73,32 @@ Set via `MODE` environment variable.
 ## Codegen
 
 ```bash
-pnpm athyper:codegen                  # Prisma -> Zod + Kysely -> @athyper/contracts
+pnpm athyper:codegen                  # Prisma -> Kysely types
 pnpm athyper:codegen:watch            # Watch mode
 ```
 
 Input: `framework/adapters/db/src/prisma/schema.prisma`
-Output: `packages/contracts/generated/prisma/{zod,kysely}/`
+Output: `framework/adapters/db/src/generated/kysely/types.ts`
+
+## Database Provisioning
+
+```bash
+pnpm db:provision                     # Run all (DDL + seed)
+pnpm db:provision:ddl                 # DDL only (schemas 001–120)
+pnpm db:provision:seed                # Seed only (200+)
+pnpm db:provision:status              # Show execution status
+pnpm db:provision:reset               # Drop and re-provision from scratch
+```
+
+SQL files: `framework/adapters/db/src/sql/` (13 files across 12 schemas).
 
 ## Verification
 
 ```bash
-curl http://localhost:3000/health      # Health check
-curl http://localhost:3000/readyz      # Readiness
-curl http://localhost:3000/metrics     # Prometheus metrics
+curl http://localhost:3000/health            # Full health check
+curl http://localhost:3000/health/readiness  # K8s readiness probe
+curl http://localhost:3000/health/liveness   # K8s liveness probe
+curl http://localhost:3000/health/jwks       # JWKS endpoint health
 ```
 
 ## Web Interfaces (Local)

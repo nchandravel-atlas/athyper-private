@@ -8,14 +8,12 @@
 import {
     ArrowRightLeft, BookOpen, Box, Building, Building2,
     Calculator, CalendarOff, CircleDot, ClipboardList, CreditCard,
-    FileText, Layers, Package, Receipt,
+    FileText, Handshake, Landmark, Layers, Package, Receipt,
     ScrollText, Send, ShoppingCart,
     UserCircle, Users, Warehouse,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-
 
 import {
     Collapsible,
@@ -48,7 +46,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
     Package, Box, Warehouse, ArrowRightLeft,
     Calculator, Receipt, CreditCard, BookOpen,
     Users, UserCircle, Building, CalendarOff,
-    ShoppingCart, Layers,
+    ShoppingCart, Layers, Landmark, Handshake,
 };
 
 function resolveIcon(name: string): LucideIcon {

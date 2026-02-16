@@ -9,7 +9,7 @@ import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type { AuditDlqEntry, CreateAuditDlqInput } from "../domain/models/AuditDlqEntry.js";
 
-const TABLE = "core.audit_dlq" as keyof DB & string;
+const TABLE = "audit.audit_dlq" as keyof DB & string;
 
 export class AuditDlqRepo {
   constructor(private readonly db: Kysely<DB>) {}

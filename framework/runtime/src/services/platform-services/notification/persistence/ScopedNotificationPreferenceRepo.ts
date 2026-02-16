@@ -1,5 +1,5 @@
 /**
- * ScopedNotificationPreferenceRepo — Kysely repo for core.notification_preference
+ * ScopedNotificationPreferenceRepo — Kysely repo for notify.notification_preference
  *
  * Supports the scoped preference hierarchy: user > org_unit > tenant.
  */
@@ -8,7 +8,7 @@ import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type { ChannelCode, PreferenceFrequency, PreferenceScope, QuietHours } from "../domain/types.js";
 
-const TABLE = "core.notification_preference" as keyof DB & string;
+const TABLE = "notify.notification_preference" as keyof DB & string;
 
 export interface ScopedPreferenceRow {
     id: string;

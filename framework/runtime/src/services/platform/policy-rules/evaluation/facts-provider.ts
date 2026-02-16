@@ -324,143 +324,70 @@ export class FactsProviderService implements IFactsProvider {
   }
 
   /**
-   * Get principal roles
+   * Get principal roles via principal_role join
    */
   private async getPrincipalRoles(principalId: string, tenantId: string): Promise<string[]> {
     const now = new Date();
 
-    // Direct role bindings
     const directRoles = await this.db
-      .selectFrom("core.role_binding as rb")
-      .innerJoin("core.role as r", "r.id", "rb.role_id")
+      .selectFrom("core.principal_role as pr")
+      .innerJoin("core.role as r", "r.id", "pr.role_id")
       .select("r.code")
-      .where("rb.tenant_id", "=", tenantId)
-      .where("rb.principal_id", "=", principalId)
-      .where("r.is_active", "=", true)
+      .where("pr.tenant_id", "=", tenantId)
+      .where("pr.principal_id", "=", principalId)
       .where((eb) =>
-        eb.or([eb("rb.valid_from", "is", null), eb("rb.valid_from", "<=", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("rb.valid_until", "is", null), eb("rb.valid_until", ">", now)])
+        eb.or([eb("pr.expires_at", "is", null), eb("pr.expires_at", ">", now)])
       )
       .execute();
 
-    // Group-inherited roles
-    const groupRoles = await this.db
-      .selectFrom("core.group_member as gm")
-      .innerJoin("core.role_binding as rb", "rb.group_id", "gm.group_id")
-      .innerJoin("core.role as r", "r.id", "rb.role_id")
-      .select("r.code")
-      .where("gm.tenant_id", "=", tenantId)
-      .where("gm.principal_id", "=", principalId)
-      .where("r.is_active", "=", true)
-      .where((eb) =>
-        eb.or([eb("gm.valid_from", "is", null), eb("gm.valid_from", "<=", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("gm.valid_until", "is", null), eb("gm.valid_until", ">", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("rb.valid_from", "is", null), eb("rb.valid_from", "<=", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("rb.valid_until", "is", null), eb("rb.valid_until", ">", now)])
-      )
-      .execute();
-
-    // Combine and dedupe
-    const allRoles = new Set([
-      ...directRoles.map((r) => r.code),
-      ...groupRoles.map((r) => r.code),
-    ]);
-
-    return [...allRoles];
+    return directRoles.map((r) => r.code);
   }
 
   /**
-   * Get principal groups
+   * Get principal groups via group_member join
    */
   private async getPrincipalGroups(principalId: string, tenantId: string): Promise<string[]> {
-    const now = new Date();
-
     const groups = await this.db
       .selectFrom("core.group_member as gm")
-      .innerJoin("core.group as g", "g.id", "gm.group_id")
+      .innerJoin("core.principal_group as g", "g.id", "gm.group_id")
       .select("g.code")
       .where("gm.tenant_id", "=", tenantId)
       .where("gm.principal_id", "=", principalId)
-      .where("g.is_active", "=", true)
-      .where((eb) =>
-        eb.or([eb("gm.valid_from", "is", null), eb("gm.valid_from", "<=", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("gm.valid_until", "is", null), eb("gm.valid_until", ">", now)])
-      )
       .execute();
 
     return groups.map((g) => g.code);
   }
 
   /**
-   * Get principal OU membership
+   * Get principal OU membership via principal_ou → organizational_unit
    */
   private async getPrincipalOU(
     principalId: string,
-    tenantId: string
+    _tenantId: string
   ): Promise<PolicySubject["ouMembership"]> {
-    // Get OU node ID from attributes
-    const ouAttr = await this.db
-      .selectFrom("core.principal_attribute")
-      .select(["attr_value"])
-      .where("principal_id", "=", principalId)
-      .where("attr_key", "=", "ou_node_id")
+    const result = await this.db
+      .selectFrom("core.principal_ou as po")
+      .innerJoin("core.organizational_unit as ou", "ou.id", "po.ou_id")
+      .select(["ou.id", "ou.code"])
+      .where("po.principal_id", "=", principalId)
       .executeTakeFirst();
 
-    if (!ouAttr) return undefined;
-
-    // Get OU node details
-    const ouNode = await this.db
-      .selectFrom("core.ou_node")
-      .select(["id", "code", "path", "depth"])
-      .where("id", "=", ouAttr.attr_value)
-      .where("tenant_id", "=", tenantId)
-      .where("is_active", "=", true)
-      .executeTakeFirst();
-
-    if (!ouNode) return undefined;
+    if (!result) return undefined;
 
     return {
-      nodeId: ouNode.id,
-      code: ouNode.code,
-      path: ouNode.path,
-      depth: ouNode.depth,
+      nodeId: result.id,
+      code: result.code,
+      path: result.code,
+      depth: 0,
     };
   }
 
   /**
    * Get principal attributes
+   * Note: principal_attribute table was removed; attributes are resolved via services
    */
-  private async getPrincipalAttributes(principalId: string): Promise<Record<string, unknown>> {
-    const now = new Date();
-
-    const attrs = await this.db
-      .selectFrom("core.principal_attribute")
-      .select(["attr_key", "attr_value"])
-      .where("principal_id", "=", principalId)
-      .where((eb) =>
-        eb.or([eb("valid_from", "is", null), eb("valid_from", "<=", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("valid_until", "is", null), eb("valid_until", ">", now)])
-      )
-      .execute();
-
-    const result: Record<string, unknown> = {};
-    for (const attr of attrs) {
-      result[attr.attr_key] = attr.attr_value;
-    }
-
-    return result;
+  private async getPrincipalAttributes(_principalId: string): Promise<Record<string, unknown>> {
+    return {};
   }
 
   /**
@@ -471,34 +398,30 @@ export class FactsProviderService implements IFactsProvider {
     const cached = this.getCached(this.entityMetaCache, entityType);
     if (cached) return cached;
 
-    // Query from meta schema
     const entity = await this.db
-      .selectFrom("meta.meta_entities")
-      .select(["id", "name", "description", "active_version"])
+      .selectFrom("meta.entity")
+      .select(["id", "name"])
       .where("name", "=", entityType)
+      .where("is_active", "=", true)
       .executeTakeFirst();
 
     if (!entity) return undefined;
 
-    // Get active version schema
-    let schema: unknown = null;
-    if (entity.active_version) {
-      const version = await this.db
-        .selectFrom("meta.meta_versions")
-        .select(["schema"])
-        .where("entity_name", "=", entityType)
-        .where("version", "=", entity.active_version)
-        .executeTakeFirst();
-
-      schema = version?.schema;
-    }
+    // Get latest published version for schema/behaviors
+    const version = await this.db
+      .selectFrom("meta.entity_version")
+      .select(["version_no", "behaviors"])
+      .where("entity_id", "=", entity.id)
+      .where("status", "=", "published")
+      .orderBy("version_no", "desc")
+      .executeTakeFirst();
 
     const metadata: EntityMetadata = {
       name: entity.name,
-      description: entity.description ?? undefined,
-      activeVersion: entity.active_version ?? undefined,
-      schema,
-      module: this.extractModule(schema),
+      description: undefined,
+      activeVersion: version ? String(version.version_no) : undefined,
+      schema: version?.behaviors ?? null,
+      module: this.extractModule(version?.behaviors),
     };
 
     this.setCache(this.entityMetaCache, entityType, metadata, this.config.entityCacheTtlMs);

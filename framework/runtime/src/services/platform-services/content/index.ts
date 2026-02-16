@@ -95,7 +95,7 @@ import { createCleanupAccessLogsHandler } from "./workers/cleanup-access-logs.wo
 
 import type { Container } from "../../../kernel/container.js";
 import type { Logger } from "../../../kernel/logger.js";
-import type { RuntimeModule } from "../../registry.js";
+import type { RuntimeModule } from "../../types.js";
 import type { RouteRegistry } from "../../platform/foundation/registries/routes.registry.js";
 import type { JobRegistry } from "../../platform/foundation/registries/jobs.registry.js";
 import type { RuntimeConfig } from "../../../kernel/config.schema.js";
@@ -226,8 +226,8 @@ export const module: RuntimeModule = {
         audit,
         createContentLogger(baseLogger, "service"),
         {
-          bucket: config.objectStorage?.defaultBucket ?? "athyper",
-          presignedUrlExpiry: config.content?.presignedUrlExpiry ?? 3600,
+          bucket: (config as any).objectStorage?.defaultBucket ?? "athyper",
+          presignedUrlExpiry: (config as any).content?.presignedUrlExpiry ?? 3600,
         },
       );
     }, "singleton");
@@ -245,8 +245,8 @@ export const module: RuntimeModule = {
         audit,
         createContentLogger(baseLogger, "version"),
         {
-          bucket: config.objectStorage?.defaultBucket ?? "athyper",
-          presignedUrlExpiry: config.content?.presignedUrlExpiry ?? 3600,
+          bucket: (config as any).objectStorage?.defaultBucket ?? "athyper",
+          presignedUrlExpiry: (config as any).content?.presignedUrlExpiry ?? 3600,
         },
       );
     }, "singleton");
@@ -710,9 +710,9 @@ export const module: RuntimeModule = {
           db,
           storage,
           {
-            orphanedThresholdHours: config.content?.cleanup?.orphanedThresholdHours ?? 24,
-            maxCleanupPerRun: config.content?.cleanup?.maxCleanupPerRun ?? 100,
-            deleteFromStorage: config.content?.cleanup?.deleteFromStorage ?? true,
+            orphanedThresholdHours: (config as any).content?.cleanup?.orphanedThresholdHours ?? 24,
+            maxCleanupPerRun: (config as any).content?.cleanup?.maxCleanupPerRun ?? 100,
+            deleteFromStorage: (config as any).content?.cleanup?.deleteFromStorage ?? true,
           },
           createContentLogger(baseLogger, "cleanup"),
         ),

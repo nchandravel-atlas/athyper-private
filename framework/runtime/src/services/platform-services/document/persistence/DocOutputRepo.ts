@@ -8,7 +8,7 @@ import type { DocOutput } from "../domain/models/DocOutput.js";
 import { isValidOutputTransition } from "../domain/types.js";
 import type { OutputId, OutputStatus, OutputListFilters } from "../domain/types.js";
 
-const TABLE = "core.doc_output" as keyof DB & string;
+const TABLE = "doc.render_output" as keyof DB & string;
 
 export interface CreateOutputInput {
     tenantId: string;

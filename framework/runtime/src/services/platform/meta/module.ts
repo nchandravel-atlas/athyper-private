@@ -90,7 +90,7 @@ import {
 } from "./handlers/overlay.handler.js";
 
 import type { Container } from "../../../kernel/container.js";
-import type { RuntimeModule } from "../../registry.js";
+import type { RuntimeModule } from "../../types.js";
 import type { RouteRegistry } from "../foundation/registries/routes.registry.js";
 import type { HttpHandlerContext } from "../foundation/http/types.js";
 

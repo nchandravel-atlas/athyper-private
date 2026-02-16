@@ -5,11 +5,6 @@
  * MVP: Simple allow/deny based on compiled policies.
  */
 
-import { uuid } from "../data/db-helpers.js";
-import { META_SPANS, withSpan } from "../observability/tracing.js";
-
-import type { MetaMetrics } from "../observability/metrics.js";
-import type { LifecycleDB_Type } from "../data/db-helpers.js";
 import type {
   HealthCheckResult,
   MetaCompiler,
@@ -17,6 +12,11 @@ import type {
   PolicyGate,
   RequestContext,
 } from "@athyper/core/meta";
+
+import { uuid } from "../data/db-helpers.js";
+import { META_SPANS, withSpan } from "../observability/tracing.js";
+import type { MetaMetrics } from "../observability/metrics.js";
+import type { LifecycleDB_Type } from "../data/db-helpers.js";
 
 /**
  * Policy Gate Service
@@ -510,7 +510,7 @@ export class PolicyGateService implements PolicyGate {
 
     try {
       await this.db
-        .insertInto("core.permission_decision_log")
+        .insertInto("audit.permission_decision_log")
         .values({
           id: uuid(),
           tenant_id: ctx.tenantId,

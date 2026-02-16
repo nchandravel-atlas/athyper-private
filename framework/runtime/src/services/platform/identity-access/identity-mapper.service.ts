@@ -4,8 +4,13 @@
  * B1: Canonical Identity Model
  * Maps external IdP identities (Keycloak) to athyper principals
  *
+ * Schema changes:
+ * - core.idp_identity columns: idp_name (not realm/provider), idp_subject (not subject), no username column
+ * - core.principal columns: principal_type, principal_code, display_name, email, is_active (not status)
+ * - core.principal_profile columns: first_name, last_name, locale, timezone (not language/avatar_url)
+ *
  * Mapping Rules:
- * - Keycloak user.sub → core.idp_identity.subject
+ * - Keycloak user.sub → core.idp_identity.idp_subject
  * - athyper actor → core.principal.id
  * - principal_type='user' for humans
  * - principal_type='service' for workers/integrations
@@ -26,31 +31,23 @@ import type { Kysely } from "kysely";
 export type PrincipalType = "user" | "service" | "external";
 
 /**
- * Principal status (matches DB constraint)
- */
-export type PrincipalStatus = "active" | "disabled" | "archived";
-
-/**
  * IdP identity information from token
  */
 export type IdpIdentityInfo = {
-  /** Realm (e.g., "main") - maps to Keycloak realm */
-  realm: string;
+  /** IdP name (e.g., "keycloak") - maps to idp_name column */
+  idpName: string;
 
-  /** IdP provider (e.g., "keycloak") */
-  provider: string;
-
-  /** Subject from IdP (sub claim) - immutable identifier */
-  subject: string;
-
-  /** Username from IdP */
-  username?: string;
+  /** Subject from IdP (sub claim) - immutable identifier, maps to idp_subject column */
+  idpSubject: string;
 
   /** Display name from IdP */
   displayName?: string;
 
-  /** Email from IdP (for profile) */
+  /** Email from IdP (for principal) */
   email?: string;
+
+  /** Principal code (e.g. username) */
+  principalCode?: string;
 };
 
 /**
@@ -96,9 +93,8 @@ export class IdentityMapperService {
       JSON.stringify({
         msg: "identity_mapping_start",
         tenantId,
-        realm: idpInfo.realm,
-        provider: idpInfo.provider,
-        subject: idpInfo.subject,
+        idpName: idpInfo.idpName,
+        idpSubject: idpInfo.idpSubject,
         principalType,
       })
     );
@@ -106,9 +102,8 @@ export class IdentityMapperService {
     // Check if idp_identity already exists
     const existingIdentity = await this.getIdpIdentity(
       tenantId,
-      idpInfo.realm,
-      idpInfo.provider,
-      idpInfo.subject
+      idpInfo.idpName,
+      idpInfo.idpSubject
     );
 
     if (existingIdentity) {
@@ -142,17 +137,15 @@ export class IdentityMapperService {
    */
   private async getIdpIdentity(
     tenantId: string,
-    realm: string,
-    provider: string,
-    subject: string
+    idpName: string,
+    idpSubject: string
   ): Promise<{ id: string; principal_id: string } | undefined> {
     const result = await this.db
       .selectFrom("core.idp_identity")
       .select(["id", "principal_id"])
       .where("tenant_id", "=", tenantId)
-      .where("realm", "=", realm)
-      .where("provider", "=", provider)
-      .where("subject", "=", subject)
+      .where("idp_name", "=", idpName)
+      .where("idp_subject", "=", idpSubject)
       .executeTakeFirst();
 
     return result
@@ -172,6 +165,7 @@ export class IdentityMapperService {
     return this.db.transaction().execute(async (trx) => {
       // 1. Create principal
       const principalId = crypto.randomUUID();
+      const principalCode = idpInfo.principalCode ?? idpInfo.idpSubject;
 
       await trx
         .insertInto("core.principal")
@@ -179,9 +173,10 @@ export class IdentityMapperService {
           id: principalId,
           tenant_id: tenantId,
           principal_type: principalType,
-          status: "active",
-          display_name: idpInfo.displayName ?? idpInfo.username ?? idpInfo.subject,
-          email: idpInfo.email,
+          principal_code: principalCode,
+          display_name: idpInfo.displayName ?? principalCode,
+          email: idpInfo.email ?? null,
+          is_active: true,
           created_by: createdBy,
         })
         .execute();
@@ -204,10 +199,8 @@ export class IdentityMapperService {
           id: idpIdentityId,
           tenant_id: tenantId,
           principal_id: principalId,
-          realm: idpInfo.realm,
-          provider: idpInfo.provider,
-          subject: idpInfo.subject,
-          username: idpInfo.username,
+          idp_name: idpInfo.idpName,
+          idp_subject: idpInfo.idpSubject,
           created_by: createdBy,
         })
         .execute();
@@ -217,8 +210,8 @@ export class IdentityMapperService {
           msg: "idp_identity_created",
           idpIdentityId,
           principalId,
-          provider: idpInfo.provider,
-          subject: idpInfo.subject,
+          idpName: idpInfo.idpName,
+          idpSubject: idpInfo.idpSubject,
         })
       );
 
@@ -261,9 +254,10 @@ export class IdentityMapperService {
         id: string;
         tenant_id: string;
         principal_type: string;
-        status: string;
+        principal_code: string;
         display_name: string | null;
         email: string | null;
+        is_active: boolean;
       }
     | undefined
   > {
@@ -273,9 +267,10 @@ export class IdentityMapperService {
         "id",
         "tenant_id",
         "principal_type",
-        "status",
+        "principal_code",
         "display_name",
         "email",
+        "is_active",
       ])
       .where("id", "=", principalId)
       .executeTakeFirst();
@@ -292,22 +287,22 @@ export class IdentityMapperService {
           id: string;
           tenant_id: string;
           principal_type: string;
-          status: string;
+          principal_code: string;
           display_name: string | null;
           email: string | null;
+          is_active: boolean;
         };
         profile?: {
           id: string;
           locale: string | null;
-          language: string | null;
-          avatar_url: string | null;
+          timezone: string | null;
+          first_name: string | null;
+          last_name: string | null;
         };
         identities: Array<{
           id: string;
-          realm: string;
-          provider: string;
-          subject: string;
-          username: string | null;
+          idp_name: string;
+          idp_subject: string;
         }>;
       }
     | undefined
@@ -319,20 +314,20 @@ export class IdentityMapperService {
     // Get profile
     const profile = await this.db
       .selectFrom("core.principal_profile")
-      .select(["id", "locale", "language", "avatar_url"])
+      .select(["id", "locale", "timezone", "first_name", "last_name"])
       .where("principal_id", "=", principalId)
       .executeTakeFirst();
 
     // Get linked identities
     const identities = await this.db
       .selectFrom("core.idp_identity")
-      .select(["id", "realm", "provider", "subject", "username"])
+      .select(["id", "idp_name", "idp_subject"])
       .where("principal_id", "=", principalId)
       .execute();
 
     return {
       principal,
-      profile,
+      profile: profile ?? undefined,
       identities,
     };
   }
@@ -349,9 +344,8 @@ export class IdentityMapperService {
     // Check if already linked
     const existing = await this.getIdpIdentity(
       tenantId,
-      idpInfo.realm,
-      idpInfo.provider,
-      idpInfo.subject
+      idpInfo.idpName,
+      idpInfo.idpSubject
     );
 
     if (existing) {
@@ -372,10 +366,8 @@ export class IdentityMapperService {
         id: idpIdentityId,
         tenant_id: tenantId,
         principal_id: principalId,
-        realm: idpInfo.realm,
-        provider: idpInfo.provider,
-        subject: idpInfo.subject,
-        username: idpInfo.username,
+        idp_name: idpInfo.idpName,
+        idp_subject: idpInfo.idpSubject,
         created_by: createdBy,
       })
       .execute();
@@ -385,7 +377,7 @@ export class IdentityMapperService {
         msg: "identity_linked",
         principalId,
         idpIdentityId,
-        provider: idpInfo.provider,
+        idpName: idpInfo.idpName,
       })
     );
 
@@ -393,15 +385,15 @@ export class IdentityMapperService {
   }
 
   /**
-   * Update principal status
+   * Update principal active status
    */
-  async updatePrincipalStatus(
+  async updatePrincipalActive(
     principalId: string,
-    status: PrincipalStatus
+    isActive: boolean
   ): Promise<void> {
     await this.db
       .updateTable("core.principal")
-      .set({ status })
+      .set({ is_active: isActive })
       .where("id", "=", principalId)
       .execute();
 
@@ -409,16 +401,16 @@ export class IdentityMapperService {
       JSON.stringify({
         msg: "principal_status_updated",
         principalId,
-        status,
+        isActive,
       })
     );
   }
 
   /**
-   * Deactivate principal (set status to 'disabled')
+   * Deactivate principal
    */
   async deactivatePrincipal(principalId: string): Promise<void> {
-    await this.updatePrincipalStatus(principalId, "disabled");
+    await this.updatePrincipalActive(principalId, false);
   }
 
   /**
@@ -428,7 +420,7 @@ export class IdentityMapperService {
     tenantId: string,
     filters?: {
       principalType?: PrincipalType;
-      status?: PrincipalStatus;
+      isActive?: boolean;
       searchTerm?: string;
       limit?: number;
       offset?: number;
@@ -437,22 +429,23 @@ export class IdentityMapperService {
     Array<{
       id: string;
       principal_type: string;
-      status: string;
+      principal_code: string;
       display_name: string | null;
       email: string | null;
+      is_active: boolean;
     }>
   > {
     let query = this.db
       .selectFrom("core.principal")
-      .select(["id", "principal_type", "status", "display_name", "email"])
+      .select(["id", "principal_type", "principal_code", "display_name", "email", "is_active"])
       .where("tenant_id", "=", tenantId);
 
     if (filters?.principalType) {
       query = query.where("principal_type", "=", filters.principalType);
     }
 
-    if (filters?.status) {
-      query = query.where("status", "=", filters.status);
+    if (filters?.isActive !== undefined) {
+      query = query.where("is_active", "=", filters.isActive);
     }
 
     if (filters?.searchTerm) {

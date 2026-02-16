@@ -5,7 +5,8 @@
  * Uses PostgreSQL ILIKE for simple text matching.
  */
 
-import type { Database } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
+import type { DB } from "@athyper/adapter-db";
 import type { Logger } from "../../../../kernel/logger.js";
 import type { EntityComment } from "../types.js";
 
@@ -34,7 +35,7 @@ export interface CommentSearchResult {
  */
 export class CommentSearchService {
   constructor(
-    private readonly db: Database,
+    private readonly db: Kysely<DB>,
     private readonly logger: Logger
   ) {}
 
@@ -69,7 +70,7 @@ export class CommentSearchService {
 
     // Build base query
     let selectQuery = this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("comment_text", "ilike", searchPattern)
@@ -88,7 +89,7 @@ export class CommentSearchService {
 
     // Get total count
     let countQuery = this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .select(({ fn }) => fn.count<number>("id").as("count"))
       .where("tenant_id", "=", tenantId)
       .where("comment_text", "ilike", searchPattern)
@@ -115,7 +116,7 @@ export class CommentSearchService {
 
     const total = Number(countResult?.count ?? 0);
 
-    const comments = rows.map((row: any) => ({
+    const comments: EntityComment[] = rows.map((row: any) => ({
       id: row.id,
       tenantId: row.tenant_id,
       entityType: row.entity_type,
@@ -124,6 +125,7 @@ export class CommentSearchService {
       commentText: row.comment_text,
       parentCommentId: row.parent_comment_id ?? undefined,
       threadDepth: row.thread_depth,
+      visibility: (row.visibility ?? "public") as "public" | "internal" | "private",
       deletedAt: row.deleted_at ?? undefined,
       deletedBy: row.deleted_by ?? undefined,
       createdAt: row.created_at,

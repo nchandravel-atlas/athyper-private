@@ -7,7 +7,7 @@ import type { DB } from "@athyper/adapter-db";
 import type { DocRenderJob } from "../domain/models/DocRenderJob.js";
 import type { RenderJobId, OutputId, RenderJobStatus } from "../domain/types.js";
 
-const TABLE = "core.doc_render_job" as keyof DB & string;
+const TABLE = "doc.render_job" as keyof DB & string;
 
 export interface CreateRenderJobInput {
     outputId: OutputId;

@@ -214,7 +214,7 @@ async function runReset(connectionString: string): Promise<void> {
         log({ msg: "reset_start" });
 
         // Drop schemas in reverse dependency order
-        const schemas = ["ui", "ent", "ref", "core", "meta"];
+        const schemas = ["notify", "ui", "collab", "doc", "ent", "wf", "sec", "audit", "meta", "ref", "core"];
         for (const schema of schemas) {
             await client.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
             log({ msg: "reset_drop_schema", schema });

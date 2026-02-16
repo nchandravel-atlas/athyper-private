@@ -5,7 +5,6 @@
  */
 
 import { sql } from "kysely";
-
 import type { DB } from "@athyper/adapter-db";
 import type { Kysely } from "kysely";
 
@@ -131,7 +130,7 @@ export type LifecycleDB = DB & {
     correlation_id: string | null;
   };
 
-  "core.permission_decision_log": {
+  "audit.permission_decision_log": {
     id: string;
     tenant_id: string;
     occurred_at: Date;
@@ -222,7 +221,7 @@ export type LifecycleDB = DB & {
 
   // ===== Approval Runtime (Approvable Core Engine) =====
 
-  "core.approval_instance": {
+  "wf.approval_instance": {
     id: string;
     tenant_id: string;
     entity_name: string;
@@ -235,7 +234,7 @@ export type LifecycleDB = DB & {
     created_by: string;
   };
 
-  "core.approval_stage": {
+  "wf.approval_stage": {
     id: string;
     tenant_id: string;
     approval_instance_id: string;
@@ -245,7 +244,7 @@ export type LifecycleDB = DB & {
     created_at: Date;
   };
 
-  "core.approval_task": {
+  "wf.approval_task": {
     id: string;
     tenant_id: string;
     approval_instance_id: string;
@@ -262,7 +261,7 @@ export type LifecycleDB = DB & {
     created_at: Date;
   };
 
-  "core.approval_assignment_snapshot": {
+  "wf.approval_assignment_snapshot": {
     id: string;
     tenant_id: string;
     approval_task_id: string;
@@ -273,7 +272,7 @@ export type LifecycleDB = DB & {
     created_by: string;
   };
 
-  "core.approval_escalation": {
+  "wf.approval_escalation": {
     id: string;
     tenant_id: string;
     approval_instance_id: string;
@@ -282,7 +281,7 @@ export type LifecycleDB = DB & {
     occurred_at: Date;
   };
 
-  "core.approval_event": {
+  "wf.approval_event": {
     id: string;
     tenant_id: string;
     approval_instance_id: string | null;
@@ -306,7 +305,7 @@ export type LifecycleDB = DB & {
     created_by: string;
   };
 
-  "core.lifecycle_timer_schedule": {
+  "wf.lifecycle_timer_schedule": {
     id: string;
     tenant_id: string;
     entity_name: string;

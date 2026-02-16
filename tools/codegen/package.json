@@ -22,9 +22,7 @@
     "publish": "node dist/publish.js",
     "publish:dry-run": "node dist/publish.js --dry-run"
   },
-  "dependencies": {
-    "@athyper/contracts": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {
     "tsup": "^8.3.0",
     "rimraf": "^6.0.1",

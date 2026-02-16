@@ -35,7 +35,7 @@ export async function registerAnalyticsAggregationWorker(container: Container) {
 
   try {
     // Check if job queue is available
-    const jobQueue = await container.resolve(TOKENS.jobQueue);
+    const jobQueue = await container.resolve(TOKENS.jobQueue) as any;
     if (!jobQueue) {
       logger.warn("[collab] Job queue not available, analytics aggregation will not run");
       return;
@@ -64,10 +64,10 @@ export async function registerAnalyticsAggregationWorker(container: Container) {
         const { startDate, endDate } = getDateRange(payload.targetDate, payload.aggregationType);
 
         // Aggregate daily activity metrics
-        const dailyMetrics = await analyticsService.getDailyActivity(
+        const dailyMetrics = await analyticsService.getDailyAnalytics(
           payload.tenantId,
-          startDate,
-          endDate
+          new Date(startDate),
+          new Date(endDate)
         );
 
         logger.debug(
@@ -83,9 +83,9 @@ export async function registerAnalyticsAggregationWorker(container: Container) {
         // Aggregate user engagement metrics
         const leaderboard = await analyticsService.getUserEngagementLeaderboard(
           payload.tenantId,
-          startDate,
-          endDate,
-          { limit: 100 }
+          new Date(startDate),
+          new Date(endDate),
+          100
         );
 
         logger.debug(
@@ -97,10 +97,12 @@ export async function registerAnalyticsAggregationWorker(container: Container) {
         );
 
         // Aggregate thread activity metrics
-        const activeThreads = await analyticsService.getActiveThreads(payload.tenantId, {
-          activeOnly: true,
-          limit: 1000,
-        });
+        const activeThreads = await analyticsService.getMostActiveThreads(
+          payload.tenantId,
+          undefined,
+          1000,
+          true
+        );
 
         logger.debug(
           {

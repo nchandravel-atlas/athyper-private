@@ -1,5 +1,5 @@
 /**
- * NotificationTemplateRepo — Kysely repo for meta.notification_template
+ * NotificationTemplateRepo — Kysely repo for notify.notification_template
  */
 
 import type { Kysely } from "kysely";
@@ -11,7 +11,7 @@ import type {
 } from "../domain/models/NotificationTemplate.js";
 import type { TemplateId, ChannelCode, TemplateStatus } from "../domain/types.js";
 
-const TABLE = "meta.notification_template" as keyof DB & string;
+const TABLE = "notify.notification_template" as keyof DB & string;
 
 export class NotificationTemplateRepo {
     constructor(private readonly db: Kysely<DB>) {}

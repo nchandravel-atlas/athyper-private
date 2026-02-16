@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { type StoreApi, useStore } from "zustand";
 
-
 import { type FontKey, fontRegistry } from "@/lib/fonts/registry";
 import {
   CONTENT_LAYOUT_VALUES,
@@ -15,7 +14,6 @@ import { THEME_MODE_VALUES, THEME_PRESET_VALUES } from "@/lib/preferences/theme"
 import { applyThemeMode, subscribeToSystemTheme } from "@/lib/preferences/theme-utils";
 
 import { createPreferencesStore, type PreferencesState } from "./preferences-store";
-
 
 const PreferencesStoreContext = createContext<StoreApi<PreferencesState> | null>(null);
 

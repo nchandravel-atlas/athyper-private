@@ -4,7 +4,7 @@
  * SSE endpoint for real-time comment updates.
  */
 
-import type { HttpHandlerContext } from "../../../platform/foundation/http/types.js";
+import type { HttpHandlerContext } from "./handlers.js";
 import type { CommentEventsService } from "../domain/comment-events.service.js";
 import { TOKENS } from "../../../../kernel/tokens.js";
 
@@ -22,11 +22,12 @@ export class CommentEventsStreamHandler {
     );
 
     const { entityType, entityId } = ctx.request.query;
+    const userId = ctx.auth.userId || ctx.auth.subject || "anonymous";
 
     // Register client and keep connection open
     const clientId = eventsService.registerClient(
       ctx.tenant.tenantId,
-      ctx.session.userId,
+      userId,
       ctx.response,
       {
         entityType: entityType as string | undefined,

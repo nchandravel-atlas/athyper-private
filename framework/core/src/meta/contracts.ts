@@ -12,6 +12,15 @@
  * - GenericDataAPI (generic read operations)
  */
 
+import type { JobQueue } from "../jobs/types.js";
+
+import type {
+  ActionExecutionRequest,
+  ActionExecutionResult,
+  EntityPageDynamicDescriptor,
+  EntityPageStaticDescriptor,
+  ViewMode,
+} from "./descriptor-types.js";
 import type {
   ApprovalAssignmentSnapshot,
   ApprovalCreationRequest,
@@ -53,16 +62,6 @@ import type {
   TemplateValidationResult,
   ValidationResult,
 } from "./types.js";
-
-import type { JobQueue } from "../jobs/types.js";
-
-import type {
-  ActionExecutionRequest,
-  ActionExecutionResult,
-  EntityPageDynamicDescriptor,
-  EntityPageStaticDescriptor,
-  ViewMode,
-} from "./descriptor-types.js";
 
 // ============================================================================
 // Meta Registry Service
@@ -1551,116 +1550,6 @@ export interface ActionDispatcher {
     request: ActionExecutionRequest,
     ctx: RequestContext
   ): Promise<ActionExecutionResult>;
-}
-
-// ============================================================================
-// Approval Template Service (EPIC G — Template Authoring)
-// ============================================================================
-
-/**
- * Approval Template Service
- *
- * CRUD, validation, compilation, and version management for approval templates.
- * Templates define multi-stage approval workflows that can be bound to
- * lifecycle transition gates.
- */
-export interface ApprovalTemplateService {
-  // ===== CRUD (G1) =====
-
-  create(
-    input: ApprovalTemplateCreateInput,
-    tenantId: string,
-    userId: string
-  ): Promise<ApprovalTemplate>;
-
-  get(
-    idOrCode: string,
-    tenantId: string
-  ): Promise<ApprovalTemplate | undefined>;
-
-  list(
-    tenantId: string,
-    options?: ListOptions
-  ): Promise<PaginatedResponse<ApprovalTemplate>>;
-
-  update(
-    idOrCode: string,
-    input: ApprovalTemplateUpdateInput,
-    tenantId: string,
-    userId: string
-  ): Promise<ApprovalTemplate>;
-
-  delete(idOrCode: string, tenantId: string): Promise<void>;
-
-  // ===== Nested Resources =====
-
-  getStages(
-    templateId: string,
-    tenantId: string
-  ): Promise<ApprovalTemplateStage[]>;
-
-  getRules(
-    templateId: string,
-    tenantId: string
-  ): Promise<ApprovalTemplateRule[]>;
-
-  // ===== Validation & Compilation (G2) =====
-
-  validate(
-    idOrCode: string,
-    tenantId: string
-  ): Promise<TemplateValidationResult>;
-
-  compile(
-    idOrCode: string,
-    tenantId: string
-  ): Promise<CompiledApprovalTemplate>;
-
-  // ===== Version Management (G3) =====
-
-  listVersions(
-    code: string,
-    tenantId: string
-  ): Promise<ApprovalTemplate[]>;
-
-  rollback(
-    code: string,
-    targetVersion: number,
-    tenantId: string,
-    userId: string
-  ): Promise<ApprovalTemplate>;
-
-  diff(
-    code: string,
-    v1: number,
-    v2: number,
-    tenantId: string
-  ): Promise<Record<string, unknown>>;
-
-  impactAnalysis(
-    idOrCode: string,
-    tenantId: string
-  ): Promise<{
-    affectedTransitions: Array<{
-      transitionId: string;
-      entityName: string;
-      operationCode: string;
-    }>;
-  }>;
-
-  // ===== Resolution Test (G4) =====
-
-  testResolution(
-    idOrCode: string,
-    context: Record<string, unknown>,
-    tenantId: string
-  ): Promise<{
-    resolvedAssignees: Array<{
-      principalId?: string;
-      groupId?: string;
-      strategy: string;
-    }>;
-  }>;
 }
 
 // ============================================================================

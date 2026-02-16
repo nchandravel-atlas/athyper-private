@@ -7,7 +7,7 @@ import type { DB } from "@athyper/adapter-db";
 import type { DocBrandProfile } from "../domain/models/DocBrandProfile.js";
 import type { BrandProfileId } from "../domain/types.js";
 
-const TABLE = "core.doc_brand_profile" as keyof DB & string;
+const TABLE = "doc.brand_profile" as keyof DB & string;
 
 export interface CreateBrandProfileInput {
     tenantId: string;

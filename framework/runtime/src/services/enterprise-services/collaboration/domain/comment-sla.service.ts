@@ -64,7 +64,7 @@ export class CommentSLAService {
 
     // Check if this is the first comment on the entity
     const existing = await this.db
-      .selectFrom("core.comment_sla_metrics")
+      .selectFrom("collab.comment_sla_metrics")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("entity_type", "=", entityType)
@@ -74,7 +74,7 @@ export class CommentSLAService {
     if (!existing) {
       // First comment - initialize SLA tracking
       await this.db
-        .insertInto("core.comment_sla_metrics")
+        .insertInto("collab.comment_sla_metrics")
         .values({
           id: crypto.randomUUID(),
           tenant_id: tenantId,
@@ -103,23 +103,25 @@ export class CommentSLAService {
       );
 
       // Update metrics
+      const updateSet: Record<string, any> = {
+        updated_at: now,
+      };
+
+      // Increment total_comments via raw SQL expression
+      updateSet.total_comments = (eb: any) => eb.raw('total_comments + 1');
+
+      if (isResponse && !existing.first_response_at) {
+        updateSet.first_response_at = now;
+        updateSet.first_response_by = commenterId;
+        updateSet.first_response_time_seconds = responseTimeSeconds;
+        if (slaConfig && responseTimeSeconds > slaConfig.slaTargetSeconds) {
+          updateSet.is_sla_breached = true;
+        }
+      }
+
       await this.db
-        .updateTable("core.comment_sla_metrics")
-        .set({
-          total_comments: this.db.raw('total_comments + 1'),
-          total_responses: isResponse ? this.db.raw('total_responses + 1') : this.db.raw('total_responses'),
-          first_response_at: isResponse && !existing.first_response_at ? now : undefined,
-          first_response_by: isResponse && !existing.first_response_at ? commenterId : undefined,
-          first_response_time_seconds: isResponse && !existing.first_response_at ? responseTimeSeconds : undefined,
-          is_sla_breached:
-            isResponse &&
-            !existing.first_response_at &&
-            slaConfig &&
-            responseTimeSeconds > slaConfig.slaTargetSeconds
-              ? true
-              : undefined,
-          updated_at: now,
-        })
+        .updateTable("collab.comment_sla_metrics")
+        .set(updateSet as any)
         .where("tenant_id", "=", tenantId)
         .where("entity_type", "=", entityType)
         .where("entity_id", "=", entityId)
@@ -147,7 +149,7 @@ export class CommentSLAService {
     entityId: string
   ): Promise<SLAMetrics | undefined> {
     const row = await this.db
-      .selectFrom("core.comment_sla_metrics")
+      .selectFrom("collab.comment_sla_metrics")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("entity_type", "=", entityType)
@@ -180,7 +182,7 @@ export class CommentSLAService {
     limit: number = 50
   ): Promise<SLAMetrics[]> {
     let query = this.db
-      .selectFrom("core.comment_sla_metrics")
+      .selectFrom("collab.comment_sla_metrics")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("is_sla_breached", "=", true);
@@ -215,7 +217,7 @@ export class CommentSLAService {
     limit: number = 50
   ): Promise<SLAMetrics[]> {
     let query = this.db
-      .selectFrom("core.comment_sla_metrics")
+      .selectFrom("collab.comment_sla_metrics")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("first_response_at", "is", null);
@@ -246,7 +248,7 @@ export class CommentSLAService {
    */
   async getSLAConfig(tenantId: string, entityType: string): Promise<SLAConfig | undefined> {
     const row = await this.db
-      .selectFrom("core.comment_sla_config")
+      .selectFrom("collab.comment_sla_config")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("entity_type", "=", entityType)
@@ -276,7 +278,7 @@ export class CommentSLAService {
     const now = new Date();
 
     await this.db
-      .insertInto("core.comment_sla_config")
+      .insertInto("collab.comment_sla_config")
       .values({
         id: crypto.randomUUID(),
         tenant_id: tenantId,
@@ -310,7 +312,7 @@ export class CommentSLAService {
     responseTimeSeconds: number | null
   ): Promise<void> {
     await this.db
-      .insertInto("core.comment_response_history")
+      .insertInto("collab.comment_response_history")
       .values({
         id: crypto.randomUUID(),
         tenant_id: tenantId,

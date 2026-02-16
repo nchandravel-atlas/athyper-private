@@ -1,7 +1,7 @@
 /**
  * Approval Comment Repository
  *
- * Kysely-based repository for core.approval_comment table.
+ * Kysely-based repository for wf.approval_comment table.
  * Handles comments specific to approval workflow instances.
  */
 
@@ -44,7 +44,7 @@ export class ApprovalCommentRepository {
    */
   async getById(tenantId: string, commentId: string): Promise<ApprovalComment | undefined> {
     const row = await this.db
-      .selectFrom("core.approval_comment")
+      .selectFrom("wf.approval_comment")
       .selectAll()
       .where("id", "=", commentId)
       .where("tenant_id", "=", tenantId)
@@ -72,7 +72,7 @@ export class ApprovalCommentRepository {
     const { limit = 100, offset = 0, taskId } = options ?? {};
 
     let query = this.db
-      .selectFrom("core.approval_comment")
+      .selectFrom("wf.approval_comment")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("approval_instance_id", "=", approvalInstanceId);
@@ -110,7 +110,7 @@ export class ApprovalCommentRepository {
     approvalInstanceId: string
   ): Promise<number> {
     const result = await this.db
-      .selectFrom("core.approval_comment")
+      .selectFrom("wf.approval_comment")
       .select(({ fn }) => fn.count<number>("id").as("count"))
       .where("tenant_id", "=", tenantId)
       .where("approval_instance_id", "=", approvalInstanceId)
@@ -127,7 +127,7 @@ export class ApprovalCommentRepository {
     const now = new Date();
 
     await this.db
-      .insertInto("core.approval_comment")
+      .insertInto("wf.approval_comment")
       .values({
         id,
         tenant_id: req.tenantId,
@@ -160,7 +160,7 @@ export class ApprovalCommentRepository {
     const { limit = 50, offset = 0 } = options ?? {};
 
     const rows = await this.db
-      .selectFrom("core.approval_comment")
+      .selectFrom("wf.approval_comment")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("commenter_id", "=", commenterId)
@@ -191,7 +191,7 @@ export class ApprovalCommentRepository {
     commentId: string
   ): Promise<Attachment[]> {
     const rows = await this.db
-      .selectFrom("core.attachment")
+      .selectFrom("doc.attachment")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", "approval_comment")
@@ -205,7 +205,7 @@ export class ApprovalCommentRepository {
       ownerEntityId: row.owner_entity_id ?? undefined,
       fileName: row.file_name,
       contentType: row.content_type ?? undefined,
-      sizeBytes: row.size_bytes ?? undefined,
+      sizeBytes: row.size_bytes ? Number(row.size_bytes) : undefined,
       storageBucket: row.storage_bucket,
       storageKey: row.storage_key,
       isVirusScanned: row.is_virus_scanned,
@@ -230,7 +230,7 @@ export class ApprovalCommentRepository {
     }
 
     const rows = await this.db
-      .selectFrom("core.attachment")
+      .selectFrom("doc.attachment")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", "approval_comment")
@@ -249,7 +249,7 @@ export class ApprovalCommentRepository {
         ownerEntityId: row.owner_entity_id ?? undefined,
         fileName: row.file_name,
         contentType: row.content_type ?? undefined,
-        sizeBytes: row.size_bytes ?? undefined,
+        sizeBytes: row.size_bytes ? Number(row.size_bytes) : undefined,
         storageBucket: row.storage_bucket,
         storageKey: row.storage_key,
         isVirusScanned: row.is_virus_scanned,

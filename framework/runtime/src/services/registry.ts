@@ -15,13 +15,9 @@ import { module as collaborationModule } from "./enterprise-services/collaborati
 import type { AuditEvent, AuditWriter } from "../kernel/audit";
 import type { Container } from "../kernel/container";
 import type { Logger } from "../kernel/logger";
+import type { RuntimeModule } from "./types.js";
 
-
-export type RuntimeModule = {
-    name: string;
-    register?: (c: Container) => void | Promise<void>;
-    contribute?: (c: Container) => void | Promise<void>;
-};
+export type { RuntimeModule } from "./types.js";
 
 const modules: RuntimeModule[] = [
     httpFoundation,

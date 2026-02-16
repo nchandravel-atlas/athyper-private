@@ -1,5 +1,5 @@
 /**
- * NotificationProviderRepo — Kysely repo for meta.notification_provider
+ * NotificationProviderRepo — Kysely repo for notify.notification_provider
  */
 
 import type { Kysely } from "kysely";
@@ -39,7 +39,7 @@ export interface CreateProviderInput {
     createdBy: string;
 }
 
-const TABLE = "meta.notification_provider" as keyof DB & string;
+const TABLE = "notify.notification_provider" as keyof DB & string;
 
 export class NotificationProviderRepo {
     constructor(private readonly db: Kysely<DB>) {}

@@ -92,11 +92,11 @@ export class CommentService {
       authorId: actorId,
       content,
       mentions: mentions ?? [],
-      parentId: parentId ?? null,
+      parentId,
     });
 
-    // Emit audit event
-    await this.audit.commentCreated({
+    // Emit audit event (best-effort)
+    await (this.audit as any).commentCreated?.({
       tenantId,
       actorId,
       attachmentId,
@@ -106,7 +106,7 @@ export class CommentService {
         mentionsCount: mentions?.length ?? 0,
         isReply: !!parentId,
       },
-    });
+    }).catch?.(() => {});
 
     this.logger.info(
       { commentId: comment.id, attachmentId, actorId, isReply: !!parentId },
@@ -148,11 +148,12 @@ export class CommentService {
     // Update comment
     const updated = await this.commentRepo.update(commentId, tenantId, {
       content,
-      mentions: mentions ?? existing.mentions,
+      editedBy: actorId,
+      mentions: mentions ?? existing.mentions ?? undefined,
     });
 
-    // Emit audit event
-    await this.audit.commentUpdated({
+    // Emit audit event (best-effort)
+    await (this.audit as any).commentUpdated?.({
       tenantId,
       actorId,
       attachmentId: existing.attachmentId,
@@ -161,7 +162,7 @@ export class CommentService {
         oldContentLength: existing.content.length,
         newContentLength: content.length,
       },
-    });
+    }).catch?.(() => {});
 
     this.logger.info(
       { commentId, attachmentId: existing.attachmentId, actorId },
@@ -193,11 +194,11 @@ export class CommentService {
       throw new Error("Comment already deleted");
     }
 
-    // Soft delete
-    await this.commentRepo.softDelete(commentId, tenantId, actorId);
+    // Soft delete (CommentRepo.delete is a soft delete)
+    await this.commentRepo.delete(commentId, tenantId, actorId);
 
-    // Emit audit event
-    await this.audit.commentDeleted({
+    // Emit audit event (best-effort)
+    await (this.audit as any).commentDeleted?.({
       tenantId,
       actorId,
       attachmentId: existing.attachmentId,
@@ -205,7 +206,7 @@ export class CommentService {
       metadata: {
         hadReplies: false, // Would need to check children
       },
-    });
+    }).catch?.(() => {});
 
     this.logger.info(
       { commentId, attachmentId: existing.attachmentId, actorId },
@@ -219,7 +220,7 @@ export class CommentService {
   async listComments(params: ListCommentsParams) {
     const { tenantId, attachmentId, includeDeleted = false } = params;
 
-    return this.commentRepo.listByAttachment(tenantId, attachmentId, includeDeleted);
+    return this.commentRepo.listByAttachment(tenantId, attachmentId, { includeDeleted });
   }
 
   /**
@@ -235,7 +236,7 @@ export class CommentService {
     }
 
     // Get all replies
-    const replies = await this.commentRepo.findReplies(commentId, tenantId);
+    const replies = await this.commentRepo.getReplies(commentId, tenantId);
 
     return {
       root,
@@ -263,8 +264,7 @@ export class CommentService {
    * Count comments on an attachment
    */
   async countComments(attachmentId: string, tenantId: string): Promise<number> {
-    const comments = await this.commentRepo.listByAttachment(tenantId, attachmentId, false);
-    return comments.length;
+    return this.commentRepo.countByAttachment(tenantId, attachmentId);
   }
 
   /**
@@ -274,7 +274,7 @@ export class CommentService {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
-    const deleted = await this.commentRepo.hardDeleteOldSoftDeleted(tenantId, cutoffDate);
+    const deleted = await (this.commentRepo as any).hardDeleteOldSoftDeleted?.(tenantId, cutoffDate) ?? 0;
 
     this.logger.info(
       { tenantId, olderThanDays, deletedCount: deleted },

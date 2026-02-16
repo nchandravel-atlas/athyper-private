@@ -2,10 +2,11 @@
  * Mention Repository
  *
  * Handles persistence for comment mentions (@username, @{uuid}).
- * Stores parsed mentions in core.comment_mention table.
+ * Stores parsed mentions in collab.comment_mention table.
  */
 
-import type { Database } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
+import type { DB } from "@athyper/adapter-db";
 
 /**
  * Comment Mention domain object
@@ -32,7 +33,7 @@ interface CommentMentionRow {
   mentioned_user_id: string;
   mention_text: string;
   position: number;
-  created_at: string;
+  created_at: Date;
 }
 
 /**
@@ -51,7 +52,7 @@ export interface CreateMentionRequest {
  * Mention Repository
  */
 export class MentionRepository {
-  constructor(private readonly db: Database) {}
+  constructor(private readonly db: Kysely<DB>) {}
 
   /**
    * Create a new mention record
@@ -60,7 +61,7 @@ export class MentionRepository {
     const id = crypto.randomUUID();
 
     await this.db
-      .insertInto("core.comment_mention")
+      .insertInto("collab.comment_mention")
       .values({
         id,
         tenant_id: req.tenantId,
@@ -85,7 +86,7 @@ export class MentionRepository {
    */
   async getById(tenantId: string, mentionId: string): Promise<CommentMention | undefined> {
     const row = await this.db
-      .selectFrom("core.comment_mention")
+      .selectFrom("collab.comment_mention")
       .selectAll()
       .where("id", "=", mentionId)
       .where("tenant_id", "=", tenantId)
@@ -103,7 +104,7 @@ export class MentionRepository {
     commentId: string
   ): Promise<CommentMention[]> {
     const rows = await this.db
-      .selectFrom("core.comment_mention")
+      .selectFrom("collab.comment_mention")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
@@ -127,7 +128,7 @@ export class MentionRepository {
     const { limit = 50, offset = 0 } = options ?? {};
 
     const rows = await this.db
-      .selectFrom("core.comment_mention")
+      .selectFrom("collab.comment_mention")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("mentioned_user_id", "=", userId)
@@ -144,7 +145,7 @@ export class MentionRepository {
    */
   async countByUser(tenantId: string, userId: string): Promise<number> {
     const result = await this.db
-      .selectFrom("core.comment_mention")
+      .selectFrom("collab.comment_mention")
       .select((eb) => eb.fn.countAll<number>().as("count"))
       .where("tenant_id", "=", tenantId)
       .where("mentioned_user_id", "=", userId)
@@ -162,7 +163,7 @@ export class MentionRepository {
     commentId: string
   ): Promise<void> {
     await this.db
-      .deleteFrom("core.comment_mention")
+      .deleteFrom("collab.comment_mention")
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
       .where("comment_id", "=", commentId)
@@ -181,7 +182,7 @@ export class MentionRepository {
       mentionedUserId: row.mentioned_user_id,
       mentionText: row.mention_text,
       position: row.position,
-      createdAt: row.created_at,
+      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
     };
   }
 }

@@ -10,6 +10,8 @@
 
 import type { Kysely } from "kysely";
 
+const TABLE = "doc.multipart_upload";
+
 export interface CreateMultipartUploadParams {
   tenantId: string;
   attachmentId: string;
@@ -46,7 +48,7 @@ export class MultipartUploadRepo {
    */
   async create(params: CreateMultipartUploadParams): Promise<MultipartUpload> {
     const result = await this.db
-      .insertInto("core.multipart_upload as upload")
+      .insertInto(TABLE as any)
       .values({
         tenant_id: params.tenantId,
         attachment_id: params.attachmentId,
@@ -69,10 +71,10 @@ export class MultipartUploadRepo {
    */
   async getById(id: string, tenantId: string): Promise<MultipartUpload | null> {
     const result = await this.db
-      .selectFrom("core.multipart_upload as upload")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("upload.id", "=", id)
-      .where("upload.tenant_id", "=", tenantId)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .executeTakeFirst();
 
     return result ? this.mapToMultipartUpload(result) : null;
@@ -83,9 +85,9 @@ export class MultipartUploadRepo {
    */
   async getByS3UploadId(s3UploadId: string): Promise<MultipartUpload | null> {
     const result = await this.db
-      .selectFrom("core.multipart_upload as upload")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("upload.s3_upload_id", "=", s3UploadId)
+      .where("s3_upload_id", "=", s3UploadId)
       .executeTakeFirst();
 
     return result ? this.mapToMultipartUpload(result) : null;
@@ -99,11 +101,11 @@ export class MultipartUploadRepo {
     tenantId: string,
   ): Promise<MultipartUpload | null> {
     const result = await this.db
-      .selectFrom("core.multipart_upload as upload")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("upload.attachment_id", "=", attachmentId)
-      .where("upload.tenant_id", "=", tenantId)
-      .orderBy("upload.initiated_at", "desc")
+      .where("attachment_id", "=", attachmentId)
+      .where("tenant_id", "=", tenantId)
+      .orderBy("initiated_at", "desc")
       .executeTakeFirst();
 
     return result ? this.mapToMultipartUpload(result) : null;
@@ -130,10 +132,10 @@ export class MultipartUploadRepo {
     }
 
     const result = await this.db
-      .updateTable("core.multipart_upload as upload")
+      .updateTable(TABLE as any)
       .set(updateData)
-      .where("upload.id", "=", id)
-      .where("upload.tenant_id", "=", tenantId)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .returningAll()
       .executeTakeFirstOrThrow();
 
@@ -145,13 +147,13 @@ export class MultipartUploadRepo {
    */
   async markCompleted(id: string, tenantId: string): Promise<void> {
     await this.db
-      .updateTable("core.multipart_upload as upload")
+      .updateTable(TABLE as any)
       .set({
         status: "completed",
         completed_at: new Date(),
       })
-      .where("upload.id", "=", id)
-      .where("upload.tenant_id", "=", tenantId)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .execute();
   }
 
@@ -160,12 +162,12 @@ export class MultipartUploadRepo {
    */
   async markAborted(id: string, tenantId: string): Promise<void> {
     await this.db
-      .updateTable("core.multipart_upload as upload")
+      .updateTable(TABLE as any)
       .set({
         status: "aborted",
       })
-      .where("upload.id", "=", id)
-      .where("upload.tenant_id", "=", tenantId)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .execute();
   }
 
@@ -174,12 +176,12 @@ export class MultipartUploadRepo {
    */
   async markFailed(id: string, tenantId: string): Promise<void> {
     await this.db
-      .updateTable("core.multipart_upload as upload")
+      .updateTable(TABLE as any)
       .set({
         status: "failed",
       })
-      .where("upload.id", "=", id)
-      .where("upload.tenant_id", "=", tenantId)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .execute();
   }
 
@@ -188,12 +190,12 @@ export class MultipartUploadRepo {
    */
   async listExpired(tenantId: string, beforeDate: Date, limit = 100): Promise<MultipartUpload[]> {
     const results = await this.db
-      .selectFrom("core.multipart_upload as upload")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("upload.tenant_id", "=", tenantId)
-      .where("upload.expires_at", "<", beforeDate)
-      .where("upload.status", "in", ["initiated", "uploading"])
-      .orderBy("upload.expires_at", "asc")
+      .where("tenant_id", "=", tenantId)
+      .where("expires_at", "<", beforeDate)
+      .where("status", "in", ["initiated", "uploading"])
+      .orderBy("expires_at", "asc")
       .limit(limit)
       .execute();
 
@@ -205,11 +207,11 @@ export class MultipartUploadRepo {
    */
   async listActive(tenantId: string): Promise<MultipartUpload[]> {
     const results = await this.db
-      .selectFrom("core.multipart_upload as upload")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("upload.tenant_id", "=", tenantId)
-      .where("upload.status", "in", ["initiated", "uploading"])
-      .orderBy("upload.initiated_at", "desc")
+      .where("tenant_id", "=", tenantId)
+      .where("status", "in", ["initiated", "uploading"])
+      .orderBy("initiated_at", "desc")
       .execute();
 
     return results.map((r) => this.mapToMultipartUpload(r));
@@ -222,10 +224,10 @@ export class MultipartUploadRepo {
     // We'd need to add actor_id to the table for this
     // For now, count all active uploads for tenant
     const result = await this.db
-      .selectFrom("core.multipart_upload as upload")
-      .select((eb) => eb.fn.count<number>("upload.id").as("count"))
-      .where("upload.tenant_id", "=", tenantId)
-      .where("upload.status", "in", ["initiated", "uploading"])
+      .selectFrom(TABLE as any)
+      .select((eb) => eb.fn.count<number>("id").as("count"))
+      .where("tenant_id", "=", tenantId)
+      .where("status", "in", ["initiated", "uploading"])
       .executeTakeFirst();
 
     return result?.count ?? 0;
@@ -236,10 +238,10 @@ export class MultipartUploadRepo {
    */
   async deleteOld(tenantId: string, beforeDate: Date, limit = 1000): Promise<number> {
     const result = await this.db
-      .deleteFrom("core.multipart_upload as upload")
-      .where("upload.tenant_id", "=", tenantId)
-      .where("upload.status", "in", ["completed", "aborted", "failed"])
-      .where("upload.initiated_at", "<", beforeDate)
+      .deleteFrom(TABLE as any)
+      .where("tenant_id", "=", tenantId)
+      .where("status", "in", ["completed", "aborted", "failed"])
+      .where("initiated_at", "<", beforeDate)
       .limit(limit)
       .execute();
 
@@ -251,9 +253,9 @@ export class MultipartUploadRepo {
    */
   async deleteByAttachment(tenantId: string, attachmentId: string): Promise<void> {
     await this.db
-      .deleteFrom("core.multipart_upload as upload")
-      .where("upload.tenant_id", "=", tenantId)
-      .where("upload.attachment_id", "=", attachmentId)
+      .deleteFrom(TABLE as any)
+      .where("tenant_id", "=", tenantId)
+      .where("attachment_id", "=", attachmentId)
       .execute();
   }
 

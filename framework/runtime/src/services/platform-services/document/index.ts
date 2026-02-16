@@ -96,7 +96,7 @@ import { createRecoverStuckJobsHandler } from "./jobs/workers/recoverStuckJobs.w
 
 import type { Container } from "../../../kernel/container.js";
 import type { Logger } from "../../../kernel/logger.js";
-import type { RuntimeModule } from "../../registry.js";
+import type { RuntimeModule } from "../../types.js";
 import type { RouteRegistry } from "../../platform/foundation/registries/routes.registry.js";
 import type { JobRegistry } from "../../platform/foundation/registries/jobs.registry.js";
 import type { RuntimeConfig } from "../../../kernel/config.schema.js";

@@ -12,8 +12,8 @@ import type { CleanupExpiredPayload } from "../../domain/services/NotificationOr
 import type { NotificationSuppressionRepo } from "../../persistence/NotificationSuppressionRepo.js";
 import type { Logger } from "../../../../../kernel/logger.js";
 
-const MESSAGE_TABLE = "core.notification_message" as keyof DB & string;
-const DELIVERY_TABLE = "core.notification_delivery" as keyof DB & string;
+const MESSAGE_TABLE = "notify.notification_message" as keyof DB & string;
+const DELIVERY_TABLE = "notify.notification_delivery" as keyof DB & string;
 
 export interface RetentionDefaults {
     messageDays: number;

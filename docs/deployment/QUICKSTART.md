@@ -85,7 +85,7 @@ pnpm install
 
 # This installs dependencies for:
 # - framework packages (core, runtime, adapters)
-# - shared packages (contracts, ui, auth, etc.)
+# - shared packages (ui, auth, dashboard, api-client, etc.)
 # - products (neon)
 ```
 
@@ -259,9 +259,9 @@ cd mesh/scripts
 
 This runs:
 
-- Database migrations (creates tables)
+- Database provisioning — executes SQL files (001–120 DDL + 200 seed data) with checksum tracking
 - IAM realm configuration (Keycloak setup)
-- Initial seed data
+- Initial reference and demo data
 
 ### Step 3: Start Kernel
 
@@ -333,16 +333,17 @@ curl http://localhost:3000/health
 ### 2. Readiness Check
 
 ```bash
-curl http://localhost:3000/readyz
+curl http://localhost:3000/health/readiness
 
 # Expected: HTTP 200 OK
 ```
 
-### 3. Metrics
+### 3. Liveness Check
 
 ```bash
-# Check Prometheus metrics
-curl http://localhost:3000/metrics
+curl http://localhost:3000/health/liveness
+
+# Expected: HTTP 200 OK
 ```
 
 ### 4. Access Web Interfaces
@@ -457,7 +458,7 @@ After getting the platform running:
 
 1. **Read the architecture docs** — [System Architecture](../architecture/OVERVIEW.md), [Multi-Tenancy](../architecture/MULTI_TENANCY.md)
 2. **Understand the codebase** — [Contributing Guide](../../CONTRIBUTING.md) covers conventions, boundaries, and workflow
-3. **Explore the API** — Health check at `http://localhost:3000/health`, Prisma Studio via `pnpm db:studio`
+3. **Explore the API** — Health check at `http://localhost:3000/health`, database provisioning status via `pnpm db:provision:status`
 4. **Run the quality checks** — `pnpm check` runs lint + typecheck + test + depcheck
 5. **Check dependency boundaries** — `pnpm depcheck` validates architecture rules
 

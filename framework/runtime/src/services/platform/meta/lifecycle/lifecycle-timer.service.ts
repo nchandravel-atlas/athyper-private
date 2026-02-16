@@ -128,7 +128,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
     const jobIdPlaceholder = `pending-${scheduleId}`;
 
     const schedule = await this.db
-      .insertInto("core.lifecycle_timer_schedule")
+      .insertInto("wf.lifecycle_timer_schedule")
       .values({
         id: scheduleId,
         tenant_id: ctx.tenantId,
@@ -176,7 +176,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
 
       // Update schedule with actual job ID
       await this.db
-        .updateTable("core.lifecycle_timer_schedule")
+        .updateTable("wf.lifecycle_timer_schedule")
         .set({ job_id: job.id })
         .where("id", "=", scheduleId)
         .execute();
@@ -213,7 +213,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
   ): Promise<number> {
     // Fetch active timers
     const timers = await this.db
-      .selectFrom("core.lifecycle_timer_schedule")
+      .selectFrom("wf.lifecycle_timer_schedule")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("entity_name", "=", entityName)
@@ -230,7 +230,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
     for (const timer of timers) {
       // Mark as canceled in DB
       await this.db
-        .updateTable("core.lifecycle_timer_schedule")
+        .updateTable("wf.lifecycle_timer_schedule")
         .set({ status: "canceled" })
         .where("id", "=", timer.id)
         .execute();
@@ -271,7 +271,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
   ): Promise<number> {
     // Fetch active timers of specific type
     const timers = await this.db
-      .selectFrom("core.lifecycle_timer_schedule")
+      .selectFrom("wf.lifecycle_timer_schedule")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("entity_name", "=", entityName)
@@ -289,7 +289,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
     for (const timer of timers) {
       // Mark as canceled in DB
       await this.db
-        .updateTable("core.lifecycle_timer_schedule")
+        .updateTable("wf.lifecycle_timer_schedule")
         .set({ status: "canceled" })
         .where("id", "=", timer.id)
         .execute();
@@ -330,7 +330,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
   ): Promise<void> {
     // Load schedule
     const schedule = await this.db
-      .selectFrom("core.lifecycle_timer_schedule")
+      .selectFrom("wf.lifecycle_timer_schedule")
       .selectAll()
       .where("id", "=", scheduleId)
       .where("tenant_id", "=", tenantId)
@@ -357,7 +357,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
 
     // Mark as fired (prevents double execution)
     await this.db
-      .updateTable("core.lifecycle_timer_schedule")
+      .updateTable("wf.lifecycle_timer_schedule")
       .set({ status: "fired" })
       .where("id", "=", scheduleId)
       .execute();
@@ -452,7 +452,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
     // Query timers with future fire dates
     const now = new Date();
     const timers = await this.db
-      .selectFrom("core.lifecycle_timer_schedule")
+      .selectFrom("wf.lifecycle_timer_schedule")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("status", "=", "scheduled")
@@ -500,7 +500,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
 
         // Update job ID
         await this.db
-          .updateTable("core.lifecycle_timer_schedule")
+          .updateTable("wf.lifecycle_timer_schedule")
           .set({ job_id: job.id })
           .where("id", "=", timer.id)
           .execute();
@@ -532,7 +532,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
     tenantId: string
   ): Promise<LifecycleTimerSchedule[]> {
     const timers = await this.db
-      .selectFrom("core.lifecycle_timer_schedule")
+      .selectFrom("wf.lifecycle_timer_schedule")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("entity_name", "=", entityName)
@@ -551,7 +551,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
       // Check for stale timers (fire_at < now - 1hr and status='scheduled')
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
       const staleTimers = await this.db
-        .selectFrom("core.lifecycle_timer_schedule")
+        .selectFrom("wf.lifecycle_timer_schedule")
         .select(({ fn }) => [fn.countAll<number>().as("count")])
         .where("status", "=", "scheduled")
         .where("fire_at", "<", oneHourAgo)
@@ -561,7 +561,7 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
 
       // Check total active timers
       const activeTimers = await this.db
-        .selectFrom("core.lifecycle_timer_schedule")
+        .selectFrom("wf.lifecycle_timer_schedule")
         .select(({ fn }) => [fn.countAll<number>().as("count")])
         .where("status", "=", "scheduled")
         .executeTakeFirst();

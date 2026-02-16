@@ -19,7 +19,7 @@ export function createCleanupOutputsHandler(
     config: CleanupConfig,
     logger: Logger,
 ) {
-    const TABLE = "core.doc_output" as keyof DB & string;
+    const TABLE = "doc.render_output" as keyof DB & string;
 
     return async (): Promise<void> => {
         const now = new Date();

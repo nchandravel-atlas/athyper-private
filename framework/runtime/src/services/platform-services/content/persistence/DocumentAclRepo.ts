@@ -11,6 +11,8 @@
 import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 
+const TABLE = "doc.document_acl" as keyof DB & string;
+
 export interface CreateAclParams {
   tenantId: string;
   attachmentId: string;
@@ -51,7 +53,7 @@ export class DocumentAclRepo {
     }
 
     const result = await this.db
-      .insertInto("core.document_acl as acl")
+      .insertInto(TABLE as any)
       .values({
         tenant_id: params.tenantId,
         attachment_id: params.attachmentId,
@@ -74,10 +76,10 @@ export class DocumentAclRepo {
    */
   async getById(id: string, tenantId: string): Promise<DocumentAcl | null> {
     const result = await this.db
-      .selectFrom("core.document_acl as acl")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("acl.id", "=", id)
-      .where("acl.tenant_id", "=", tenantId)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .executeTakeFirst();
 
     return result ? this.mapToAcl(result) : null;
@@ -88,9 +90,9 @@ export class DocumentAclRepo {
    */
   async delete(id: string, tenantId: string): Promise<void> {
     await this.db
-      .deleteFrom("core.document_acl as acl")
-      .where("acl.id", "=", id)
-      .where("acl.tenant_id", "=", tenantId)
+      .deleteFrom(TABLE as any)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .execute();
   }
 
@@ -103,22 +105,22 @@ export class DocumentAclRepo {
     options?: { activeOnly?: boolean },
   ): Promise<DocumentAcl[]> {
     let query = this.db
-      .selectFrom("core.document_acl as acl")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("acl.tenant_id", "=", tenantId)
-      .where("acl.attachment_id", "=", attachmentId);
+      .where("tenant_id", "=", tenantId)
+      .where("attachment_id", "=", attachmentId);
 
     if (options?.activeOnly) {
       const now = new Date();
       query = query.where((eb) =>
         eb.or([
-          eb("acl.expires_at", "is", null),
-          eb("acl.expires_at", ">", now),
+          eb("expires_at", "is", null),
+          eb("expires_at", ">", now),
         ]),
       );
     }
 
-    query = query.orderBy("acl.granted_at", "desc");
+    query = query.orderBy("granted_at", "desc");
 
     const results = await query.execute();
     return results.map((r) => this.mapToAcl(r));
@@ -140,15 +142,15 @@ export class DocumentAclRepo {
     const now = new Date();
 
     let query = this.db
-      .selectFrom("core.document_acl as acl")
-      .select("acl.granted")
-      .where("acl.tenant_id", "=", tenantId)
-      .where("acl.attachment_id", "=", attachmentId)
-      .where("acl.permission", "=", permission)
+      .selectFrom(TABLE as any)
+      .select("granted")
+      .where("tenant_id", "=", tenantId)
+      .where("attachment_id", "=", attachmentId)
+      .where("permission", "=", permission)
       .where((eb) =>
         eb.or([
-          eb("acl.expires_at", "is", null),
-          eb("acl.expires_at", ">", now),
+          eb("expires_at", "is", null),
+          eb("expires_at", ">", now),
         ]),
       );
 
@@ -156,12 +158,12 @@ export class DocumentAclRepo {
     if (principalRoleIds && principalRoleIds.length > 0) {
       query = query.where((eb) =>
         eb.or([
-          eb("acl.principal_id", "=", principalId),
-          eb("acl.role_id", "in", principalRoleIds),
+          eb("principal_id", "=", principalId),
+          eb("role_id", "in", principalRoleIds),
         ]),
       );
     } else {
-      query = query.where("acl.principal_id", "=", principalId);
+      query = query.where("principal_id", "=", principalId);
     }
 
     const results = await query.execute();
@@ -185,10 +187,10 @@ export class DocumentAclRepo {
     principalId: string,
   ): Promise<void> {
     await this.db
-      .deleteFrom("core.document_acl as acl")
-      .where("acl.tenant_id", "=", tenantId)
-      .where("acl.attachment_id", "=", attachmentId)
-      .where("acl.principal_id", "=", principalId)
+      .deleteFrom(TABLE as any)
+      .where("tenant_id", "=", tenantId)
+      .where("attachment_id", "=", attachmentId)
+      .where("principal_id", "=", principalId)
       .execute();
   }
 
@@ -199,16 +201,16 @@ export class DocumentAclRepo {
   async upsert(params: CreateAclParams): Promise<DocumentAcl> {
     // First check if entry exists
     const existing = await this.db
-      .selectFrom("core.document_acl as acl")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("acl.tenant_id", "=", params.tenantId)
-      .where("acl.attachment_id", "=", params.attachmentId)
-      .where("acl.permission", "=", params.permission)
+      .where("tenant_id", "=", params.tenantId)
+      .where("attachment_id", "=", params.attachmentId)
+      .where("permission", "=", params.permission)
       .where((eb) => {
         if (params.principalId) {
-          return eb("acl.principal_id", "=", params.principalId);
+          return eb("principal_id", "=", params.principalId);
         } else {
-          return eb("acl.role_id", "=", params.roleId!);
+          return eb("role_id", "=", params.roleId!);
         }
       })
       .executeTakeFirst();
@@ -216,14 +218,14 @@ export class DocumentAclRepo {
     if (existing) {
       // Update existing entry
       const result = await this.db
-        .updateTable("core.document_acl as acl")
+        .updateTable(TABLE as any)
         .set({
           granted: params.granted,
           granted_by: params.grantedBy,
           granted_at: new Date(),
           expires_at: params.expiresAt ?? null,
         })
-        .where("acl.id", "=", existing.id)
+        .where("id", "=", existing.id)
         .returningAll()
         .executeTakeFirstOrThrow();
 
@@ -239,10 +241,10 @@ export class DocumentAclRepo {
    */
   async deleteExpired(tenantId: string, beforeDate: Date): Promise<number> {
     const result = await this.db
-      .deleteFrom("core.document_acl as acl")
-      .where("acl.tenant_id", "=", tenantId)
-      .where("acl.expires_at", "is not", null)
-      .where("acl.expires_at", "<", beforeDate)
+      .deleteFrom(TABLE as any)
+      .where("tenant_id", "=", tenantId)
+      .where("expires_at", "is not", null)
+      .where("expires_at", "<", beforeDate)
       .execute();
 
     return result.length > 0 ? (result[0] as any).numDeletedRows ?? 0 : 0;
@@ -253,9 +255,9 @@ export class DocumentAclRepo {
    */
   async deleteByAttachment(tenantId: string, attachmentId: string): Promise<void> {
     await this.db
-      .deleteFrom("core.document_acl as acl")
-      .where("acl.tenant_id", "=", tenantId)
-      .where("acl.attachment_id", "=", attachmentId)
+      .deleteFrom(TABLE as any)
+      .where("tenant_id", "=", tenantId)
+      .where("attachment_id", "=", attachmentId)
       .execute();
   }
 

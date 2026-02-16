@@ -18,6 +18,8 @@ import type { DB } from "@athyper/adapter-db";
 import type { Logger } from "../../../../../kernel/logger.js";
 import type { ObjectStorageAdapter } from "@athyper/adapter-objectstorage";
 
+const TABLE = "doc.attachment" as keyof DB & string;
+
 export interface CleanupOrphanedUploadsConfig {
   /**
    * Age threshold in hours (default: 24)
@@ -56,19 +58,19 @@ export function createCleanupOrphanedUploadsHandler(
     try {
       // Find orphaned uploads
       const orphanedUploads = await db
-        .selectFrom("core.attachment as attachment")
+        .selectFrom(TABLE as any)
         .select([
-          "attachment.id",
-          "attachment.tenant_id",
-          "attachment.storage_bucket",
-          "attachment.storage_key",
-          "attachment.original_filename",
-          "attachment.created_at",
-        ])
-        .where("attachment.sha256", "is", null)
-        .where("attachment.created_at", "<", cutoff)
+          "id",
+          "tenant_id",
+          "storage_bucket",
+          "storage_key",
+          "original_filename",
+          "created_at",
+        ] as any)
+        .where("sha256", "is", null)
+        .where("created_at", "<", cutoff)
         .limit(config.maxCleanupPerRun)
-        .execute();
+        .execute() as any[];
 
       if (orphanedUploads.length === 0) {
         logger.debug("[content:worker:cleanup-orphaned] No orphaned uploads found");
@@ -90,7 +92,7 @@ export function createCleanupOrphanedUploadsHandler(
           // Delete from S3 if key exists
           if (config.deleteFromStorage && upload.storage_bucket && upload.storage_key) {
             try {
-              await storage.delete(upload.storage_bucket, upload.storage_key);
+              await storage.delete(upload.storage_key);
               deletedFromStorage++;
               logger.debug(
                 {
@@ -115,8 +117,8 @@ export function createCleanupOrphanedUploadsHandler(
 
           // Delete attachment record
           const deleteResult = await db
-            .deleteFrom("core.attachment as attachment")
-            .where("attachment.id", "=", upload.id)
+            .deleteFrom(TABLE as any)
+            .where("id", "=", upload.id)
             .execute();
 
           if (deleteResult.length > 0 && (deleteResult[0] as any).numDeletedRows > 0) {

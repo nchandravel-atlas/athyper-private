@@ -21,8 +21,7 @@
     "migrations",
     "sql",
     "seed",
-    "types",
-    "generated"
+    "types"
   ],
   "scripts": {
     "clean": "rimraf dist",
@@ -56,7 +55,6 @@
     "@types/pg": "^8.11.10",
     "prisma": "^7.4.0",
     "prisma-kysely": "^3.0.0",
-    "prisma-zod-generator": "^2.1.2",
     "rimraf": "^6.0.1",
     "tsup": "^8.3.0",
     "tsx": "^4.19.2",

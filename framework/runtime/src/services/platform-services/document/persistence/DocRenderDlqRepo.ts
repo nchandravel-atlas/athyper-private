@@ -6,7 +6,7 @@ import { type Kysely, sql } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type { DocRenderDlqEntry, CreateDlqEntryInput } from "../domain/models/DocRenderDlqEntry.js";
 
-const TABLE = "core.doc_render_dlq" as keyof DB & string;
+const TABLE = "doc.render_dlq" as keyof DB & string;
 
 export class DocRenderDlqRepo {
     constructor(private readonly db: Kysely<DB>) {}

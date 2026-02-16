@@ -237,7 +237,7 @@ export function createMetaServices(
 
   // 10.4 Overlay Repository (depends on db)
   const overlayRepository = new DatabaseOverlayRepository(
-    config.db as unknown as LifecycleDB_Type
+    config.db as any
   );
 
   // 10.4.1 Schema Composer (depends on overlayRepository)

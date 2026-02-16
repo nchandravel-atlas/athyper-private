@@ -11,6 +11,8 @@
 import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 
+const TABLE = "doc.attachment_comment" as keyof DB & string;
+
 export interface CreateCommentParams {
   tenantId: string;
   attachmentId: string;
@@ -52,7 +54,7 @@ export class CommentRepo {
     const now = new Date();
 
     const result = await this.db
-      .insertInto("core.attachment_comment as comment")
+      .insertInto(TABLE as any)
       .values({
         tenant_id: params.tenantId,
         attachment_id: params.attachmentId,
@@ -74,11 +76,11 @@ export class CommentRepo {
    */
   async getById(id: string, tenantId: string): Promise<AttachmentComment | null> {
     const result = await this.db
-      .selectFrom("core.attachment_comment as comment")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("comment.id", "=", id)
-      .where("comment.tenant_id", "=", tenantId)
-      .where("comment.deleted_at", "is", null)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
+      .where("deleted_at", "is", null)
       .executeTakeFirst();
 
     return result ? this.mapToComment(result) : null;
@@ -93,7 +95,7 @@ export class CommentRepo {
     params: UpdateCommentParams,
   ): Promise<AttachmentComment> {
     const result = await this.db
-      .updateTable("core.attachment_comment as comment")
+      .updateTable(TABLE as any)
       .set({
         content: params.content,
         mentions: params.mentions ? JSON.stringify(params.mentions) : null,
@@ -101,9 +103,9 @@ export class CommentRepo {
         edited_by: params.editedBy,
         updated_at: new Date(),
       })
-      .where("comment.id", "=", id)
-      .where("comment.tenant_id", "=", tenantId)
-      .where("comment.deleted_at", "is", null)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
+      .where("deleted_at", "is", null)
       .returningAll()
       .executeTakeFirstOrThrow();
 
@@ -115,14 +117,14 @@ export class CommentRepo {
    */
   async delete(id: string, tenantId: string, deletedBy: string): Promise<void> {
     await this.db
-      .updateTable("core.attachment_comment as comment")
+      .updateTable(TABLE as any)
       .set({
         deleted_at: new Date(),
         deleted_by: deletedBy,
         updated_at: new Date(),
       })
-      .where("comment.id", "=", id)
-      .where("comment.tenant_id", "=", tenantId)
+      .where("id", "=", id)
+      .where("tenant_id", "=", tenantId)
       .execute();
   }
 
@@ -135,16 +137,16 @@ export class CommentRepo {
     options?: { includeDeleted?: boolean },
   ): Promise<AttachmentComment[]> {
     let query = this.db
-      .selectFrom("core.attachment_comment as comment")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("comment.tenant_id", "=", tenantId)
-      .where("comment.attachment_id", "=", attachmentId);
+      .where("tenant_id", "=", tenantId)
+      .where("attachment_id", "=", attachmentId);
 
     if (!options?.includeDeleted) {
-      query = query.where("comment.deleted_at", "is", null);
+      query = query.where("deleted_at", "is", null);
     }
 
-    query = query.orderBy("comment.created_at", "asc");
+    query = query.orderBy("created_at", "asc");
 
     const results = await query.execute();
     return results.map((r) => this.mapToComment(r));
@@ -158,12 +160,12 @@ export class CommentRepo {
     tenantId: string,
   ): Promise<AttachmentComment[]> {
     const results = await this.db
-      .selectFrom("core.attachment_comment as comment")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("comment.parent_id", "=", parentId)
-      .where("comment.tenant_id", "=", tenantId)
-      .where("comment.deleted_at", "is", null)
-      .orderBy("comment.created_at", "asc")
+      .where("parent_id", "=", parentId)
+      .where("tenant_id", "=", tenantId)
+      .where("deleted_at", "is", null)
+      .orderBy("created_at", "asc")
       .execute();
 
     return results.map((r) => this.mapToComment(r));
@@ -178,12 +180,12 @@ export class CommentRepo {
     limit = 50,
   ): Promise<AttachmentComment[]> {
     const results = await this.db
-      .selectFrom("core.attachment_comment as comment")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("comment.tenant_id", "=", tenantId)
-      .where("comment.author_id", "=", authorId)
-      .where("comment.deleted_at", "is", null)
-      .orderBy("comment.created_at", "desc")
+      .where("tenant_id", "=", tenantId)
+      .where("author_id", "=", authorId)
+      .where("deleted_at", "is", null)
+      .orderBy("created_at", "desc")
       .limit(limit)
       .execute();
 
@@ -200,16 +202,16 @@ export class CommentRepo {
   ): Promise<AttachmentComment[]> {
     // Use JSONB contains operator
     const results = await this.db
-      .selectFrom("core.attachment_comment as comment")
+      .selectFrom(TABLE as any)
       .selectAll()
-      .where("comment.tenant_id", "=", tenantId)
-      .where("comment.deleted_at", "is", null)
+      .where("tenant_id", "=", tenantId)
+      .where("deleted_at", "is", null)
       .where((eb) =>
         eb.or([
-          eb("comment.mentions", "@>", JSON.stringify([userId])),
+          eb("mentions", "@>", JSON.stringify([userId])),
         ]),
       )
-      .orderBy("comment.created_at", "desc")
+      .orderBy("created_at", "desc")
       .limit(limit)
       .execute();
 
@@ -221,11 +223,11 @@ export class CommentRepo {
    */
   async countByAttachment(tenantId: string, attachmentId: string): Promise<number> {
     const result = await this.db
-      .selectFrom("core.attachment_comment as comment")
-      .select((eb) => eb.fn.count<number>("comment.id").as("count"))
-      .where("comment.tenant_id", "=", tenantId)
-      .where("comment.attachment_id", "=", attachmentId)
-      .where("comment.deleted_at", "is", null)
+      .selectFrom(TABLE as any)
+      .select((eb) => eb.fn.count<number>("id").as("count"))
+      .where("tenant_id", "=", tenantId)
+      .where("attachment_id", "=", attachmentId)
+      .where("deleted_at", "is", null)
       .executeTakeFirst();
 
     return result?.count ?? 0;
@@ -236,9 +238,9 @@ export class CommentRepo {
    */
   async hardDeleteByAttachment(tenantId: string, attachmentId: string): Promise<void> {
     await this.db
-      .deleteFrom("core.attachment_comment as comment")
-      .where("comment.tenant_id", "=", tenantId)
-      .where("comment.attachment_id", "=", attachmentId)
+      .deleteFrom(TABLE as any)
+      .where("tenant_id", "=", tenantId)
+      .where("attachment_id", "=", attachmentId)
       .execute();
   }
 

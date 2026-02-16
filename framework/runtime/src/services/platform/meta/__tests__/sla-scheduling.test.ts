@@ -245,10 +245,10 @@ describe("SLA Scheduling", () => {
 
       await service.processReminder("task-1", "t1");
 
-      // Should have logged an event (insertInto "core.approval_event")
+      // Should have logged an event (insertInto "wf.approval_event")
       expect(db.insertInto).toHaveBeenCalled();
       const insertCalls = (db.insertInto as any).mock.calls;
-      const eventInsert = insertCalls.find((c: any[]) => c[0] === "core.approval_event");
+      const eventInsert = insertCalls.find((c: any[]) => c[0] === "wf.approval_event");
       expect(eventInsert).toBeDefined();
     });
 
@@ -267,7 +267,7 @@ describe("SLA Scheduling", () => {
 
       // Should NOT have logged an event
       const insertCalls = (db.insertInto as any).mock.calls;
-      const eventInsert = insertCalls.find((c: any[]) => c[0] === "core.approval_event");
+      const eventInsert = insertCalls.find((c: any[]) => c[0] === "wf.approval_event");
       expect(eventInsert).toBeUndefined();
     });
 
@@ -300,10 +300,10 @@ describe("SLA Scheduling", () => {
         "t1",
       );
 
-      // Should have inserted into core.approval_escalation AND core.approval_event
+      // Should have inserted into wf.approval_escalation AND wf.approval_event
       const insertCalls = (db.insertInto as any).mock.calls;
-      const escalationInsert = insertCalls.find((c: any[]) => c[0] === "core.approval_escalation");
-      const eventInsert = insertCalls.find((c: any[]) => c[0] === "core.approval_event");
+      const escalationInsert = insertCalls.find((c: any[]) => c[0] === "wf.approval_escalation");
+      const eventInsert = insertCalls.find((c: any[]) => c[0] === "wf.approval_event");
       expect(escalationInsert).toBeDefined();
       expect(eventInsert).toBeDefined();
     });
@@ -345,7 +345,7 @@ describe("SLA Scheduling", () => {
       await service.cancelTimers("task-1", "t1");
 
       const insertCalls = (db.insertInto as any).mock.calls;
-      const eventInsert = insertCalls.find((c: any[]) => c[0] === "core.approval_event");
+      const eventInsert = insertCalls.find((c: any[]) => c[0] === "wf.approval_event");
       expect(eventInsert).toBeDefined();
     });
   });

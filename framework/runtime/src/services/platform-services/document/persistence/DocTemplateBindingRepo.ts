@@ -7,7 +7,7 @@ import type { DB } from "@athyper/adapter-db";
 import type { DocTemplateBinding } from "../domain/models/DocTemplateBinding.js";
 import type { TemplateBindingId, TemplateId } from "../domain/types.js";
 
-const TABLE = "core.doc_template_binding" as keyof DB & string;
+const TABLE = "doc.template_binding" as keyof DB & string;
 
 export interface CreateBindingInput {
     tenantId: string;

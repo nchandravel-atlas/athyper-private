@@ -1,5 +1,5 @@
 /**
- * InAppNotificationRepo — Kysely repo for the existing ui.notification table.
+ * InAppNotificationRepo — Kysely repo for the notify.notification table.
  *
  * This repo is used by the InAppAdapter to write in-app notifications
  * and by the inbox controller for user-facing queries.
@@ -50,7 +50,7 @@ export interface CreateInAppInput {
     createdBy: string;
 }
 
-const TABLE = "ui.notification" as keyof DB & string;
+const TABLE = "notify.notification" as keyof DB & string;
 
 export class InAppNotificationRepo {
     constructor(private readonly db: Kysely<DB>) {}

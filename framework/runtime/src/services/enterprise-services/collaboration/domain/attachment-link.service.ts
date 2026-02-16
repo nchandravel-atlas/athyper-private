@@ -2,14 +2,15 @@
  * Attachment Link Service
  *
  * Handles linking file attachments to comments.
- * Updates core.attachment table with comment_type and comment_id.
+ * Updates doc.attachment table with comment_type and comment_id.
  */
 
-import type { Database } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
+import type { DB } from "@athyper/adapter-db";
 import type { Logger } from "../../../../kernel/logger.js";
 
 /**
- * Attachment record from core.attachment table
+ * Attachment record from doc.attachment table
  */
 export interface Attachment {
   id: string;
@@ -63,7 +64,7 @@ type CommentType = typeof VALID_COMMENT_TYPES[number];
  */
 export class AttachmentLinkService {
   constructor(
-    private readonly db: Database,
+    private readonly db: Kysely<DB>,
     private readonly logger: Logger
   ) {}
 
@@ -91,7 +92,7 @@ export class AttachmentLinkService {
 
     // Check if attachment exists and belongs to tenant
     const existing = await this.db
-      .selectFrom("core.attachment")
+      .selectFrom("doc.attachment")
       .select(["id", "tenant_id"])
       .where("id", "=", attachmentId)
       .where("tenant_id", "=", tenantId)
@@ -103,7 +104,7 @@ export class AttachmentLinkService {
 
     // Update attachment with comment link
     await this.db
-      .updateTable("core.attachment")
+      .updateTable("doc.attachment")
       .set({
         comment_type: commentType,
         comment_id: commentId,
@@ -137,7 +138,7 @@ export class AttachmentLinkService {
     commentId: string
   ): Promise<Attachment[]> {
     const rows = await this.db
-      .selectFrom("core.attachment")
+      .selectFrom("doc.attachment")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
@@ -145,7 +146,7 @@ export class AttachmentLinkService {
       .orderBy("created_at", "asc")
       .execute();
 
-    return rows.map((row) => this.mapRow(row as AttachmentRow));
+    return rows.map((row) => this.mapRow(row as unknown as AttachmentRow));
   }
 
   /**
@@ -159,7 +160,7 @@ export class AttachmentLinkService {
    */
   async unlinkFromComment(tenantId: string, attachmentId: string): Promise<void> {
     await this.db
-      .updateTable("core.attachment")
+      .updateTable("doc.attachment")
       .set({
         comment_type: null,
         comment_id: null,
@@ -186,13 +187,13 @@ export class AttachmentLinkService {
    */
   async getById(tenantId: string, attachmentId: string): Promise<Attachment | undefined> {
     const row = await this.db
-      .selectFrom("core.attachment")
+      .selectFrom("doc.attachment")
       .selectAll()
       .where("id", "=", attachmentId)
       .where("tenant_id", "=", tenantId)
       .executeTakeFirst();
 
-    return row ? this.mapRow(row as AttachmentRow) : undefined;
+    return row ? this.mapRow(row as unknown as AttachmentRow) : undefined;
   }
 
   /**

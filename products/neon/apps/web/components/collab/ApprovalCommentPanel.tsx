@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import { Loader2, MessageSquare, Send } from "lucide-react";
+
 import { useApprovalComments, type ApprovalComment } from "@/lib/collab";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+
 import { MentionInput } from "./MentionInput";
-import { Loader2, MessageSquare, Send } from "lucide-react";
-import { useState } from "react";
 
 // ─── Single approval comment card ────────────────────────────
 

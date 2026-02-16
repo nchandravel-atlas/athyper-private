@@ -198,8 +198,8 @@ export class RoleBindingService {
           tenant_id: tenantId,
           code: roleDef.code,
           name: roleDef.name,
-          scope_mode: roleDef.scopeMode,
-          is_active: true,
+          category: roleDef.scopeMode,
+          description: roleDef.description,
           created_by: createdBy,
         })
         .execute();
@@ -244,8 +244,7 @@ export class RoleBindingService {
         tenant_id: tenantId,
         code,
         name,
-        scope_mode: scopeMode,
-        is_active: true,
+        category: scopeMode,
         created_by: createdBy,
       })
       .execute();
@@ -266,7 +265,7 @@ export class RoleBindingService {
   async getRole(roleId: string): Promise<RoleInfo | undefined> {
     const result = await this.db
       .selectFrom("core.role")
-      .select(["id", "tenant_id", "code", "name", "scope_mode", "is_active"])
+      .select(["id", "tenant_id", "code", "name", "category"])
       .where("id", "=", roleId)
       .executeTakeFirst();
 
@@ -277,8 +276,8 @@ export class RoleBindingService {
       tenantId: result.tenant_id,
       code: result.code,
       name: result.name,
-      scopeMode: result.scope_mode as ScopeMode,
-      isActive: result.is_active,
+      scopeMode: (result.category ?? "tenant") as ScopeMode,
+      isActive: true,
     };
   }
 
@@ -288,7 +287,7 @@ export class RoleBindingService {
   async getRoleByCode(tenantId: string, code: string): Promise<RoleInfo | undefined> {
     const result = await this.db
       .selectFrom("core.role")
-      .select(["id", "tenant_id", "code", "name", "scope_mode", "is_active"])
+      .select(["id", "tenant_id", "code", "name", "category"])
       .where("tenant_id", "=", tenantId)
       .where("code", "=", code)
       .executeTakeFirst();
@@ -300,8 +299,8 @@ export class RoleBindingService {
       tenantId: result.tenant_id,
       code: result.code,
       name: result.name,
-      scopeMode: result.scope_mode as ScopeMode,
-      isActive: result.is_active,
+      scopeMode: (result.category ?? "tenant") as ScopeMode,
+      isActive: true,
     };
   }
 
@@ -330,19 +329,14 @@ export class RoleBindingService {
 
     const id = crypto.randomUUID();
     await this.db
-      .insertInto("core.role_binding")
+      .insertInto("core.principal_role")
       .values({
         id,
         tenant_id: request.tenantId,
         role_id: request.roleId,
-        principal_id: request.principalId ?? null,
-        group_id: request.groupId ?? null,
-        scope_kind: request.scopeKind ?? "tenant",
-        scope_key: request.scopeKey ?? null,
-        priority: request.priority ?? 100,
-        valid_from: request.validFrom ?? null,
-        valid_until: request.validUntil ?? null,
-        created_by: request.createdBy,
+        principal_id: request.principalId ?? request.groupId ?? "",
+        assigned_by: request.createdBy,
+        expires_at: request.validUntil ?? null,
       })
       .execute();
 
@@ -376,7 +370,7 @@ export class RoleBindingService {
    */
   async removeBinding(bindingId: string): Promise<void> {
     await this.db
-      .deleteFrom("core.role_binding")
+      .deleteFrom("core.principal_role" as any)
       .where("id", "=", bindingId)
       .execute();
 
@@ -397,34 +391,24 @@ export class RoleBindingService {
   ): Promise<Array<RoleInfo & { binding: RoleBindingInfo }>> {
     const now = new Date();
 
-    // Get direct bindings
+    // Get direct role bindings
     const directBindings = await this.db
-      .selectFrom("core.role_binding as rb")
-      .innerJoin("core.role as r", "r.id", "rb.role_id")
+      .selectFrom("core.principal_role as pr")
+      .innerJoin("core.role as r", "r.id", "pr.role_id")
       .select([
         "r.id as role_id",
         "r.tenant_id",
         "r.code",
         "r.name",
-        "r.scope_mode",
-        "r.is_active",
-        "rb.id as binding_id",
-        "rb.principal_id",
-        "rb.group_id",
-        "rb.scope_kind",
-        "rb.scope_key",
-        "rb.priority",
-        "rb.valid_from",
-        "rb.valid_until",
+        "r.category",
+        "pr.id as binding_id",
+        "pr.principal_id",
+        "pr.expires_at",
       ])
-      .where("rb.tenant_id", "=", tenantId)
-      .where("rb.principal_id", "=", principalId)
-      .where("r.is_active", "=", true)
+      .where("pr.tenant_id", "=", tenantId)
+      .where("pr.principal_id", "=", principalId)
       .where((eb) =>
-        eb.or([eb("rb.valid_from", "is", null), eb("rb.valid_from", "<=", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("rb.valid_until", "is", null), eb("rb.valid_until", ">", now)])
+        eb.or([eb("pr.expires_at", "is", null), eb("pr.expires_at", ">", now)])
       )
       .execute();
 
@@ -433,46 +417,30 @@ export class RoleBindingService {
       .selectFrom("core.group_member")
       .select("group_id")
       .where("principal_id", "=", principalId)
-      .where((eb) =>
-        eb.or([eb("valid_from", "is", null), eb("valid_from", "<=", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("valid_until", "is", null), eb("valid_until", ">", now)])
-      )
       .execute();
 
     const groupIds = groupMemberships.map((m) => m.group_id);
 
-    // Get group-based bindings
+    // Get group-based bindings (groups share principal_role via principal_id)
     let groupBindings: typeof directBindings = [];
     if (groupIds.length > 0) {
       groupBindings = await this.db
-        .selectFrom("core.role_binding as rb")
-        .innerJoin("core.role as r", "r.id", "rb.role_id")
+        .selectFrom("core.principal_role as pr")
+        .innerJoin("core.role as r", "r.id", "pr.role_id")
         .select([
           "r.id as role_id",
           "r.tenant_id",
           "r.code",
           "r.name",
-          "r.scope_mode",
-          "r.is_active",
-          "rb.id as binding_id",
-          "rb.principal_id",
-          "rb.group_id",
-          "rb.scope_kind",
-          "rb.scope_key",
-          "rb.priority",
-          "rb.valid_from",
-          "rb.valid_until",
+          "r.category",
+          "pr.id as binding_id",
+          "pr.principal_id",
+          "pr.expires_at",
         ])
-        .where("rb.tenant_id", "=", tenantId)
-        .where("rb.group_id", "in", groupIds)
-        .where("r.is_active", "=", true)
+        .where("pr.tenant_id", "=", tenantId)
+        .where("pr.principal_id", "in", groupIds)
         .where((eb) =>
-          eb.or([eb("rb.valid_from", "is", null), eb("rb.valid_from", "<=", now)])
-        )
-        .where((eb) =>
-          eb.or([eb("rb.valid_until", "is", null), eb("rb.valid_until", ">", now)])
+          eb.or([eb("pr.expires_at", "is", null), eb("pr.expires_at", ">", now)])
         )
         .execute();
     }
@@ -482,34 +450,38 @@ export class RoleBindingService {
     const seen = new Set<string>();
     const results: Array<RoleInfo & { binding: RoleBindingInfo }> = [];
 
-    // Sort by priority (lower = higher priority)
-    allBindings.sort((a, b) => a.priority - b.priority);
-
     for (const row of allBindings) {
       if (seen.has(row.code)) continue;
       seen.add(row.code);
+
+      const roleDef = getStandardRoleDef(row.code as PersonaCode);
+      const priority = roleDef?.priority ?? 100;
 
       results.push({
         id: row.role_id,
         tenantId: row.tenant_id,
         code: row.code,
         name: row.name,
-        scopeMode: row.scope_mode as ScopeMode,
-        isActive: row.is_active,
+        scopeMode: (row.category ?? "tenant") as ScopeMode,
+        isActive: true,
+        priority,
         binding: {
           id: row.binding_id,
           tenantId: row.tenant_id,
           roleId: row.role_id,
           principalId: row.principal_id,
-          groupId: row.group_id,
-          scopeKind: row.scope_kind as ScopeKind,
-          scopeKey: row.scope_key,
-          priority: row.priority,
-          validFrom: row.valid_from,
-          validUntil: row.valid_until,
+          groupId: null,
+          scopeKind: (row.category ?? "tenant") as ScopeKind,
+          scopeKey: null,
+          priority,
+          validFrom: null,
+          validUntil: row.expires_at,
         },
       });
     }
+
+    // Sort by priority (lower = higher priority)
+    results.sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100));
 
     return results;
   }
@@ -525,14 +497,10 @@ export class RoleBindingService {
       offset?: number;
     }
   ): Promise<RoleInfo[]> {
-    let query = this.db
+    const query = this.db
       .selectFrom("core.role")
-      .select(["id", "tenant_id", "code", "name", "scope_mode", "is_active"])
+      .select(["id", "tenant_id", "code", "name", "category"])
       .where("tenant_id", "=", tenantId);
-
-    if (filters?.isActive !== undefined) {
-      query = query.where("is_active", "=", filters.isActive);
-    }
 
     const results = await query
       .limit(filters?.limit ?? 100)
@@ -545,8 +513,8 @@ export class RoleBindingService {
       tenantId: r.tenant_id,
       code: r.code,
       name: r.name,
-      scopeMode: r.scope_mode as ScopeMode,
-      isActive: r.is_active,
+      scopeMode: (r.category ?? "tenant") as ScopeMode,
+      isActive: true,
     }));
   }
 

@@ -241,27 +241,25 @@ export class ApprovalServiceImpl implements ApprovalService {
       // 4. Create approval instance (stores transition_id for deterministic resume)
       const instanceId = uuid();
       await this.db
-        .insertInto("core.approval_instance")
+        .insertInto("wf.approval_instance")
         .values({
           id: instanceId,
           tenant_id: ctx.tenantId,
-          entity_name: entityName,
+          approval_definition_id: approvalTemplateId,
+          entity_type: entityName,
           entity_id: entityId,
-          transition_id: transitionId,
-          approval_template_id: approvalTemplateId,
           status: "open",
-          context: JSON.stringify(assignmentContext ?? {}),
-          created_at: new Date(),
-          created_by: ctx.userId,
-        })
+          requested_by: ctx.userId,
+          metadata: JSON.stringify({ transitionId, assignmentContext: assignmentContext ?? {} }),
+        } as any)
         .execute();
 
       // 5. Create stages
       let totalTasks = 0;
       for (const templateStage of templateStages) {
         const stageId = uuid();
-        await this.db
-          .insertInto("core.approval_stage")
+        await (this.db as any)
+          .insertInto("wf.approval_stage")
           .values({
             id: stageId,
             tenant_id: ctx.tenantId,
@@ -283,28 +281,22 @@ export class ApprovalServiceImpl implements ApprovalService {
         for (const assignee of assignees) {
           const taskId = uuid();
           await this.db
-            .insertInto("core.approval_task")
+            .insertInto("wf.approval_task")
             .values({
               id: taskId,
               tenant_id: ctx.tenantId,
               approval_instance_id: instanceId,
-              approval_stage_id: stageId,
-              assignee_principal_id: assignee.principalId ?? null,
-              assignee_group_id: assignee.groupId ?? null,
-              task_type: "approver",
+              approver_id: assignee.principalId ?? assignee.groupId ?? "",
+              order_index: totalTasks,
               status: "pending",
-              due_at: null,
-              metadata: null,
-              decided_at: null,
-              decided_by: null,
-              decision_note: null,
-              created_at: new Date(),
-            })
+              created_by: ctx.userId,
+              metadata: JSON.stringify({ stageId, taskType: "approver" }),
+            } as any)
             .execute();
 
           // 7. Create assignment snapshot
           await this.db
-            .insertInto("core.approval_assignment_snapshot")
+            .insertInto("wf.approval_assignment_snapshot")
             .values({
               id: uuid(),
               tenant_id: ctx.tenantId,
@@ -354,7 +346,7 @@ export class ApprovalServiceImpl implements ApprovalService {
     tenantId: string
   ): Promise<ApprovalInstance | undefined> {
     const row = await this.db
-      .selectFrom("core.approval_instance")
+      .selectFrom("wf.approval_instance")
       .selectAll()
       .where("id", "=", instanceId)
       .where("tenant_id", "=", tenantId)
@@ -369,7 +361,7 @@ export class ApprovalServiceImpl implements ApprovalService {
     tenantId: string
   ): Promise<ApprovalInstance | undefined> {
     const row = await this.db
-      .selectFrom("core.approval_instance")
+      .selectFrom("wf.approval_instance")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("entity_name", "=", entityName)
@@ -389,7 +381,7 @@ export class ApprovalServiceImpl implements ApprovalService {
     tenantId: string
   ): Promise<ApprovalTask | undefined> {
     const row = await this.db
-      .selectFrom("core.approval_task")
+      .selectFrom("wf.approval_task")
       .selectAll()
       .where("id", "=", taskId)
       .where("tenant_id", "=", tenantId)
@@ -403,7 +395,7 @@ export class ApprovalServiceImpl implements ApprovalService {
     tenantId: string
   ): Promise<ApprovalTask[]> {
     const rows = await this.db
-      .selectFrom("core.approval_task")
+      .selectFrom("wf.approval_task")
       .selectAll()
       .where("approval_instance_id", "=", instanceId)
       .where("tenant_id", "=", tenantId)
@@ -421,7 +413,7 @@ export class ApprovalServiceImpl implements ApprovalService {
     const offset = options?.offset ?? 0;
 
     const rows = await this.db
-      .selectFrom("core.approval_task")
+      .selectFrom("wf.approval_task")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("assignee_principal_id", "=", userId)
@@ -453,7 +445,7 @@ export class ApprovalServiceImpl implements ApprovalService {
     tenantId: string
   ): Promise<ApprovalAssignmentSnapshot | undefined> {
     const row = await this.db
-      .selectFrom("core.approval_assignment_snapshot")
+      .selectFrom("wf.approval_assignment_snapshot")
       .selectAll()
       .where("approval_task_id", "=", taskId)
       .where("tenant_id", "=", tenantId)
@@ -490,7 +482,7 @@ export class ApprovalServiceImpl implements ApprovalService {
       // 2. Update task status
       const taskStatus = decision === "approve" ? "approved" : "rejected";
       await this.db
-        .updateTable("core.approval_task")
+        .updateTable("wf.approval_task")
         .set({
           status: taskStatus,
           decided_at: new Date(),
@@ -533,7 +525,7 @@ export class ApprovalServiceImpl implements ApprovalService {
 
         // Update stage status
         await this.db
-          .updateTable("core.approval_stage")
+          .updateTable("wf.approval_stage")
           .set({ status: stageOutcome === "rejected" ? "canceled" : "completed" })
           .where("id", "=", task.approvalStageId)
           .where("tenant_id", "=", ctx.tenantId)
@@ -543,7 +535,7 @@ export class ApprovalServiceImpl implements ApprovalService {
         if (stageOutcome === "rejected") {
           // Rejection at any stage → cancel instance with rejected reason
           await this.db
-            .updateTable("core.approval_instance")
+            .updateTable("wf.approval_instance")
             .set({
               status: "canceled",
               context: JSON.stringify({ reason: "rejected" }),
@@ -570,7 +562,7 @@ export class ApprovalServiceImpl implements ApprovalService {
 
           if (allComplete) {
             await this.db
-              .updateTable("core.approval_instance")
+              .updateTable("wf.approval_instance")
               .set({ status: "completed" })
               .where("id", "=", task.approvalInstanceId)
               .where("tenant_id", "=", ctx.tenantId)
@@ -617,7 +609,7 @@ export class ApprovalServiceImpl implements ApprovalService {
     tenantId: string
   ): Promise<boolean> {
     const stages = await this.db
-      .selectFrom("core.approval_stage")
+      .selectFrom("wf.approval_stage")
       .select(["id", "status"])
       .where("approval_instance_id", "=", instanceId)
       .where("tenant_id", "=", tenantId)
@@ -629,7 +621,7 @@ export class ApprovalServiceImpl implements ApprovalService {
 
   async isStageComplete(stageId: string, tenantId: string): Promise<boolean> {
     const stage = await this.db
-      .selectFrom("core.approval_stage")
+      .selectFrom("wf.approval_stage")
       .select(["mode"])
       .where("id", "=", stageId)
       .where("tenant_id", "=", tenantId)
@@ -638,7 +630,7 @@ export class ApprovalServiceImpl implements ApprovalService {
     if (!stage) return false;
 
     const tasks = await this.db
-      .selectFrom("core.approval_task")
+      .selectFrom("wf.approval_task")
       .select(["status"])
       .where("approval_stage_id", "=", stageId)
       .where("tenant_id", "=", tenantId)
@@ -785,7 +777,7 @@ export class ApprovalServiceImpl implements ApprovalService {
 
   /**
    * Process an escalation when the job fires.
-   * Records an escalation row in `core.approval_escalation` and logs the event.
+   * Records an escalation row in `wf.approval_escalation` and logs the event.
    */
   async processEscalation(
     taskId: string,
@@ -797,7 +789,7 @@ export class ApprovalServiceImpl implements ApprovalService {
 
     // Record escalation
     await this.db
-      .insertInto("core.approval_escalation")
+      .insertInto("wf.approval_escalation")
       .values({
         id: uuid(),
         tenant_id: tenantId,
@@ -854,7 +846,7 @@ export class ApprovalServiceImpl implements ApprovalService {
    */
   async rehydratePendingTimers(tenantId: string): Promise<number> {
     const pendingTasks = await this.db
-      .selectFrom("core.approval_task")
+      .selectFrom("wf.approval_task")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("status", "=", "pending")
@@ -899,7 +891,7 @@ export class ApprovalServiceImpl implements ApprovalService {
     const offset = options?.offset ?? 0;
 
     const rows = await this.db
-      .selectFrom("core.approval_event")
+      .selectFrom("wf.approval_event")
       .selectAll()
       .where("approval_instance_id", "=", instanceId)
       .orderBy("occurred_at", "asc")
@@ -933,7 +925,7 @@ export class ApprovalServiceImpl implements ApprovalService {
     const offset = options?.offset ?? 0;
 
     const rows = await this.db
-      .selectFrom("core.approval_escalation")
+      .selectFrom("wf.approval_escalation")
       .selectAll()
       .where("approval_instance_id", "=", instanceId)
       .orderBy("occurred_at", "desc")
@@ -961,7 +953,7 @@ export class ApprovalServiceImpl implements ApprovalService {
 
   async healthCheck(): Promise<HealthCheckResult> {
     try {
-      await sql`SELECT 1 FROM core.approval_instance LIMIT 0`.execute(this.db);
+      await sql`SELECT 1 FROM wf.approval_instance LIMIT 0`.execute(this.db);
       return { healthy: true, name: "approval-service" };
     } catch (error) {
       return {
@@ -1045,7 +1037,7 @@ export class ApprovalServiceImpl implements ApprovalService {
     tenantId: string
   ): Promise<"completed" | "rejected"> {
     const tasks = await this.db
-      .selectFrom("core.approval_task")
+      .selectFrom("wf.approval_task")
       .select(["status"])
       .where("approval_stage_id", "=", stageId)
       .where("tenant_id", "=", tenantId)
@@ -1068,7 +1060,7 @@ export class ApprovalServiceImpl implements ApprovalService {
 
     // Load instance to get transition_id
     const instance = await this.db
-      .selectFrom("core.approval_instance")
+      .selectFrom("wf.approval_instance")
       .select(["transition_id", "entity_name", "entity_id"])
       .where("id", "=", instanceId)
       .where("tenant_id", "=", tenantId)
@@ -1130,7 +1122,7 @@ export class ApprovalServiceImpl implements ApprovalService {
   ): Promise<void> {
     try {
       await this.db
-        .insertInto("core.approval_event")
+        .insertInto("wf.approval_event")
         .values({
           id: uuid(),
           tenant_id: tenantId,

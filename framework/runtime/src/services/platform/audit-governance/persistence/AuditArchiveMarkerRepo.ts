@@ -39,7 +39,7 @@ export interface CreateArchiveMarkerInput {
 // Repository
 // ============================================================================
 
-const TABLE = "core.audit_archive_marker" as keyof DB & string;
+const TABLE = "audit.audit_archive_marker" as keyof DB & string;
 
 export class AuditArchiveMarkerRepo {
   constructor(private readonly db: Kysely<DB>) {}

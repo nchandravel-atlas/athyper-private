@@ -33,7 +33,7 @@ export class ReactionRepository {
   async toggle(req: CreateReactionRequest): Promise<{ action: "added" | "removed" }> {
     // Check if reaction exists
     const existing = await this.db
-      .selectFrom("core.comment_reaction")
+      .selectFrom("collab.comment_reaction")
       .select("id")
       .where("tenant_id", "=", req.tenantId)
       .where("comment_type", "=", req.commentType)
@@ -45,7 +45,7 @@ export class ReactionRepository {
     if (existing) {
       // Remove reaction
       await this.db
-        .deleteFrom("core.comment_reaction")
+        .deleteFrom("collab.comment_reaction")
         .where("id", "=", existing.id)
         .execute();
 
@@ -54,7 +54,7 @@ export class ReactionRepository {
       // Add reaction
       const id = crypto.randomUUID();
       await this.db
-        .insertInto("core.comment_reaction")
+        .insertInto("collab.comment_reaction")
         .values({
           id,
           tenant_id: req.tenantId,
@@ -80,7 +80,7 @@ export class ReactionRepository {
     currentUserId?: string
   ): Promise<ReactionSummary[]> {
     const rows = await this.db
-      .selectFrom("core.comment_reaction")
+      .selectFrom("collab.comment_reaction")
       .select(["reaction_type", "user_id"])
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
@@ -120,7 +120,7 @@ export class ReactionRepository {
     }
 
     const rows = await this.db
-      .selectFrom("core.comment_reaction")
+      .selectFrom("collab.comment_reaction")
       .select(["comment_id", "reaction_type", "user_id"])
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
@@ -169,7 +169,7 @@ export class ReactionRepository {
     const { limit = 50, offset = 0 } = options ?? {};
 
     const rows = await this.db
-      .selectFrom("core.comment_reaction")
+      .selectFrom("collab.comment_reaction")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("user_id", "=", userId)
@@ -190,7 +190,7 @@ export class ReactionRepository {
     commentId: string
   ): Promise<void> {
     await this.db
-      .deleteFrom("core.comment_reaction")
+      .deleteFrom("collab.comment_reaction")
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
       .where("comment_id", "=", commentId)

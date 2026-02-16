@@ -27,20 +27,16 @@ export class AuditLoggerService implements AuditLogger {
     event: Omit<AuditEvent, "eventId" | "timestamp">
   ): Promise<void> {
     await this.db
-      .insertInto("meta.meta_audit")
+      .insertInto("audit.audit_log")
       .values({
         id: crypto.randomUUID(),
-        event_id: this.generateEventId(),
-        event_type: event.eventType,
-        timestamp: new Date(),
-        user_id: event.userId,
         tenant_id: event.tenantId,
-        realm_id: event.realmId,
+        actor_id: event.userId,
+        actor_type: event.eventType ?? "user",
         action: event.action,
-        resource: event.resource,
-        details: event.details ? JSON.stringify(event.details) : null,
-        result: event.result,
-        error_message: event.errorMessage ?? null,
+        entity_name: event.resource ?? null,
+        correlation_id: event.realmId ?? null,
+        payload: event.details ? JSON.stringify(event.details) : null,
       })
       .execute();
   }
@@ -53,19 +49,19 @@ export class AuditLoggerService implements AuditLogger {
     const offset = (page - 1) * pageSize;
 
     // Build query
-    let query = this.db.selectFrom("meta.meta_audit").selectAll();
+    let query = this.db.selectFrom("audit.audit_log").selectAll();
 
     // Apply filters
     if (filters.eventType) {
       if (Array.isArray(filters.eventType)) {
-        query = query.where("event_type", "in", filters.eventType);
+        query = query.where("actor_type", "in", filters.eventType);
       } else {
-        query = query.where("event_type", "=", filters.eventType);
+        query = query.where("actor_type", "=", filters.eventType);
       }
     }
 
     if (filters.userId) {
-      query = query.where("user_id", "=", filters.userId);
+      query = query.where("actor_id", "=", filters.userId);
     }
 
     if (filters.tenantId) {
@@ -73,28 +69,24 @@ export class AuditLoggerService implements AuditLogger {
     }
 
     if (filters.resource) {
-      query = query.where("resource", "=", filters.resource);
-    }
-
-    if (filters.result) {
-      query = query.where("result", "=", filters.result);
+      query = query.where("entity_name", "=", filters.resource);
     }
 
     if (filters.startDate) {
-      query = query.where("timestamp", ">=", filters.startDate);
+      query = query.where("occurred_at", ">=", filters.startDate);
     }
 
     if (filters.endDate) {
-      query = query.where("timestamp", "<=", filters.endDate);
+      query = query.where("occurred_at", "<=", filters.endDate);
     }
 
-    // Order by timestamp desc
-    query = query.orderBy("timestamp", "desc");
+    // Order by occurred_at desc
+    query = query.orderBy("occurred_at", "desc");
 
     // Execute count and data queries
     const [countResult, data] = await Promise.all([
       this.db
-        .selectFrom("meta.meta_audit")
+        .selectFrom("audit.audit_log")
         .select((eb) => eb.fn.countAll().as("count"))
         .executeTakeFirstOrThrow(),
       query.limit(pageSize).offset(offset).execute(),
@@ -118,9 +110,9 @@ export class AuditLoggerService implements AuditLogger {
 
   async getEvent(eventId: string): Promise<AuditEvent | undefined> {
     const event = await this.db
-      .selectFrom("meta.meta_audit")
+      .selectFrom("audit.audit_log")
       .selectAll()
-      .where("event_id", "=", eventId)
+      .where("id", "=", eventId)
       .executeTakeFirst();
 
     return event ? this.mapEventFromDb(event) : undefined;
@@ -128,9 +120,9 @@ export class AuditLoggerService implements AuditLogger {
 
   async getRecent(limit: number = 10): Promise<AuditEvent[]> {
     const events = await this.db
-      .selectFrom("meta.meta_audit")
+      .selectFrom("audit.audit_log")
       .selectAll()
-      .orderBy("timestamp", "desc")
+      .orderBy("occurred_at", "desc")
       .limit(Math.min(limit, 100))
       .execute();
 
@@ -174,7 +166,7 @@ export class AuditLoggerService implements AuditLogger {
     try {
       // Try to query the audit table
       await this.db
-        .selectFrom("meta.meta_audit")
+        .selectFrom("audit.audit_log")
         .select((eb) => eb.fn.countAll().as("count"))
         .executeTakeFirst();
 
@@ -195,29 +187,22 @@ export class AuditLoggerService implements AuditLogger {
   // Private Helpers
   // =========================================================================
 
-  private generateEventId(): string {
-    // Generate event ID: evt_<timestamp>_<random>
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substring(2, 9);
-    return `evt_${timestamp}_${random}`;
-  }
-
   private mapEventFromDb(dbEvent: any): AuditEvent {
     return {
-      eventId: dbEvent.event_id,
-      eventType: dbEvent.event_type,
-      timestamp: new Date(dbEvent.timestamp),
-      userId: dbEvent.user_id,
+      eventId: dbEvent.id,
+      eventType: dbEvent.actor_type,
+      timestamp: new Date(dbEvent.occurred_at),
+      userId: dbEvent.actor_id,
       tenantId: dbEvent.tenant_id,
-      realmId: dbEvent.realm_id,
+      realmId: dbEvent.correlation_id ?? "default",
       action: dbEvent.action,
-      resource: dbEvent.resource,
+      resource: dbEvent.entity_name,
       details:
-        typeof dbEvent.details === "string"
-          ? JSON.parse(dbEvent.details)
-          : dbEvent.details,
-      result: dbEvent.result,
-      errorMessage: dbEvent.error_message ?? undefined,
+        typeof dbEvent.payload === "string"
+          ? JSON.parse(dbEvent.payload)
+          : dbEvent.payload,
+      result: "success",
+      errorMessage: undefined,
     };
   }
 }

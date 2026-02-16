@@ -1,9 +1,9 @@
 // framework/adapters/db/src/adapter.ts
+import type { Kysely } from "kysely";
+
+import type { DB } from "./generated/kysely/types.js";
 import { DbClient, type DbClientConfig, type DbPoolStats } from "./kysely/db.js";
 import { withTx, withTxIsolation } from "./kysely/tx.js";
-
-import type { DB } from "../generated/kysely/types.js";
-import type { Kysely } from "kysely";
 
 export type { DbPoolStats } from "./kysely/db.js";
 

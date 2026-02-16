@@ -54,7 +54,7 @@ export class AuditDsarService {
 
     // 1. workflow_audit_event
     const wae = await this.countInTable(
-      "core.workflow_audit_event",
+      "audit.workflow_audit_event",
       "actor_user_id",
       tenantId,
       subjectUserId,
@@ -82,7 +82,7 @@ export class AuditDsarService {
 
     // 2. permission_decision_log
     const pdl = await this.countInTable(
-      "core.permission_decision_log",
+      "audit.permission_decision_log",
       "principal_id",
       tenantId,
       subjectUserId,
@@ -93,7 +93,7 @@ export class AuditDsarService {
 
     // 3. field_access_log
     const fal = await this.countInTable(
-      "core.field_access_log",
+      "audit.field_access_log",
       "principal_id",
       tenantId,
       subjectUserId,
@@ -104,7 +104,7 @@ export class AuditDsarService {
 
     // 4. security_event
     const se = await this.countInTable(
-      "core.security_event",
+      "sec.security_event",
       "principal_id",
       tenantId,
       subjectUserId,
@@ -115,7 +115,7 @@ export class AuditDsarService {
 
     // 5. audit_log
     const al = await this.countInTable(
-      "core.audit_log",
+      "audit.audit_log",
       "performed_by",
       tenantId,
       subjectUserId,

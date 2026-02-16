@@ -178,7 +178,7 @@ describe("Lifecycle Timer Service", () => {
 
     it("should store policy snapshot for immutability", async () => {
       // Verify policy rules are stored as snapshot
-      // expect(mockDb.insertInto).toHaveBeenCalledWith("core.lifecycle_timer_schedule");
+      // expect(mockDb.insertInto).toHaveBeenCalledWith("wf.lifecycle_timer_schedule");
       // expect(mockDb.values).toHaveBeenCalledWith(
       //   expect.objectContaining({
       //     policy_snapshot: expect.any(String), // JSON stringified
@@ -188,7 +188,7 @@ describe("Lifecycle Timer Service", () => {
 
     it("should store job ID for cancellation", async () => {
       // Verify BullMQ job ID is stored
-      // expect(mockDb.updateTable).toHaveBeenCalledWith("core.lifecycle_timer_schedule");
+      // expect(mockDb.updateTable).toHaveBeenCalledWith("wf.lifecycle_timer_schedule");
       // expect(mockDb.set).toHaveBeenCalledWith({ job_id: expect.any(String) });
     });
   });
@@ -266,7 +266,7 @@ describe("Lifecycle Timer Service", () => {
       // await timerService.processTimer(scheduleId, tenantId);
 
       // Assert
-      // expect(mockDb.updateTable).toHaveBeenCalledWith("core.lifecycle_timer_schedule");
+      // expect(mockDb.updateTable).toHaveBeenCalledWith("wf.lifecycle_timer_schedule");
       // expect(mockDb.set).toHaveBeenCalledWith({ status: "fired" });
       // expect(mockLifecycleManager.transition).toHaveBeenCalledWith(
       //   expect.objectContaining({

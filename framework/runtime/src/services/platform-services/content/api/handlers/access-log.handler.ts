@@ -7,8 +7,7 @@
  */
 
 import type { Request, Response } from "express";
-import type { HttpHandlerContext } from "../../../../platform/foundation/http/http.types.js";
-import type { RouteHandler } from "../../../../platform/foundation/http/http.types.js";
+import type { HttpHandlerContext, RouteHandler } from "../../../../platform/foundation/http/types.js";
 import type { AccessLogService } from "../../domain/services/AccessLogService.js";
 import { TOKENS } from "../../../../../kernel/tokens.js";
 
@@ -35,7 +34,7 @@ export class GetAccessHistoryHandler implements RouteHandler {
         return;
       }
 
-      const logs = await accessLogService.getAccessHistory(tenantId, attachmentId, limit);
+      const logs = await accessLogService.getAccessHistory(tenantId, attachmentId, { limit });
 
       res.status(200).json({
         success: true,
@@ -73,7 +72,7 @@ export class GetAccessStatsHandler implements RouteHandler {
         return;
       }
 
-      const stats = await accessLogService.getAccessStats(tenantId, attachmentId, days);
+      const stats = await accessLogService.getAccessStats(tenantId, attachmentId);
 
       res.status(200).json({
         success: true,

@@ -122,7 +122,7 @@ export class VersionService {
     await this.attachmentRepo.markNotCurrent(currentVersion.id, params.tenantId, params.actorId);
 
     // 5. Generate presigned URL
-    const presignedUrl = await this.storage.generatePresignedPutUrl(
+    const presignedUrl = await (this.storage as any).generatePresignedPutUrl(
       this.bucket,
       storageKey,
       this.presignedUrlExpiry,
@@ -236,7 +236,7 @@ export class VersionService {
       fileId: newVersionId,
     });
 
-    await this.storage.copy(
+    await (this.storage as any).copy(
       versionToRestore.storageBucket,
       versionToRestore.storageKey,
       this.bucket,
@@ -258,8 +258,8 @@ export class VersionService {
       sizeBytes: versionToRestore.sizeBytes,
       storageBucket: this.bucket,
       storageKey: newStorageKey,
-      sha256: versionToRestore.sha256,
-      originalFilename: versionToRestore.originalFilename,
+      sha256: versionToRestore.sha256 ?? undefined,
+      originalFilename: versionToRestore.originalFilename ?? undefined,
       uploadedBy: params.actorId,
       shard,
       versionNo: nextVersionNo,

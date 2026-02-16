@@ -15,7 +15,7 @@ import type { DB } from "@athyper/adapter-db";
 // Constants
 // ============================================================================
 
-const TABLE = "core.audit_outbox" as keyof DB & string;
+const TABLE = "core.outbox" as keyof DB & string;
 const DEFAULT_BATCH_SIZE = 50;
 const DEFAULT_BACKOFF_BASE_MS = 2000;
 

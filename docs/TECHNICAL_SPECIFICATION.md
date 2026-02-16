@@ -26,9 +26,9 @@ The platform separates concerns into four architectural layers. Each layer owns 
 
 ### 1.1 Layer Responsibility Matrix
 
-| Capability | Physical Schema (Prisma) | Query Layer (Kysely) | Contract Layer (Zod DTO) | Behavior Layer (Meta) |
-|------------|:------------------------:|:--------------------:|:------------------------:|:---------------------:|
-| **DEFINES** | WHAT EXISTS physically — generates DB shape | HOW we query it efficiently — executes queries on that shape | WHAT IS VALID at runtime boundaries — runtime validation + contracts. Zod schemas come from Prisma | HOW THE SYSTEM BEHAVES over that data |
+| Capability | Physical Schema (Prisma) | Query Layer (Kysely) | Contract Layer (Zod — hand-authored) | Behavior Layer (Meta) |
+|------------|:------------------------:|:--------------------:|:------------------------------------:|:---------------------:|
+| **DEFINES** | WHAT EXISTS physically — generates DB shape | HOW we query it efficiently — executes queries on that shape | WHAT IS VALID at runtime boundaries — hand-authored Zod schemas for API DTOs, config, and domain validation | HOW THE SYSTEM BEHAVES over that data |
 | Table exists | Yes | — | — | — |
 | Column type | Yes | — | — | — |
 | Enum values | Yes | — | — | — |
@@ -39,7 +39,7 @@ The platform separates concerns into four architectural layers. Each layer owns 
 | Workflow rules | — | — | — | Yes |
 | Permissions | — | — | — | Yes |
 | State transitions | — | — | — | Yes |
-| Schema evolution | Via migration | — | Regenerate DTO | Governs |
+| Schema evolution | Via migration | Kysely types regenerated | Update DTOs as needed | Governs |
 
 ### 1.2 Concern Ownership
 
@@ -47,24 +47,21 @@ The platform separates concerns into four architectural layers. Each layer owns 
 |---------|----------|------|
 | Physical storage | Infra | Prisma |
 | Query execution | Infra | Kysely |
-| API boundary validation | Contracts layer | Zod |
+| API boundary validation | Runtime / domain services | Zod (hand-authored DTOs) |
 | Dynamic behavior | Runtime | Meta Engine |
 | Evolution control | Meta lifecycle | SchemaChange Engine |
 | Cross-module safety | Meta policy engine | Runtime |
 
 ### 1.3 Data Flow
 
-```
+```text
 Meta Definition
     |
     v
-Generate / Update Contracts
+Update Prisma Schema
     |
     v
-Generate / Update Prisma Schema
-    |
-    v
-Apply Migration
+Apply Migration + prisma generate (Kysely types)
     |
     v
 Runtime Loads New Meta Overlay
@@ -79,18 +76,17 @@ Kysely executes optimized queries
 
 ### 2.1 Inter-Package Dependency Matrix
 
-| From \ To | framework/core | framework/runtime | framework/adapters/* | packages/contracts | packages/* (non-contracts) | products/* |
-|-----------|:--------------:|:-----------------:|:--------------------:|:------------------:|:-------------------------:|:----------:|
-| **framework/core** | YES | NO | NO | YES | NO | NO |
-| **framework/runtime** | YES | YES | YES | YES | YES (optional) | NO |
-| **framework/adapters/*** | YES | NO | YES (rare) | YES | NO | NO |
-| **packages/contracts** | NO | NO | NO | YES | NO | NO |
-| **packages/* (non-contracts)** | NO (usually) | NO | NO | NO | YES | NO |
-| **products/*** | NO | NO | NO | YES | YES | YES |
+| From \ To | framework/core | framework/runtime | framework/adapters/* | packages/* | products/* |
+|-----------|:--------------:|:-----------------:|:--------------------:|:----------:|:----------:|
+| **framework/core** | YES | NO | NO | NO | NO |
+| **framework/runtime** | YES | YES | YES | YES (optional) | NO |
+| **framework/adapters/*** | YES | NO | YES (rare) | NO | NO |
+| **packages/*** | NO (usually) | NO | NO | YES | NO |
+| **products/*** | NO | NO | NO | YES | YES |
 
 ### 2.2 Dependency Rules (Enforced by ESLint + dependency-cruiser)
 
-- **core is pure** — Cannot import runtime, adapters, products, or infrastructure libraries (pg, ioredis, @aws-sdk, express, pino, jose). Can only import contracts.
+- **core is pure** — Cannot import runtime, adapters, products, or infrastructure libraries (pg, ioredis, @aws-sdk, express, pino, jose). Zero external dependencies.
 - **runtime orchestrates** — Can import core + adapters (via DI tokens only, no deep imports). Cannot import product apps.
 - **adapters touch infra** — Can import core and their respective infrastructure library. Cannot import runtime. Cannot import UI/packages. Cannot import each other (no cross-talk between adapters).
 - **packages = reusable libs** — Cannot import framework/*. Can only import other packages.
@@ -134,16 +130,15 @@ The system validates:
 
 The system generates:
 - DB migration (Prisma)
-- Contract diff (DTO regeneration)
+- Kysely type diff (via `prisma generate`)
 - Runtime overlay change
 
 ### Step 4 — Controlled Apply
 
 Execute the plan:
 1. Apply migration to database
-2. Regenerate Prisma client
-3. Regenerate Contracts (Zod + Kysely types)
-4. Rebuild runtime
+2. Regenerate Kysely types (`prisma generate` via prisma-kysely)
+3. Rebuild runtime
 
 ### Step 5 — Runtime Hot Load
 
@@ -171,7 +166,7 @@ If safe:
 | Module | Path | Key Exports | Purpose |
 |--------|------|-------------|---------|
 | **model** | `src/model/` | `Entity<ID>`, `ValueObject<T>`, `AggregateRoot`, `EntityId` | DDD building blocks — identity-based equality for entities, value-based equality for value objects |
-| **access** | `src/access/` | `RbacPolicy`, `AccessContext`, `AccessPolicy` | RBAC with wildcard permissions. Default roles: admin (`*`), manager, user, guest. Permission format: `action:resource` |
+| **access** | `src/access/` | `RbacPolicy`, `AccessContext`, `AccessPolicy` | RBAC with wildcard permissions. Default roles: admin (`*`), manager, user, guest. Permission format: `action:resource`. Types extracted to `types.ts`, implementation in `rbac-policy.ts` |
 | **events** | `src/events/` | `DomainEvent<T>`, `InMemoryEventBus`, `EventStore` | Domain events, pub/sub event bus, event sourcing contracts |
 | **lifecycle** | `src/lifecycle/` | `LifecycleManager`, `ComponentLifecycle`, `LifecyclePhase` | Component startup/shutdown coordination. Forward order start, reverse order stop. Health check aggregation |
 | **resilience** | `src/resilience/` | `CircuitBreaker`, `withRetry`, `@Retry`, `@WithCircuitBreaker` | Exponential/linear/fixed retry with jitter. Circuit breaker (CLOSED/OPEN/HALF_OPEN). Pre-configured `DB_RETRY_POLICY` and `API_RETRY_POLICY` |
@@ -179,7 +174,7 @@ If safe:
 | **security** | `src/security/` | `MemoryRateLimiter`, `validate()`, `sanitizeHtml()`, `sanitizeDeep()` | Token-bucket rate limiting (5 profiles), input validation (14+ types, pre-built rulesets), XSS/SQL/path-traversal sanitization |
 | **registry** | `src/registry/` | `TenantRegistry`, `IdentityProviderRegistry`, `TenantIdpRegistry` | Multi-tenancy registries — tenant config with feature flags, per-realm IdP config, combined tenant-to-IdP resolution |
 | **jobs** | `src/jobs/` | `JobQueue`, `JobHandler`, `JobData`, `QueueMetrics` | Background job abstractions — priority queues, retry, bulk operations, status tracking |
-| **meta** | `src/meta/` (subpath: `@athyper/core/meta`) | `FieldDefinition`, `EntitySchema`, `CompiledModel`, `PolicyDefinition`, `CompiledPolicyRule`, `Lifecycle`, `ApprovalTemplate`, `Overlay`, `META_TOKENS` | **Phases 1–14** of the META Engine type system. Entity/version models, compiled IR with SQL fragments, policy engine types (RBAC+ABAC), workflow lifecycle (states, transitions, gates), approval runtime (instances, stages, tasks, escalation), overlay system, compilation diagnostics, DI token definitions |
+| **meta** | `src/meta/` (subpath: `@athyper/core/meta`) | `FieldDefinition`, `EntitySchema`, `CompiledModel`, `CompiledPolicyRule`, `Lifecycle`, `ApprovalTemplate`, `Overlay`, `META_TOKENS`, `MetaEventBus`, `EntityPageDescriptorService`, `ActionDispatcher`, `ApprovalTemplateService` | **Phases 1–14+** of the META Engine type system. 17+ service interfaces (`MetaRegistry`, `MetaCompiler`, `PolicyGate`, `GenericDataAPI`, `MetaStore`, `LifecycleManager`, `LifecycleTimerService`, `ApprovalService`, `NumberingEngine`, `DdlGenerator`, etc.). Entity/version models, compiled IR with SQL fragments, policy engine types (RBAC+ABAC with explainable `PolicyDecision`), workflow lifecycle (states, transitions, gates, auto-transition timers), approval runtime (instances, stages, tasks, escalation, template authoring EPIC G), overlay system, compilation diagnostics with `DiagnosticSeverity`, event bus for cross-cutting notifications, entity page orchestration, action dispatcher, 10 typed validation rules, ~25 DI tokens |
 
 ### 4.2 @athyper/runtime
 
@@ -187,7 +182,7 @@ If safe:
 |---|---|
 | **Path** | `framework/runtime` |
 | **Purpose** | Kernel, DI container, config, HTTP server, module system, all platform services |
-| **Dependencies** | `@athyper/core`, all adapters, `@athyper/contracts`, express, pino, zod, jose, kysely, pg, ioredis, bullmq |
+| **Dependencies** | `@athyper/core`, all adapters, express, pino, zod, jose, kysely, pg, ioredis, bullmq |
 | **Runtime Modes** | `api` (HTTP server), `worker` (job consumer), `scheduler` (cron) |
 | **Status** | Production-ready |
 
@@ -207,12 +202,12 @@ If safe:
 
 #### Module System
 
-Two-phase loading for all platform services:
+Two-phase loading for all platform services via `RuntimeModule` type (`services/types.ts`):
 
 1. **Register phase** — Modules register dependencies/services into the DI container
 2. **Contribute phase** — Modules add routes/jobs/services to registries
 
-Three registries accumulate definitions: `RouteRegistry`, `JobRegistry`, `ServiceRegistry`.
+9 modules loaded by `loadServices()` (`services/registry.ts`). Each module emits an audit event on load. Three registries accumulate definitions: `RouteRegistry`, `JobRegistry`, `ServiceRegistry`.
 
 #### HTTP Server
 
@@ -245,13 +240,43 @@ All adapters follow the same pattern: factory function, circuit breaker protecti
 | | |
 |---|---|
 | **Path** | `framework/adapters/db` |
-| **Wraps** | PostgreSQL via Kysely + Prisma + pg.Pool |
-| **Key Features** | PgBouncer-optimized pooling (no prepared statements), multi-schema (core/mdm/meta/public/ref/ui), transaction helpers with isolation levels, safe filtering/pagination with field whitelisting, migration runner, provisioning system with checksum tracking |
+| **Wraps** | PostgreSQL via Kysely + pg.Pool (Prisma used only for type generation via prisma-kysely) |
+| **Key Features** | PgBouncer-optimized pooling (no prepared statements), multi-schema (12 schemas), transaction helpers with isolation levels, safe filtering/pagination with field whitelisting, provisioning system with checksum tracking |
 | **Circuit Breaker** | 5 failures / 60s window / 30s reset |
 | **Health Check** | Required — `SELECT 1` |
-| **Key Exports** | `createDbAdapter()`, `DbClient`, `withTx()`, `withTxIsolation()`, `buildKyselyListQuery()`, `MigrationRunner`, `DB` type |
-| **Schemas** | 6 PostgreSQL schemas: core, mdm, meta, public, ref, ui |
-| **Important** | Migrations require `DATABASE_ADMIN_URL` (direct Postgres, NOT PgBouncer) |
+| **Key Exports** | `createDbAdapter()`, `DbClient`, `withTx()`, `withTxIsolation()`, `buildKyselyListQuery()`, `DB` type |
+| **Schemas** | 12 PostgreSQL schemas: `core`, `meta`, `ref`, `sec`, `wf`, `ent`, `doc`, `collab`, `audit`, `notify`, `ui`, `public` |
+| **Important** | Provisioning requires `DATABASE_ADMIN_URL` (direct Postgres, NOT PgBouncer) |
+
+#### Database Schema Organization
+
+| Schema | Purpose | SQL File |
+|--------|---------|----------|
+| `public` | Provisioning tracking (`schema_provisions`) | `001_schemas.sql` |
+| `core` | Tenants, outbox, jobs, addresses, contact points, IAM, permissions | `010_core.sql` |
+| `ref` | Countries, regions, currencies, languages, timezones, UOM | `030_ref.sql` |
+| `meta` | Entity registry, versioning, fields, relations, policies, approval templates | `040_meta.sql` |
+| `sec` | Field-level security, MFA config, password history | `050_sec.sql` |
+| `wf` | Workflows, SLAs, versioning, lifecycle templates | `060_wf.sql` |
+| `ent` | Document links, tags, entitlements | `070_ent.sql` |
+| `doc` | Templates, versions, outputs, render jobs | `080_doc.sql` |
+| `collab` | Comments, mentions, reactions, threading, analytics, SLA | `090_collab.sql` |
+| `audit` | Logs, DLQ, archive markers, hash chains, partitioning | `100_audit.sql` |
+| `notify` | Messages, templates, rules, preferences, delivery | `110_notify.sql` |
+| `ui` | Settings, preferences, dashboards | `120_ui.sql` |
+
+Seed data is consolidated in `200_seed_all.sql` (reference data, demo tenants). The provisioning system uses checksum-based tracking in `public.schema_provisions` to skip unchanged files.
+
+#### Provisioning CLI
+
+```bash
+npx tsx src/seed/seed.ts                  # Run all (DDL + seed)
+npx tsx src/seed/seed.ts --ddl-only       # DDL only (001–120), skip seed
+npx tsx src/seed/seed.ts --seed-only      # Seed only (200+)
+npx tsx src/seed/seed.ts --reset          # Drop schemas + re-provision
+npx tsx src/seed/seed.ts --status         # Show execution status
+npx tsx src/seed/seed.ts --force          # Re-run even if checksum unchanged
+```
 
 ### 5.3 @athyper/adapter-memorycache
 
@@ -299,30 +324,7 @@ All adapters follow the same pattern: factory function, circuit breaker protecti
 
 ## 6. Package Catalog — Shared Libraries
 
-### 6.1 @athyper/contracts
-
-| | |
-|---|---|
-| **Path** | `packages/contracts` |
-| **Purpose** | Central source of truth for all data contracts. Auto-generated Prisma Zod schemas and Kysely database type definitions |
-| **Status** | Production-ready |
-| **Stats** | ~130 tables, 1,756+ Zod schemas, full Kysely DB type |
-
-**Subpath Exports:**
-- `@athyper/contracts` — Main barrel
-- `@athyper/contracts/generated` — All generated types
-- `@athyper/contracts/platform` — Platform contracts
-- `@athyper/contracts/runtime` — Runtime config schemas
-
-**Database Domains Covered:**
-- **Core** — address, approval, attachment, audit_log, contact, document, entity, field, group, job, lifecycle, notification, overlay, permission, persona, principal, role, tenant, workflow, workspace (~90 tables)
-- **Reference** — commodity_code, country, currency, industry_code, language, locale, state_region, timezone, uom (~10 tables)
-- **UI** — dashboard_widget, notification, recent_activity, saved_view, search_history, user_preference (~10 tables)
-- **Meta** — entity definitions, versioning, compilation, overlays (~20 tables)
-
-**Codegen Pipeline:** `Prisma schema` → `prisma generate` → `Zod schemas + Kysely types` → `sync to packages/contracts/generated/`
-
-### 6.2 @athyper/ui
+### 6.1 @athyper/ui
 
 | | |
 |---|---|
@@ -335,7 +337,7 @@ All adapters follow the same pattern: factory function, circuit breaker protecti
 
 **Stack:** Radix UI + class-variance-authority + clsx + tailwind-merge + Lucide React icons
 
-### 6.3 @athyper/dashboard
+### 6.2 @athyper/dashboard
 
 | | |
 |---|---|
@@ -349,7 +351,7 @@ All adapters follow the same pattern: factory function, circuit breaker protecti
 
 **Features:** 12-column grid layout, role-based ACL, Zod-validated widget params, versioned dashboard layouts, multi-tier resolution
 
-### 6.4 @athyper/auth
+### 6.3 @athyper/auth
 
 | | |
 |---|---|
@@ -359,7 +361,7 @@ All adapters follow the same pattern: factory function, circuit breaker protecti
 
 **Key Exports:** `Session`, `WorkbenchType` (ADMIN/USER/PARTNER/SERVICEMANAGER), `setSession()`, `getSession()`, `clearSession()`, `keycloakPasswordGrant()` (DEV only), `refreshAccessToken()`
 
-### 6.5 @athyper/api-client
+### 6.4 @athyper/api-client
 
 | | |
 |---|---|
@@ -369,7 +371,7 @@ All adapters follow the same pattern: factory function, circuit breaker protecti
 
 **Key Exports:** `createApiClient({ baseUrl, token?, fetch? })`, `ApiClient` with `ping()` endpoint
 
-### 6.6 @athyper/i18n
+### 6.5 @athyper/i18n
 
 | | |
 |---|---|
@@ -383,7 +385,7 @@ All adapters follow the same pattern: factory function, circuit breaker protecti
 
 **Key Exports:** `i18nConfig`, `Locale` type, `isValidLocale()`, `isRtlLocale()`
 
-### 6.7 @athyper/theme
+### 6.6 @athyper/theme
 
 | | |
 |---|---|
@@ -395,7 +397,7 @@ All adapters follow the same pattern: factory function, circuit breaker protecti
 
 **Subpath Export:** `@athyper/theme/tailwind` — Tailwind preset for `presets: [themePreset]`
 
-### 6.8 @athyper/workbench-admin, workbench-partner, workbench-user
+### 6.7 @athyper/workbench-admin, workbench-partner, workbench-user
 
 | | |
 |---|---|
@@ -408,7 +410,6 @@ All adapters follow the same pattern: factory function, circuit breaker protecti
 
 | Package | Status | Key Metric |
 |---------|--------|------------|
-| **contracts** | Production | 1,756 Zod schemas, 130 tables |
 | **ui** | Production | 15 Radix components |
 | **dashboard** | Production | 6 widgets, registry + resolution |
 | **auth** | Implemented | Session management, PKCE ready |
@@ -435,8 +436,17 @@ All adapters follow the same pattern: factory function, circuit breaker protecti
 **App Structure:**
 - `(auth)/login/` — Workbench selector + Keycloak PKCE login
 - `(public)/` — Landing page, health check
+- `(shell)/wb/[wb]/home/` — Workbench-scoped home page
 - `(shell)/app/[entity]/` — Dynamic entity workspace (list, kanban, dashboard, listreport views; detail with edit, clone, comments, approvals, actions)
 - `api/auth/` — BFF authentication routes (login, callback, session, refresh, touch, logout, debug)
+- `api/data/[entity]/` — Generic entity data API (list + detail by ID)
+- `api/entity-page/[entity]/` — Entity page descriptors (list + detail by ID)
+- `api/content/` — Content operations (initiate, complete, link)
+- `api/nav/modules/` — Navigation module tree
+- `api/notifications/` — Notification list + unread count
+- `api/messaging/analytics/` — Messaging analytics
+- `api/admin/cache/clear/` — Admin cache management
+- `lib/mock-data/` — Centralized mock data registry for API routes (accounts, purchase invoices)
 
 **Auth BFF Routes:**
 - `GET /api/auth/login` — Initiates PKCE flow (generates codeVerifier + codeChallenge + state, stores in Redis, redirects to Keycloak)
@@ -469,7 +479,16 @@ All adapters follow the same pattern: factory function, circuit breaker protecti
 
 **Audit Logging:** Redis LIST-based (`audit:auth:{tenantId}`), 16 event types, 10K cap per tenant, 7-day TTL, best-effort. Session IDs hashed for logs (first 16 chars of SHA-256)
 
-### 7.3 @neon/ui, @neon/theme
+### 7.3 @neon/content
+
+| | |
+|---|---|
+| **Path** | `products/neon/content` |
+| **Purpose** | Content management server library — upload orchestration, versioning |
+| **Subpath Export** | `@neon/content/server` |
+| **Status** | Implemented |
+
+### 7.4 @neon/ui, @neon/theme
 
 Thin re-export wrappers over `@athyper/ui` and `@athyper/theme`. Provide product-level abstraction for future customization without modifying framework packages.
 
@@ -497,17 +516,16 @@ Thin re-export wrappers over `@athyper/ui` and `@athyper/theme`. Provide product
 | | |
 |---|---|
 | **Path** | `tools/codegen` |
-| **CLIs** | `athyper-codegen` (quick sync), `athyper-publish` (full lifecycle) |
+| **CLIs** | `athyper-codegen` (quick generate), `athyper-publish` (full lifecycle) |
 
-**Quick Codegen:** `prisma generate` → sync Zod + Kysely to `packages/contracts/generated/` → write entry-points
+**Quick Codegen:** Runs `prisma generate` which produces Kysely type definitions in `framework/adapters/db/src/generated/kysely/types.ts` via the prisma-kysely generator.
 
-**Full Publish (6 steps):**
+**Full Publish (5 steps):**
 1. Validate — Prisma schema syntax check
 2. Diff/Plan — Preview SQL migration
 3. Migrate — Apply to database (requires `DATABASE_ADMIN_URL`)
-4. Generate — Run Prisma generators (Zod + Kysely)
-5. Sync — Copy artifacts to contracts package
-6. Report — Summary with timings
+4. Generate — Run prisma-kysely generator (Kysely types)
+5. Report — Summary with timings
 
 ### 8.4 tooling/devtools
 
@@ -521,30 +539,52 @@ Keycloak realm bootstrap scripts (`groupsgen.ps1`, `athyper-groups-import.json`)
 
 ## 9. Platform Services (Runtime)
 
-All services live in `framework/runtime/src/services/platform/` and follow the `RuntimeModule` pattern (register + contribute phases).
+Services are organized into a 3-tier architecture under `framework/runtime/src/services/` and follow the `RuntimeModule` pattern with two-phase loading (`register` + `contribute`).
 
-### 9.1 Foundation (`foundation/`)
+```typescript
+type RuntimeModule = {
+    name: string;
+    register?: (c: Container) => void | Promise<void>;
+    contribute?: (c: Container) => void | Promise<void>;
+};
+```
+
+**9 modules** are loaded in order by `loadServices()` in `services/registry.ts`. Each module emits a `module.loaded` audit event after initialization.
+
+| # | Module | Tier | Path |
+|---|--------|------|------|
+| 1 | `platform.foundation.http` | Platform | `platform/foundation/http/` |
+| 2 | `platform.meta` | Platform | `platform/meta/` |
+| 3 | `platform.foundation.iam` | Platform | `platform/foundation/iam/` |
+| 4 | `platform.ui.dashboard` | Platform | `platform/ui/` |
+| 5 | `platform-services.document` | Platform-Services | `platform-services/document/` |
+| 6 | `platform-services.content` | Platform-Services | `platform-services/content/` |
+| 7 | `platform-services.notification` | Platform-Services | `platform-services/notification/` |
+| 8 | `platform.audit-governance` | Platform | `platform/audit-governance/` |
+| 9 | `enterprise.collaboration` | Enterprise | `enterprise-services/collaboration/` |
+
+### 9.1 Foundation (`platform/foundation/`)
 
 | Sub-module | Purpose |
 |------------|---------|
-| **HTTP** | Express server, route mounting, health + JWKS health endpoints |
+| **HTTP** | Express server, route mounting, health endpoints (`/health`, `/health/jwks`, `/health/readiness`, `/health/liveness`) |
 | **Registries** | RouteRegistry, JobRegistry, ServiceRegistry — definition buckets |
 | **Resilience** | `AdapterCircuitBreakers` — per-adapter circuit breaker protection |
 | **Security** | Redis rate limiter, field-level security (access checks, data masking, policy explain, field projection) |
 | **Middleware** | Observability (request context, tracing), rate limiting, security headers, validation, field-level enforcement |
 | **Generic API** | Cross-entity query DSL with JOIN support, query validation, security enforcement |
 | **Overlay System** | Dynamic schema overlays per tenant, schema composition |
-| **IAM** | Persona model (7 personas: User, Power User, Manager, Admin, Security Officer, Compliance Officer, System Admin), MFA (TOTP + backup codes + device trust), IAM REST API (principals, groups, roles, role bindings, OUs, capabilities, MFA — 50+ endpoints) |
+| **IAM** | Persona model (7 personas: User, Power User, Manager, Admin, Security Officer, Compliance Officer, System Admin), MFA (TOTP + backup codes + device trust), IAM REST API (principals, groups, roles, role bindings, OUs, capabilities, MFA — 40+ handler tokens) |
 
-### 9.2 Identity & Access (`identity-access/`)
+### 9.2 Identity & Access (`platform/identity-access/`)
 
 6 core services: `IdentityMapperService` (IdP identity → principal), `TenantResolverService` (tenant status + subscription tiers), `RoleBindingService` (scope: realm/tenant/org), `GroupSyncService` (LDAP/SCIM/OAuth/internal), `OUMembershipService` (OU hierarchy), `EntitlementSnapshotService` (point-in-time permissions)
 
-### 9.3 Policy Rules (`policy-rules/`)
+### 9.3 Policy Rules (`platform/policy-rules/`)
 
-RBAC+ABAC authorization engine. `PolicyGateService` evaluates `AuthorizationRequest` → `AuthorizationDecision` (Allow/Deny with obligations). Operation catalog organized by namespace (entity, workflow, utility, delegation, collaboration). Includes policy compiler, rule evaluator, subject resolver, decision logger, and policy simulator for testing.
+RBAC+ABAC authorization engine. `PolicyGateService` evaluates `AuthorizationRequest` → `AuthorizationDecision` (Allow/Deny with obligations). Operation catalog organized by namespace (entity, workflow, utility, delegation, collaboration). Includes policy compiler, rule evaluator, subject resolver, decision logger, and policy simulator for testing. Persona-based capability matrix evaluation with 5-minute subject caching.
 
-### 9.4 Workflow Engine (`workflow-engine/`)
+### 9.4 Workflow Engine (`platform/workflow-engine/`)
 
 Comprehensive approval workflow system:
 - **Design-time** — Templates with steps, approver resolution strategies (direct/role/dynamic/group/expression), conditions (threshold/attribute/time), SLA + escalation
@@ -555,25 +595,33 @@ Comprehensive approval workflow system:
 - **Recovery** — Missing approver detection, deactivated user handling, workflow pause/resume/retry
 - **Versioning** — Template versions (active/deprecated/retired), impact analysis, safe migration
 
-### 9.5 Audit & Governance (`audit-governance/`)
+### 9.5 Audit & Governance (`platform/audit-governance/`)
 
-Audit log persistence, retention jobs (auto-cleanup), compliance API.
+Comprehensive audit trail, compliance, and integrity system with ~15 domain services:
 
-### 9.6 Meta Engine (`meta/`)
+- **Integrity** — `AuditHashChainService` (blockchain-style hash linking), `AuditIntegrityService` (verification), `AuditReplayService` (event replay/reconstruction)
+- **Security** — `AuditRedactionPipeline` (sensitive data masking), `AuditColumnEncryptionService` (optional column-level encryption), `AuditQueryPolicyGate` (audit record access control)
+- **Resilience** — `AuditLoadSheddingService` (rate limiting, 500 events/tenant/min), `AuditDlqManager` (dead letter queue for failed audits), outbox pattern for reliable async writes
+- **Compliance** — `AuditDsarService` (GDPR data subject access requests), `AuditExplainabilityService` (decision context documentation), `AuditAccessReportService` (access reports)
+- **Operations** — `AuditStorageTieringService` (archive management), `AuditExportService` (bulk export), `ActivityTimelineService` (activity feed generation)
+- **Feature flags** — write mode (outbox/sync), hash chain, timeline, encryption toggleable per tenant
+- **Workers** — Key rotation worker
 
-Entity storage/retrieval, registry, policy/rule compiler, authorization enforcement, lifecycle state machine, route compilation, generic data API, DDL generation, schema publishing.
+### 9.6 Meta Engine (`platform/meta/`)
 
-### 9.7 Metadata Studio (`metadata-studio/`)
+Entity storage/retrieval, registry, policy/rule compiler, authorization enforcement, lifecycle state machine, route compilation, generic data API, DDL generation, schema publishing. ~30 HTTP handlers covering data operations, entity page descriptors, lifecycle transitions, approvals, overlays. Persona-based RBAC via `MetaDataRbacPolicy` with graceful degradation if PolicyGate unavailable. SLA workers for reminder/escalation handling. Auto-transition timer rehydration on server restart.
 
-Schema design, visual modeling, persistence & API layer. Module structure in place.
+### 9.7 Automation Jobs (`platform/automation-jobs/`)
 
-### 9.8 Automation Jobs (`automation-jobs/`)
+BullMQ-backed job queuing via `RedisJobQueue`. Redis-backed persistence, worker pools, cron scheduling, retry with exponential backoff. Priority levels: critical (1), high (2), normal (3), low (4).
 
-BullMQ-backed job queuing, Redis-backed persistence, worker pools, scheduled execution, retry with exponential backoff.
+### 9.8 Dashboard UI (`platform/ui/`)
+
+`DashboardService` — CRUD, publishing, drafts, ACLs, duplication. `DashboardContributionSeeder` — system dashboard seeding. 12 HTTP handlers.
 
 ### 9.9 Document Services (`platform-services/document/`)
 
-Multi-tenant document generation platform. 8 database tables, 7 domain services, 30 API endpoints, 3 job workers, 104 tests.
+Multi-tenant document generation platform. 8 repositories, 10 domain services, ~15 HTTP handlers, 3 job workers.
 
 - **Templates** — Versioned Handlebars templates with publish/retire lifecycle, entity+operation+variant bindings (priority-based resolution), capability flags (RTL, letterhead requirement, allowed operations, supported locales)
 - **Rendering** — Puppeteer-core HTML-to-PDF with concurrent page semaphore, per-stage timeouts (compose 5s, render 30s, upload 30s), SSRF blocking via request interception, deterministic render manifests (v2)
@@ -584,6 +632,56 @@ Multi-tenant document generation platform. 8 database tables, 7 domain services,
 - **Observability** — Stage-level metrics (compose/render/upload/db_update), failure-by-code counters, renderer pool gauges, structured logging (12 categories), health check
 
 See [Document Services](./framework/DOCUMENT_SERVICES.md) for full documentation.
+
+### 9.10 Content Services (`platform-services/content/`)
+
+File upload, document versioning, entity linking, and access control system. 6 repositories, 9 domain services, ~20 HTTP handlers.
+
+- **Upload** — `ContentService` orchestrates single and multipart (chunked) uploads via `MultipartUploadService`
+- **Versioning** — `VersionService` manages document version chains
+- **Entity Linking** — `LinkService` provides N:M entity-to-document relationships
+- **Access Control** — `AclService` (per-document permissions), `AccessLogService` (access audit trail)
+- **Comments** — `CommentService` for document-level comments
+- **Preview** — `PreviewService` for document preview generation
+- **Expiry** — `ExpiryService` for time-based document expiration
+- **Workers** — `cleanupOrphanedUploads` worker for orphan file removal
+
+### 9.11 Notification Services (`platform-services/notification/`)
+
+Multi-channel notification orchestration. 11 repositories, 9 domain services, 4 channel adapters, ~15 HTTP handlers.
+
+- **Orchestration** — `NotificationOrchestrator` (main engine), `RuleEngine` (rule evaluation), `TemplateRenderer` (template rendering), `PreferenceEvaluator` (user preferences), `DeduplicationService` (duplicate detection), `RecipientResolver` (recipient resolution)
+- **Channels** — `SendGridAdapter` (email), `TeamsAdapter` (Teams/Slack), `InAppAdapter` (in-app notifications), `WhatsAppAdapter` (WhatsApp + template sync)
+- **Preferences** — `ScopedPreferenceResolver` for scope-based notification preferences, suppression rules
+- **Reliability** — `DlqManager` for failed notification recovery, `DigestAggregator` for digest batching
+- **Explainability** — `ExplainabilityService` for notification delivery reasoning
+- **Workers** — `cleanupExpired` worker for expired notification removal
+
+### 9.12 Collaboration (`enterprise-services/collaboration/`)
+
+Activity tracking, comments, mentions, reactions, SLA, analytics, and retention. 7 repositories, 12 domain services, ~20 HTTP handlers, 3 job workers.
+
+- **Comments** — `EntityCommentService` (record-level comments), `ApprovalCommentService` (approval workflow comments), threaded discussions, full-text search via `CommentSearchService`
+- **Mentions** — `MentionService` with @mention detection and notification
+- **Reactions** — `ReactionService` with emoji toggle support
+- **Read Tracking** — `ReadTrackingService` with optional Redis cache for read/unread status
+- **Moderation** — `CommentModerationService` for flagging/review via `CommentFlagRepository`
+- **Attachment Links** — `AttachmentLinkService` for file attachment linking
+- **SLA** — `CommentSLAService` for response time tracking, breach detection, configurable per entity
+- **Analytics** — `CommentAnalyticsService` for engagement metrics, daily rollups, leaderboard, thread analytics
+- **Retention** — `CommentRetentionService` with configurable archival/deletion policies
+- **Rate Limiting** — Per-user comment throttling
+- **Workers** — `mention-notification` (sends @mention alerts), `analytics-aggregation` (nightly rollup), `retention-execution` (archive/delete execution)
+
+### Service Counts Summary
+
+| Category | Count |
+|----------|-------|
+| Runtime Modules | 9 |
+| HTTP Handlers | 100+ |
+| Repositories | 47+ |
+| Domain Services | 54+ |
+| Job Workers | 10+ |
 
 ---
 
@@ -667,9 +765,9 @@ All scripts run from monorepo root via `pnpm run <script>`.
 
 | Script | Description |
 |--------|-------------|
-| `athyper:codegen` | Quick codegen: `prisma generate` → sync Zod + Kysely to `packages/contracts/generated/` → write entry-points |
+| `athyper:codegen` | Quick codegen: runs `prisma generate` to regenerate Kysely types in `framework/adapters/db/src/generated/kysely/` |
 | `athyper:codegen:watch` | Run codegen in watch mode (re-runs on schema.prisma changes) |
-| `db:publish` | Full schema lifecycle: validate → diff → migrate → generate → sync → report |
+| `db:publish` | Full schema lifecycle: validate → diff → migrate → generate → report |
 | `db:publish:dry-run` | Preview only — validate + diff without applying changes |
 
 ### Infrastructure — MESH
@@ -723,7 +821,7 @@ All scripts run from monorepo root via `pnpm run <script>`.
 
 - **Base:** ES2022 target, ESNext module, bundler resolution, full strict mode, composite projects
 - **Next.js:** Extends base + JSX preserve + DOM libs + noEmit + isolatedModules
-- **Root:** 17 project references for incremental builds, dual path mapping (@athyper/* + @neon/*)
+- **Root:** 16 project references for incremental builds, dual path mapping (@athyper/\* + @neon/\*)
 
 ### 11.4 Boundary Enforcement (dependency-cruiser)
 
@@ -731,6 +829,6 @@ All scripts run from monorepo root via `pnpm run <script>`.
 1. `core-no-infra` — Core cannot import runtime/adapters/products/infra libs
 2. `runtime-no-direct-infra` — Runtime cannot directly use pg/ioredis/@aws-sdk
 3. `adapter-*-no-cross-talk` (5 rules) — Each adapter isolated from all others
-4. `adapters-no-packages-except-contracts` — Adapters can only use contract types
+4. `adapters-no-packages` — Adapters cannot import shared packages
 5. `packages-no-framework` — Packages are framework-independent
 6. `products-no-framework` — Products cannot import framework directly

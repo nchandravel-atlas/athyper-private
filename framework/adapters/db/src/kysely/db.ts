@@ -1,11 +1,10 @@
 // framework/adapters/db/src/kysely/db.ts
 import { Kysely } from "kysely";
+import type pg from "pg";
 
+import type { DB } from "../generated/kysely/types.js";
 import { createPostgresDialect } from "./dialect.js";
 import { closePool, createPool, healthCheck, type PoolConfig } from "./pool.js";
-
-import type { DB } from "../../generated/kysely/types.js";
-import type pg from "pg";
 
 export type DbClientConfig = {
     /**

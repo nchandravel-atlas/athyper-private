@@ -11,7 +11,7 @@ export * from "./kysely/query-helpers.js";
 export * from "./kysely/tx.js";
 
 // Generated types
-export type { DB } from "../generated/kysely/types.js";
+export type { DB } from "./generated/kysely/types.js";
 
 // Migrations
 export * from "./migrations/registry.js";

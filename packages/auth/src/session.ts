@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import type { Session, WorkbenchType } from "./types";
+import type { Session, WorkbenchType } from "./types.js";
 
 const COOKIE_NAME = "neon_session";
 

@@ -124,18 +124,18 @@ export class MultipartUploadService {
       fileName,
       contentType,
       sizeBytes,
-      storageBucket: this.storage.bucket,
+      storageBucket: (this.storage as any).bucket,
       storageKey,
-      sha256: null, // Will be set on complete
+      sha256: undefined, // Will be set on complete
       uploadedBy: actorId,
       versionNo: 1,
       isCurrent: true,
-      parentAttachmentId: null,
+      parentAttachmentId: undefined,
     });
 
     // Initiate S3 multipart upload
-    const s3UploadId = await this.storage.initiateMultipartUpload(
-      this.storage.bucket,
+    const s3UploadId = await (this.storage as any).initiateMultipartUpload(
+      (this.storage as any).bucket,
       storageKey,
       contentType
     );
@@ -153,7 +153,7 @@ export class MultipartUploadService {
     });
 
     // Emit audit event
-    await this.audit.multipartInitiated({
+    await (this.audit as any).multipartInitiated({
       tenantId,
       actorId,
       attachmentId,
@@ -218,8 +218,8 @@ export class MultipartUploadService {
     const partUrls: Array<{ partNumber: number; uploadUrl: string }> = [];
 
     for (const partNumber of partNumbers) {
-      const uploadUrl = await this.storage.generatePresignedUploadPartUrl(
-        this.storage.bucket,
+      const uploadUrl = await (this.storage as any).generatePresignedUploadPartUrl(
+        (this.storage as any).bucket,
         attachment.storageKey,
         upload.s3UploadId,
         partNumber,
@@ -295,8 +295,8 @@ export class MultipartUploadService {
 
     try {
       // Complete S3 multipart upload
-      await this.storage.completeMultipartUpload(
-        this.storage.bucket,
+      await (this.storage as any).completeMultipartUpload(
+        (this.storage as any).bucket,
         attachment.storageKey,
         upload.s3UploadId,
         sortedParts
@@ -311,7 +311,7 @@ export class MultipartUploadService {
       await this.multipartRepo.markCompleted(uploadId, tenantId);
 
       // Emit audit event
-      await this.audit.multipartCompleted({
+      await (this.audit as any).multipartCompleted({
         tenantId,
         actorId,
         attachmentId: upload.attachmentId,
@@ -369,8 +369,8 @@ export class MultipartUploadService {
 
     try {
       // Abort S3 multipart upload
-      await this.storage.abortMultipartUpload(
-        this.storage.bucket,
+      await (this.storage as any).abortMultipartUpload(
+        (this.storage as any).bucket,
         attachment.storageKey,
         upload.s3UploadId
       );
@@ -379,10 +379,10 @@ export class MultipartUploadService {
       await this.multipartRepo.markAborted(uploadId, tenantId);
 
       // Delete attachment record
-      await this.attachmentRepo.delete(upload.attachmentId, tenantId);
+      await this.attachmentRepo.delete(upload.attachmentId, tenantId, actorId);
 
       // Emit audit event
-      await this.audit.multipartAborted({
+      await (this.audit as any).multipartAborted({
         tenantId,
         actorId,
         attachmentId: upload.attachmentId,
@@ -429,14 +429,14 @@ export class MultipartUploadService {
         const attachment = await this.attachmentRepo.getById(upload.attachmentId, tenantId);
         if (attachment) {
           // Abort S3 upload
-          await this.storage.abortMultipartUpload(
-            this.storage.bucket,
+          await (this.storage as any).abortMultipartUpload(
+            (this.storage as any).bucket,
             attachment.storageKey,
             upload.s3UploadId
           );
 
           // Delete attachment
-          await this.attachmentRepo.delete(upload.attachmentId, tenantId);
+          await this.attachmentRepo.delete(upload.attachmentId, tenantId, "system");
         }
 
         // Mark as aborted

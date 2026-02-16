@@ -21,7 +21,7 @@ import { loadTenantIAMProfile, validateTenantIAMProfile } from "./tenant-iam-pro
 import type { Container } from "../../../../kernel/container.js";
 import type { Logger } from "../../../../kernel/logger.js";
 import type { AuditWriter } from "../../../../kernel/audit.js";
-import type { RuntimeModule } from "../../../registry.js";
+import type { RuntimeModule } from "../../../types.js";
 import type { RouteRegistry } from "../registries/routes.registry.js";
 import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
@@ -492,15 +492,12 @@ class AddGroupMemberHandler implements RouteHandler {
         }
 
         try {
-            const userId = ctx.auth.userId ?? ctx.auth.subject ?? "system";
             await db.insertInto("core.group_member")
                 .values({
                     id: crypto.randomUUID(),
                     tenant_id: tenantId,
                     group_id: req.params.id,
                     principal_id: body.principalId,
-                    joined_at: new Date(),
-                    created_by: userId,
                 })
                 .execute();
 
@@ -579,7 +576,6 @@ class CreateRoleHandler implements RouteHandler {
                 tenant_id: tenantId,
                 name: body.name,
                 code: body.code,
-                scope_mode: "tenant",
                 description: body.description ?? null,
                 category: body.category ?? null,
                 metadata: body.metadata ? JSON.stringify(body.metadata) : null,

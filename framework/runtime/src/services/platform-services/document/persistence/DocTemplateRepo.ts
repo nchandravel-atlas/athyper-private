@@ -7,7 +7,7 @@ import type { DB } from "@athyper/adapter-db";
 import type { DocTemplate } from "../domain/models/DocTemplate.js";
 import type { TemplateId, TemplateVersionId, TemplateListFilters } from "../domain/types.js";
 
-const TABLE = "core.doc_template" as keyof DB & string;
+const TABLE = "doc.template" as keyof DB & string;
 
 export interface CreateTemplateInput {
     tenantId: string;

@@ -218,7 +218,7 @@ describe("ApprovalServiceImpl", () => {
       expect(mocks.where).toHaveBeenCalledWith("id", "=", "template-1");
 
       // Verify instance insert
-      expect(mocks.insertInto).toHaveBeenCalledWith("core.approval_instance");
+      expect(mocks.insertInto).toHaveBeenCalledWith("wf.approval_instance");
       expect(mocks.values).toHaveBeenCalledWith(
         expect.objectContaining({
           tenant_id: "tenant-456",
@@ -231,18 +231,18 @@ describe("ApprovalServiceImpl", () => {
       );
 
       // Verify stage insert
-      expect(mocks.insertInto).toHaveBeenCalledWith("core.approval_stage");
+      expect(mocks.insertInto).toHaveBeenCalledWith("wf.approval_stage");
 
       // Verify task insert
-      expect(mocks.insertInto).toHaveBeenCalledWith("core.approval_task");
+      expect(mocks.insertInto).toHaveBeenCalledWith("wf.approval_task");
 
       // Verify snapshot insert
       expect(mocks.insertInto).toHaveBeenCalledWith(
-        "core.approval_assignment_snapshot"
+        "wf.approval_assignment_snapshot"
       );
 
       // Verify event insert
-      expect(mocks.insertInto).toHaveBeenCalledWith("core.approval_event");
+      expect(mocks.insertInto).toHaveBeenCalledWith("wf.approval_event");
     });
 
     it("should return error when template not found", async () => {
@@ -418,7 +418,7 @@ describe("ApprovalServiceImpl", () => {
       expect(result.instanceStatus).toBe("completed");
 
       // Verify task update
-      expect(mocks.updateTable).toHaveBeenCalledWith("core.approval_task");
+      expect(mocks.updateTable).toHaveBeenCalledWith("wf.approval_task");
       expect(mocks.set).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "approved",
@@ -427,11 +427,11 @@ describe("ApprovalServiceImpl", () => {
       );
 
       // Verify stage update
-      expect(mocks.updateTable).toHaveBeenCalledWith("core.approval_stage");
+      expect(mocks.updateTable).toHaveBeenCalledWith("wf.approval_stage");
       expect(mocks.set).toHaveBeenCalledWith({ status: "completed" });
 
       // Verify instance update
-      expect(mocks.updateTable).toHaveBeenCalledWith("core.approval_instance");
+      expect(mocks.updateTable).toHaveBeenCalledWith("wf.approval_instance");
       expect(mocks.set).toHaveBeenCalledWith({ status: "completed" });
     });
   });

@@ -7,7 +7,7 @@
 
 import { TOKENS } from "../../../kernel/tokens.js";
 import type { Container } from "../../../kernel/container.js";
-import type { RuntimeModule } from "../../registry.js";
+import type { RuntimeModule } from "../../types.js";
 import type { Logger } from "../../../kernel/logger.js";
 import type { RuntimeConfig } from "../../../kernel/config.schema.js";
 import type { RouteRegistry } from "../../platform/foundation/registries/routes.registry.js";
@@ -26,6 +26,7 @@ import { ReactionService } from "./domain/reaction.service.js";
 import { ReadTrackingRepository } from "./persistence/read-tracking.repository.js";
 import { ReadTrackingService } from "./domain/read-tracking.service.js";
 import { CommentModerationService } from "./domain/comment-moderation.service.js";
+import { CommentFlagRepository } from "./persistence/comment-flag.repository.js";
 import { CommentSLAService } from "./domain/comment-sla.service.js";
 import { CommentAnalyticsService } from "./domain/comment-analytics.service.js";
 import { CommentRetentionService } from "./domain/comment-retention.service.js";
@@ -80,20 +81,20 @@ export const module: RuntimeModule = {
 
     // Phase 1: Timeline Service
     c.register(TOKENS.collabTimelineService, async () => {
-      const activityTimeline = await c.resolve(TOKENS.auditTimeline);
+      const activityTimeline = await c.resolve(TOKENS.auditTimeline) as any;
       return new CollabTimelineService(activityTimeline);
     }, "singleton");
 
     // Phase 5: Mention Repository
     c.register(TOKENS.collabMentionRepo, async () => {
-      const db = await c.resolve(TOKENS.db);
+      const db = await c.resolve(TOKENS.db) as any;
       return new MentionRepository(db);
     }, "singleton");
 
     // Phase 5: Mention Service
     c.register(TOKENS.collabMentionService, async () => {
-      const repo = await c.resolve(TOKENS.collabMentionRepo);
-      const db = await c.resolve(TOKENS.db);
+      const repo = await c.resolve(TOKENS.collabMentionRepo) as any;
+      const db = await c.resolve(TOKENS.db) as any;
       const logger = await c.resolve<Logger>(TOKENS.logger);
       const config = await c.resolve<RuntimeConfig>(TOKENS.config);
 
@@ -104,18 +105,18 @@ export const module: RuntimeModule = {
 
     // Phase 2: Entity Comment Repository
     c.register(TOKENS.collabCommentRepo, async () => {
-      const db = await c.resolve(TOKENS.db);
+      const db = await c.resolve(TOKENS.db) as any;
       return new EntityCommentRepository(db);
     }, "singleton");
 
     // Phase 2: Entity Comment Service
     c.register(TOKENS.collabCommentService, async () => {
-      const repo = await c.resolve(TOKENS.collabCommentRepo);
+      const repo = await c.resolve(TOKENS.collabCommentRepo) as any;
       const auditWriter = await c.resolve(TOKENS.auditWriter);
       const logger = await c.resolve<Logger>(TOKENS.logger);
       const config = await c.resolve<RuntimeConfig>(TOKENS.config);
       const mentionService = config.collab.mentionsEnabled
-        ? await c.resolve(TOKENS.collabMentionService)
+        ? await c.resolve(TOKENS.collabMentionService) as any
         : undefined;
 
       return new EntityCommentService(repo, auditWriter, logger, {
@@ -125,18 +126,18 @@ export const module: RuntimeModule = {
 
     // Phase 3: Approval Comment Repository
     c.register(TOKENS.collabApprovalCommentRepo, async () => {
-      const db = await c.resolve(TOKENS.db);
+      const db = await c.resolve(TOKENS.db) as any;
       return new ApprovalCommentRepository(db);
     }, "singleton");
 
     // Phase 3: Approval Comment Service
     c.register(TOKENS.collabApprovalCommentService, async () => {
-      const repo = await c.resolve(TOKENS.collabApprovalCommentRepo);
+      const repo = await c.resolve(TOKENS.collabApprovalCommentRepo) as any;
       const auditWriter = await c.resolve(TOKENS.auditWriter);
       const logger = await c.resolve<Logger>(TOKENS.logger);
       const config = await c.resolve<RuntimeConfig>(TOKENS.config);
       const mentionService = config.collab.mentionsEnabled
-        ? await c.resolve(TOKENS.collabMentionService)
+        ? await c.resolve(TOKENS.collabMentionService) as any
         : undefined;
 
       return new ApprovalCommentService(repo, auditWriter, logger, {
@@ -146,14 +147,14 @@ export const module: RuntimeModule = {
 
     // Phase 4: Attachment Link Service
     c.register(TOKENS.collabAttachmentService, async () => {
-      const db = await c.resolve(TOKENS.db);
+      const db = await c.resolve(TOKENS.db) as any;
       const logger = await c.resolve<Logger>(TOKENS.logger);
       return new AttachmentLinkService(db, logger);
     }, "singleton");
 
     // Phase 7: Rate Limiter
     c.register(TOKENS.collabRateLimiter, async () => {
-      const db = await c.resolve(TOKENS.db);
+      const db = await c.resolve(TOKENS.db) as any;
       const logger = await c.resolve<Logger>(TOKENS.logger);
       const config = await c.resolve<RuntimeConfig>(TOKENS.config);
       return new CommentRateLimiter(db, logger, {
@@ -163,19 +164,19 @@ export const module: RuntimeModule = {
 
     // Phase 7: Search Service
     c.register(TOKENS.collabSearchService, async () => {
-      const db = await c.resolve(TOKENS.db);
+      const db = await c.resolve(TOKENS.db) as any;
       const logger = await c.resolve<Logger>(TOKENS.logger);
       return new CommentSearchService(db, logger);
     }, "singleton");
 
     // Enhancement 1: Reaction Repository & Service
     c.register(TOKENS.collabReactionRepo, async () => {
-      const db = await c.resolve(TOKENS.db);
+      const db = await c.resolve(TOKENS.db) as any;
       return new ReactionRepository(db);
     }, "singleton");
 
     c.register(TOKENS.collabReactionService, async () => {
-      const repo = await c.resolve(TOKENS.collabReactionRepo);
+      const repo = await c.resolve(TOKENS.collabReactionRepo) as any;
       const auditWriter = await c.resolve(TOKENS.auditWriter);
       const logger = await c.resolve<Logger>(TOKENS.logger);
       return new ReactionService(repo, auditWriter, logger);
@@ -183,10 +184,10 @@ export const module: RuntimeModule = {
 
     // Enhancement 2: Read Tracking Repository & Service
     c.register(TOKENS.collabReadTrackingRepo, async () => {
-      const db = await c.resolve(TOKENS.db);
+      const db = await c.resolve(TOKENS.db) as any;
       // Optionally inject memory cache for Redis
       try {
-        const cache = await c.resolve(TOKENS.memoryCache);
+        const cache = await c.resolve(TOKENS.cache) as any;
         return new ReadTrackingRepository(db, cache);
       } catch {
         return new ReadTrackingRepository(db);
@@ -194,39 +195,45 @@ export const module: RuntimeModule = {
     }, "singleton");
 
     c.register(TOKENS.collabReadTrackingService, async () => {
-      const repo = await c.resolve(TOKENS.collabReadTrackingRepo);
+      const repo = await c.resolve(TOKENS.collabReadTrackingRepo) as any;
       const logger = await c.resolve<Logger>(TOKENS.logger);
       return new ReadTrackingService(repo, logger);
     }, "singleton");
 
+    // Phase 3 Enhancement: Moderation Repository
+    c.register(TOKENS.collabModerationRepo, async () => {
+      const db = await c.resolve(TOKENS.db) as any;
+      return new CommentFlagRepository(db);
+    }, "singleton");
+
     // Phase 3 Enhancement: Moderation Service
     c.register(TOKENS.collabModerationService, async () => {
-      const db = await c.resolve(TOKENS.db);
-      const logger = await c.resolve<Logger>(TOKENS.logger);
+      const repo = await c.resolve(TOKENS.collabModerationRepo) as any;
       const auditWriter = await c.resolve(TOKENS.auditWriter);
-      return new CommentModerationService(db, logger, auditWriter);
+      const logger = await c.resolve<Logger>(TOKENS.logger);
+      return new CommentModerationService(repo, auditWriter, logger);
     }, "singleton");
 
     // Phase 3 Enhancement: SLA Tracking Service
     c.register(TOKENS.collabSLAService, async () => {
-      const db = await c.resolve(TOKENS.db);
+      const db = await c.resolve(TOKENS.db) as any;
       const logger = await c.resolve<Logger>(TOKENS.logger);
       return new CommentSLAService(db, logger);
     }, "singleton");
 
     // Phase 3 Enhancement: Analytics Service
     c.register(TOKENS.collabAnalyticsService, async () => {
-      const db = await c.resolve(TOKENS.db);
+      const db = await c.resolve(TOKENS.db) as any;
       const logger = await c.resolve<Logger>(TOKENS.logger);
       return new CommentAnalyticsService(db, logger);
     }, "singleton");
 
     // Phase 3 Enhancement: Retention Service
     c.register(TOKENS.collabRetentionService, async () => {
-      const db = await c.resolve(TOKENS.db);
-      const logger = await c.resolve<Logger>(TOKENS.logger);
+      const db = await c.resolve(TOKENS.db) as any;
       const auditWriter = await c.resolve(TOKENS.auditWriter);
-      return new CommentRetentionService(db, logger, auditWriter);
+      const logger = await c.resolve<Logger>(TOKENS.logger);
+      return new CommentRetentionService(db, auditWriter, logger);
     }, "singleton");
 
     // Phase 1: Timeline Handler

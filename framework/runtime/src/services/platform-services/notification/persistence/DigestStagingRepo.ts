@@ -1,5 +1,5 @@
 /**
- * DigestStagingRepo — Kysely repo for core.notification_digest_staging
+ * DigestStagingRepo — Kysely repo for notify.notification_digest_staging
  *
  * Stages non-immediate notifications for batch digest delivery.
  */
@@ -8,7 +8,7 @@ import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type { PreferenceFrequency, ChannelCode } from "../domain/types.js";
 
-const TABLE = "core.notification_digest_staging" as keyof DB & string;
+const TABLE = "notify.notification_digest_staging" as keyof DB & string;
 
 export interface DigestStagingEntry {
     id: string;

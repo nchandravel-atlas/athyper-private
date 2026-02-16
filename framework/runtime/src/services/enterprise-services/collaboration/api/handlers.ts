@@ -5,6 +5,7 @@
  */
 
 import type { Request, Response } from "express";
+import type { Container } from "../../../../kernel/container.js";
 import { TOKENS } from "../../../../kernel/tokens.js";
 import type { CollabTimelineService } from "../domain/timeline.service.js";
 import type { EntityCommentService } from "../domain/entity-comment.service.js";
@@ -22,7 +23,7 @@ import type { CommentRetentionService } from "../domain/comment-retention.servic
 export interface HttpHandlerContext {
   request: Request;
   response: Response;
-  container: any;
+  container: Container;
   tenant: { tenantId: string; tenantKey: string };
   auth: { userId?: string; subject?: string; persona?: string };
 }
@@ -528,7 +529,7 @@ export class FlagCommentHandler {
         tenantId: ctx.tenant.tenantId,
         commentType: "entity_comment",
         commentId,
-        flaggedBy: userId,
+        flaggerUserId: userId,
         flagReason,
         flagDetails,
       });
@@ -551,16 +552,13 @@ export class FlagCommentHandler {
 export class ListFlagsHandler {
   async handle(ctx: HttpHandlerContext) {
     const service = await ctx.container.resolve<CommentModerationService>(TOKENS.collabModerationService);
-    const { status, limit, offset } = ctx.request.query;
+    const { limit, offset } = ctx.request.query;
 
     try {
       const flags = await service.getPendingFlags(
         ctx.tenant.tenantId,
-        {
-          status: status as "pending" | "dismissed" | "action_taken" | undefined,
-          limit: limit ? Number(limit) : 50,
-          offset: offset ? Number(offset) : 0,
-        }
+        limit ? Number(limit) : 50,
+        offset ? Number(offset) : 0,
       );
 
       ctx.response.status(200).json({ ok: true, data: flags });
@@ -603,8 +601,11 @@ export class ReviewFlagHandler {
       await service.reviewFlag(
         ctx.tenant.tenantId,
         flagId,
-        action as "dismiss" | "hide_comment" | "delete_comment",
-        userId
+        {
+          action: action as "dismiss" | "hide_comment" | "delete_comment",
+          reviewedBy: userId,
+          resolution: action,
+        }
       );
 
       ctx.response.status(200).json({ ok: true });
@@ -1025,7 +1026,6 @@ export class RestoreArchivedCommentHandler {
     try {
       await service.restoreArchivedComment(
         ctx.tenant.tenantId,
-        "entity_comment",
         commentId,
         userId
       );

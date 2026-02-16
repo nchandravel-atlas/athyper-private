@@ -4,14 +4,16 @@
  * B3: Groups Model
  * Manages groups and group memberships
  *
- * Hybrid approach:
- * - Keycloak groups → synced into core.group with source_type='idp'
- * - Local athyper groups → source_type='local'
- * - Import groups → source_type='import'
- * - Membership snapshots → core.group_member
+ * Schema changes:
+ * - core.group → core.principal_group (cols: id, tenant_id, code, name, description, metadata, created_at, created_by, updated_at, updated_by)
+ * - core.group_member (cols: id, tenant_id, group_id, principal_id, joined_at — NO valid_from/valid_until/created_by)
+ *
+ * Notes:
+ * - source_type, source_ref, is_active columns removed from principal_group
+ * - Group source tracking now stored in metadata JSON
  *
  * Tables:
- * - core.group
+ * - core.principal_group
  * - core.group_member
  */
 
@@ -19,7 +21,7 @@ import type { DB } from "@athyper/adapter-db";
 import type { Kysely } from "kysely";
 
 /**
- * Group source type (matches DB constraint)
+ * Group source type (stored in metadata for backward compat)
  */
 export type GroupSourceType = "idp" | "local" | "import";
 
@@ -31,9 +33,8 @@ export type GroupInfo = {
   tenantId: string;
   code: string;
   name: string;
-  sourceType: GroupSourceType;
-  sourceRef: string | null;
-  isActive: boolean;
+  description: string | null;
+  metadata: unknown | null;
 };
 
 /**
@@ -43,8 +44,7 @@ export type GroupMemberInfo = {
   id: string;
   groupId: string;
   principalId: string;
-  validFrom: Date | null;
-  validUntil: Date | null;
+  joinedAt: Date;
 };
 
 /**
@@ -63,15 +63,15 @@ export class GroupSyncService {
     sourceRef: string,
     createdBy: string = "system"
   ): Promise<GroupInfo> {
-    // Check if exists by source_ref
-    const existing = await this.getGroupBySourceRef(tenantId, sourceRef);
+    // Check if exists by code
+    const existing = await this.getGroupByCode(tenantId, groupCode);
 
     if (existing) {
       // Update name if changed
       if (existing.name !== groupName) {
         await this.db
-          .updateTable("core.group")
-          .set({ name: groupName })
+          .updateTable("core.principal_group")
+          .set({ name: groupName, updated_by: createdBy, updated_at: new Date() })
           .where("id", "=", existing.id)
           .execute();
       }
@@ -80,16 +80,16 @@ export class GroupSyncService {
 
     // Create new
     const id = crypto.randomUUID();
+    const metadata = JSON.stringify({ source_type: "idp", source_ref: sourceRef });
     await this.db
-      .insertInto("core.group")
+      .insertInto("core.principal_group")
       .values({
         id,
         tenant_id: tenantId,
         code: groupCode,
         name: groupName,
-        source_type: "idp",
-        source_ref: sourceRef,
-        is_active: true,
+        description: null,
+        metadata,
         created_by: createdBy,
       })
       .execute();
@@ -109,9 +109,8 @@ export class GroupSyncService {
       tenantId,
       code: groupCode,
       name: groupName,
-      sourceType: "idp",
-      sourceRef,
-      isActive: true,
+      description: null,
+      metadata: { source_type: "idp", source_ref: sourceRef },
     };
   }
 
@@ -125,15 +124,16 @@ export class GroupSyncService {
     createdBy: string
   ): Promise<GroupInfo> {
     const id = crypto.randomUUID();
+    const metadata = JSON.stringify({ source_type: "local" });
     await this.db
-      .insertInto("core.group")
+      .insertInto("core.principal_group")
       .values({
         id,
         tenant_id: tenantId,
         code,
         name,
-        source_type: "local",
-        is_active: true,
+        description: null,
+        metadata,
         created_by: createdBy,
       })
       .execute();
@@ -152,9 +152,8 @@ export class GroupSyncService {
       tenantId,
       code,
       name,
-      sourceType: "local",
-      sourceRef: null,
-      isActive: true,
+      description: null,
+      metadata: { source_type: "local" },
     };
   }
 
@@ -163,15 +162,14 @@ export class GroupSyncService {
    */
   async getGroup(groupId: string): Promise<GroupInfo | undefined> {
     const result = await this.db
-      .selectFrom("core.group")
+      .selectFrom("core.principal_group")
       .select([
         "id",
         "tenant_id",
         "code",
         "name",
-        "source_type",
-        "source_ref",
-        "is_active",
+        "description",
+        "metadata",
       ])
       .where("id", "=", groupId)
       .executeTakeFirst();
@@ -183,32 +181,30 @@ export class GroupSyncService {
       tenantId: result.tenant_id,
       code: result.code,
       name: result.name,
-      sourceType: result.source_type as GroupSourceType,
-      sourceRef: result.source_ref,
-      isActive: result.is_active,
+      description: result.description,
+      metadata: result.metadata,
     };
   }
 
   /**
-   * Get group by source ref
+   * Get group by code within tenant
    */
-  private async getGroupBySourceRef(
+  private async getGroupByCode(
     tenantId: string,
-    sourceRef: string
+    code: string
   ): Promise<GroupInfo | undefined> {
     const result = await this.db
-      .selectFrom("core.group")
+      .selectFrom("core.principal_group")
       .select([
         "id",
         "tenant_id",
         "code",
         "name",
-        "source_type",
-        "source_ref",
-        "is_active",
+        "description",
+        "metadata",
       ])
       .where("tenant_id", "=", tenantId)
-      .where("source_ref", "=", sourceRef)
+      .where("code", "=", code)
       .executeTakeFirst();
 
     if (!result) return undefined;
@@ -218,9 +214,8 @@ export class GroupSyncService {
       tenantId: result.tenant_id,
       code: result.code,
       name: result.name,
-      sourceType: result.source_type as GroupSourceType,
-      sourceRef: result.source_ref,
-      isActive: result.is_active,
+      description: result.description,
+      metadata: result.metadata,
     };
   }
 
@@ -231,7 +226,7 @@ export class GroupSyncService {
     groupId: string,
     tenantId: string,
     principalIds: string[],
-    createdBy: string = "system"
+    _createdBy: string = "system"
   ): Promise<void> {
     await this.db.transaction().execute(async (trx) => {
       // Get current members
@@ -265,7 +260,6 @@ export class GroupSyncService {
               tenant_id: tenantId,
               group_id: groupId,
               principal_id: principalId,
-              created_by: createdBy,
             }))
           )
           .execute();
@@ -289,9 +283,7 @@ export class GroupSyncService {
     groupId: string,
     tenantId: string,
     principalId: string,
-    createdBy: string,
-    validFrom?: Date,
-    validUntil?: Date
+    _createdBy: string
   ): Promise<void> {
     await this.db
       .insertInto("core.group_member")
@@ -300,9 +292,6 @@ export class GroupSyncService {
         tenant_id: tenantId,
         group_id: groupId,
         principal_id: principalId,
-        valid_from: validFrom ?? null,
-        valid_until: validUntil ?? null,
-        created_by: createdBy,
       })
       .onConflict((oc) => oc.doNothing())
       .execute();
@@ -323,33 +312,18 @@ export class GroupSyncService {
    * Get groups for principal
    */
   async getPrincipalGroups(principalId: string): Promise<GroupInfo[]> {
-    const now = new Date();
     const results = await this.db
       .selectFrom("core.group_member as gm")
-      .innerJoin("core.group as g", "g.id", "gm.group_id")
+      .innerJoin("core.principal_group as g", "g.id", "gm.group_id")
       .select([
         "g.id",
         "g.tenant_id",
         "g.code",
         "g.name",
-        "g.source_type",
-        "g.source_ref",
-        "g.is_active",
+        "g.description",
+        "g.metadata",
       ])
       .where("gm.principal_id", "=", principalId)
-      .where("g.is_active", "=", true)
-      .where((eb) =>
-        eb.or([
-          eb("gm.valid_from", "is", null),
-          eb("gm.valid_from", "<=", now),
-        ])
-      )
-      .where((eb) =>
-        eb.or([
-          eb("gm.valid_until", "is", null),
-          eb("gm.valid_until", ">", now),
-        ])
-      )
       .execute();
 
     return results.map((r) => ({
@@ -357,9 +331,8 @@ export class GroupSyncService {
       tenantId: r.tenant_id,
       code: r.code,
       name: r.name,
-      sourceType: r.source_type as GroupSourceType,
-      sourceRef: r.source_ref,
-      isActive: r.is_active,
+      description: r.description,
+      metadata: r.metadata,
     }));
   }
 
@@ -369,32 +342,21 @@ export class GroupSyncService {
   async listGroups(
     tenantId: string,
     filters?: {
-      sourceType?: GroupSourceType;
-      isActive?: boolean;
       limit?: number;
       offset?: number;
     }
   ): Promise<GroupInfo[]> {
-    let query = this.db
-      .selectFrom("core.group")
+    const query = this.db
+      .selectFrom("core.principal_group")
       .select([
         "id",
         "tenant_id",
         "code",
         "name",
-        "source_type",
-        "source_ref",
-        "is_active",
+        "description",
+        "metadata",
       ])
       .where("tenant_id", "=", tenantId);
-
-    if (filters?.sourceType) {
-      query = query.where("source_type", "=", filters.sourceType);
-    }
-
-    if (filters?.isActive !== undefined) {
-      query = query.where("is_active", "=", filters.isActive);
-    }
 
     const results = await query
       .limit(filters?.limit ?? 100)
@@ -407,9 +369,8 @@ export class GroupSyncService {
       tenantId: r.tenant_id,
       code: r.code,
       name: r.name,
-      sourceType: r.source_type as GroupSourceType,
-      sourceRef: r.source_ref,
-      isActive: r.is_active,
+      description: r.description,
+      metadata: r.metadata,
     }));
   }
 }

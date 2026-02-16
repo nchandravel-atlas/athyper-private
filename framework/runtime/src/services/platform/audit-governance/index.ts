@@ -43,7 +43,7 @@ import { createDrainAuditOutboxHandler } from "./jobs/workers/drainAuditOutbox.w
 
 import type { Container } from "../../../kernel/container.js";
 import type { Logger } from "../../../kernel/logger.js";
-import type { RuntimeModule } from "../../registry.js";
+import type { RuntimeModule } from "../../types.js";
 import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type {

@@ -79,9 +79,9 @@ export function createIAMServices(db: Kysely<DB>): IAMServices {
 }
 
 // Re-export types for convenience
-export type { IdpIdentityInfo, PrincipalResult, PrincipalStatus, PrincipalType } from "./identity-mapper.service.js";
+export type { IdpIdentityInfo, PrincipalResult, PrincipalType } from "./identity-mapper.service.js";
 export type { SubscriptionTier, TenantInfo, TenantProfileInfo, TenantStatus } from "./tenant-resolver.service.js";
 export type { GroupInfo, GroupMemberInfo, GroupSourceType } from "./group-sync.service.js";
 export type { RoleBindingInfo, RoleInfo, ScopeKind, ScopeMode } from "./role-binding.service.js";
-export type { OUNodeInfo, PrincipalAttributeInfo } from "./ou-membership.service.js";
+export type { OUNodeInfo } from "./ou-membership.service.js";
 export type { EntitlementSnapshot } from "./entitlement-snapshot.service.js";

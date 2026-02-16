@@ -33,14 +33,14 @@ Template CRUD             Resolve inputs            QUEUED
 
 | Table | Purpose |
 |-------|---------|
-| `core.doc_template` | Template definitions (code, name, kind, engine, capability flags) |
-| `core.doc_template_version` | Versioned template content (HTML body, header, footer, CSS, schema) |
-| `core.doc_template_binding` | Maps entity+operation+variant to a template (priority-based resolution) |
-| `core.doc_letterhead` | Tenant/org-unit letterheads (logo, header, footer, watermark, page margins) |
-| `core.doc_brand_profile` | Brand palette, typography, spacing, RTL/LTR direction |
-| `core.doc_output` | Rendered document records with full lifecycle tracking |
-| `core.doc_render_job` | BullMQ job metadata (status, attempts, timing) |
-| `core.doc_render_dlq` | Dead-letter queue for permanently failed renders |
+| `doc.template` | Template definitions (code, name, kind, engine, capability flags) |
+| `doc.template_version` | Versioned template content (HTML body, header, footer, CSS, schema) |
+| `doc.template_binding` | Maps entity+operation+variant to a template (priority-based resolution) |
+| `doc.letterhead` | Tenant/org-unit letterheads (logo, header, footer, watermark, page margins) |
+| `doc.brand_profile` | Brand palette, typography, spacing, RTL/LTR direction |
+| `doc.render_output` | Rendered document records with full lifecycle tracking |
+| `doc.render_job` | BullMQ job metadata (status, attempts, timing) |
+| `doc.render_dlq` | Dead-letter queue for permanently failed renders |
 
 ### Core Types
 
@@ -379,14 +379,14 @@ document/
 │       ├── DocRenderDlqManager.ts        Dead-letter queue management
 │       └── DocAuditEmitter.ts            Audit event emission
 ├── persistence/
-│   ├── DocTemplateRepo.ts                Kysely repo for doc_template
-│   ├── DocTemplateVersionRepo.ts         Kysely repo for doc_template_version
-│   ├── DocTemplateBindingRepo.ts         Kysely repo for doc_template_binding
-│   ├── DocLetterheadRepo.ts              Kysely repo for doc_letterhead
-│   ├── DocBrandProfileRepo.ts            Kysely repo for doc_brand_profile
-│   ├── DocOutputRepo.ts                  Kysely repo for doc_output
-│   ├── DocRenderJobRepo.ts               Kysely repo for doc_render_job
-│   └── DocRenderDlqRepo.ts              Kysely repo for doc_render_dlq
+│   ├── DocTemplateRepo.ts                Kysely repo for doc.template
+│   ├── DocTemplateVersionRepo.ts         Kysely repo for doc.template_version
+│   ├── DocTemplateBindingRepo.ts         Kysely repo for doc.template_binding
+│   ├── DocLetterheadRepo.ts              Kysely repo for doc.letterhead
+│   ├── DocBrandProfileRepo.ts            Kysely repo for doc.brand_profile
+│   ├── DocOutputRepo.ts                  Kysely repo for doc.render_output
+│   ├── DocRenderJobRepo.ts               Kysely repo for doc.render_job
+│   └── DocRenderDlqRepo.ts              Kysely repo for doc.render_dlq
 ├── adapters/
 │   ├── PdfRenderer.ts                    Puppeteer adapter (semaphore, timeout, SSRF)
 │   └── DocStorageAdapter.ts              S3/MinIO storage adapter

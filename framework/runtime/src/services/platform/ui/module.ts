@@ -33,7 +33,7 @@ import {
 
 import type { Container } from "../../../kernel/container.js";
 import type { Logger } from "../../../kernel/logger.js";
-import type { RuntimeModule } from "../../registry.js";
+import type { RuntimeModule } from "../../types.js";
 import type { RouteRegistry } from "../foundation/registries/routes.registry.js";
 import type { Kysely } from "kysely";
 

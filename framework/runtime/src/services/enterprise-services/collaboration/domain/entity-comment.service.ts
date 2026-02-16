@@ -399,7 +399,7 @@ export class EntityCommentService {
     await this.auditWriter.write({
       ts: new Date().toISOString(),
       type: "comment.deleted",
-      level: "warning",
+      level: "warn",
       actor: { kind: "user", id: requesterId },
       meta: {
         tenantId,

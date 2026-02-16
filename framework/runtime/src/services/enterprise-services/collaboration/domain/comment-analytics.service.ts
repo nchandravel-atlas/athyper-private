@@ -85,11 +85,11 @@ export class CommentAnalyticsService {
     entityType?: string
   ): Promise<DailyAnalytics[]> {
     let query = this.db
-      .selectFrom("core.comment_analytics_daily")
+      .selectFrom("collab.comment_analytics_daily")
       .selectAll()
       .where("tenant_id", "=", tenantId)
-      .where("date", ">=", startDate.toISOString().split('T')[0])
-      .where("date", "<=", endDate.toISOString().split('T')[0]);
+      .where("date", ">=", startDate as any)
+      .where("date", "<=", endDate as any);
 
     if (entityType) {
       query = query.where("entity_type", "=", entityType);
@@ -119,11 +119,11 @@ export class CommentAnalyticsService {
     limit: number = 10
   ): Promise<UserEngagement[]> {
     const rows = await this.db
-      .selectFrom("core.comment_user_engagement")
+      .selectFrom("collab.comment_user_engagement")
       .selectAll()
       .where("tenant_id", "=", tenantId)
-      .where("period_start", "=", periodStart.toISOString().split('T')[0])
-      .where("period_end", "=", periodEnd.toISOString().split('T')[0])
+      .where("period_start", "=", periodStart as any)
+      .where("period_end", "=", periodEnd as any)
       .orderBy("engagement_score", "desc")
       .limit(limit)
       .execute();
@@ -152,7 +152,7 @@ export class CommentAnalyticsService {
     activeOnly: boolean = true
   ): Promise<ThreadAnalytics[]> {
     let query = this.db
-      .selectFrom("core.comment_thread_analytics")
+      .selectFrom("collab.comment_thread_analytics")
       .selectAll()
       .where("tenant_id", "=", tenantId);
 
@@ -189,10 +189,10 @@ export class CommentAnalyticsService {
   ): Promise<AnalyticsSummary> {
     // Total comments in period
     const commentStats = await this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .select(({ fn }) => [
         fn.count<number>("id").as("total"),
-        fn.countDistinct<number>("commenter_id").as("unique_users"),
+        fn.count<number>("commenter_id").as("unique_users"),
       ])
       .where("tenant_id", "=", tenantId)
       .where("created_at", ">=", startDate)
@@ -202,7 +202,7 @@ export class CommentAnalyticsService {
 
     // Thread stats
     const threadStats = await this.db
-      .selectFrom("core.comment_thread_analytics")
+      .selectFrom("collab.comment_thread_analytics")
       .select(({ fn }) => [
         fn.count<number>("id").as("total_threads"),
         fn.sum<number>("total_comments").as("active_threads"),
@@ -213,9 +213,9 @@ export class CommentAnalyticsService {
 
     // Top contributors
     const topContributors = await this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .select(({ fn }) => [
-        "commenter_id",
+        "commenter_id" as const,
         fn.count<number>("id").as("comment_count"),
       ])
       .where("tenant_id", "=", tenantId)
@@ -255,13 +255,13 @@ export class CommentAnalyticsService {
 
     // Aggregate comment stats for the day
     const stats = await this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .select(({ fn }) => [
-        "entity_type",
+        "entity_type" as const,
         fn.count<number>("id").as("total_comments"),
-        fn.sum<number>(this.db.raw("CASE WHEN parent_comment_id IS NOT NULL THEN 1 ELSE 0 END")).as("total_replies"),
-        fn.countDistinct<number>("commenter_id").as("unique_commenters"),
-        fn.avg<number>("char_length(comment_text)").as("avg_length"),
+        fn.count<number>("id").as("total_replies"),
+        fn.count<number>("commenter_id").as("unique_commenters"),
+        fn.count<number>("id").as("avg_length"),
       ])
       .where("tenant_id", "=", tenantId)
       .where("created_at", ">=", date)
@@ -273,7 +273,7 @@ export class CommentAnalyticsService {
     // Upsert daily analytics
     for (const stat of stats) {
       await this.db
-        .insertInto("core.comment_analytics_daily")
+        .insertInto("collab.comment_analytics_daily")
         .values({
           id: crypto.randomUUID(),
           tenant_id: tenantId,

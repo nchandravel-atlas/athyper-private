@@ -1,5 +1,5 @@
 /**
- * WhatsAppConsentRepo — Kysely repo for core.whatsapp_consent
+ * WhatsAppConsentRepo — Kysely repo for notify.whatsapp_consent
  */
 
 import type { Kysely } from "kysely";
@@ -9,7 +9,7 @@ import type {
     UpsertConsentInput,
 } from "../domain/models/WhatsAppConsent.js";
 
-const TABLE = "core.whatsapp_consent" as keyof DB & string;
+const TABLE = "notify.whatsapp_consent" as keyof DB & string;
 
 export class WhatsAppConsentRepo {
     constructor(private readonly db: Kysely<DB>) {}

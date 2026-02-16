@@ -4,10 +4,13 @@
  * Handles file uploads to object storage (MinIO/S3) and creates attachment records.
  */
 
-import type { Database } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
+import type { DB } from "@athyper/adapter-db";
 import type { Logger } from "../../../../kernel/logger.js";
 import type { ObjectStorageAdapter } from "@athyper/adapter-objectstorage";
 import { validateFile, type DocumentKindType } from "./content-taxonomy.js";
+
+const TABLE = "doc.attachment" as keyof DB & string;
 
 /**
  * Upload request
@@ -43,7 +46,7 @@ export interface UploadResult {
  */
 export class FileUploadService {
   constructor(
-    private readonly db: Database,
+    private readonly db: Kysely<DB>,
     private readonly objectStorage: ObjectStorageAdapter,
     private readonly logger: Logger,
     private readonly config?: {
@@ -73,10 +76,7 @@ export class FileUploadService {
 
     try {
       // Upload to object storage
-      await this.objectStorage.putObject({
-        bucket,
-        key: storageKey,
-        data: req.file.content,
+      await this.objectStorage.put(storageKey, Buffer.from(req.file.content), {
         contentType: req.file.contentType,
         metadata: {
           tenantId: req.tenantId,
@@ -88,7 +88,7 @@ export class FileUploadService {
 
       // Create attachment record
       await this.db
-        .insertInto("core.attachment")
+        .insertInto(TABLE as any)
         .values({
           id: attachmentId,
           tenant_id: req.tenantId,
@@ -96,12 +96,12 @@ export class FileUploadService {
           owner_entity_id: req.ownerEntityId || null,
           file_name: req.file.name,
           content_type: req.file.contentType,
-          size_bytes: req.file.size,
+          size_bytes: String(req.file.size),
           storage_bucket: bucket,
           storage_key: storageKey,
           is_virus_scanned: false, // TODO: Integrate virus scanning
           created_by: req.uploadedBy,
-        })
+        } as any)
         .execute();
 
       this.logger.info(
@@ -142,22 +142,21 @@ export class FileUploadService {
   async getDownloadUrl(tenantId: string, attachmentId: string, expirySeconds: number = 3600): Promise<string> {
     // Get attachment record
     const attachment = await this.db
-      .selectFrom("core.attachment")
-      .select(["storage_bucket", "storage_key"])
+      .selectFrom(TABLE as any)
+      .select(["storage_bucket", "storage_key"] as any)
       .where("id", "=", attachmentId)
       .where("tenant_id", "=", tenantId)
-      .executeTakeFirst();
+      .executeTakeFirst() as any;
 
     if (!attachment) {
       throw new Error("Attachment not found");
     }
 
     // Generate presigned URL
-    const url = await this.objectStorage.getPresignedUrl({
-      bucket: attachment.storage_bucket,
-      key: attachment.storage_key,
+    const url = await this.objectStorage.getPresignedUrl(
+      attachment.storage_key,
       expirySeconds,
-    });
+    );
 
     return url;
   }
@@ -168,11 +167,11 @@ export class FileUploadService {
   async delete(tenantId: string, attachmentId: string): Promise<void> {
     // Get attachment record
     const attachment = await this.db
-      .selectFrom("core.attachment")
-      .select(["storage_bucket", "storage_key"])
+      .selectFrom(TABLE as any)
+      .select(["storage_bucket", "storage_key"] as any)
       .where("id", "=", attachmentId)
       .where("tenant_id", "=", tenantId)
-      .executeTakeFirst();
+      .executeTakeFirst() as any;
 
     if (!attachment) {
       throw new Error("Attachment not found");
@@ -180,14 +179,11 @@ export class FileUploadService {
 
     try {
       // Delete from object storage
-      await this.objectStorage.deleteObject({
-        bucket: attachment.storage_bucket,
-        key: attachment.storage_key,
-      });
+      await this.objectStorage.delete(attachment.storage_key);
 
       // Delete database record
       await this.db
-        .deleteFrom("core.attachment")
+        .deleteFrom(TABLE as any)
         .where("id", "=", attachmentId)
         .where("tenant_id", "=", tenantId)
         .execute();

@@ -41,11 +41,11 @@ describe("Immutability Guard (specifications)", () => {
 
   it("spec: trigger should be attached to 5 tables", () => {
     const protectedTables = [
-      "core.workflow_audit_event",
-      "core.audit_log",
-      "core.permission_decision_log",
-      "core.field_access_log",
-      "core.security_event",
+      "audit.workflow_audit_event",
+      "audit.audit_log",
+      "audit.permission_decision_log",
+      "audit.field_access_log",
+      "sec.security_event",
     ];
     expect(protectedTables).toHaveLength(5);
   });

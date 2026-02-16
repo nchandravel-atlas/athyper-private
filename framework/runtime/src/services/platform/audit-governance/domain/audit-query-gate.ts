@@ -136,7 +136,7 @@ export class AuditQueryPolicyGate {
 
     try {
       await this.db
-        .insertInto("core.security_event" as any)
+        .insertInto("sec.security_event" as any)
         .values({
           id: crypto.randomUUID(),
           tenant_id: caller.tenantId,

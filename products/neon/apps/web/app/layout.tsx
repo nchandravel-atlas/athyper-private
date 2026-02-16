@@ -2,7 +2,6 @@ import "./globals.css";
 import { getIntl, isValidLocale } from "@athyper/i18n";
 import { cookies } from "next/headers";
 
-
 import { Toaster } from "@/components/ui/sonner";
 import { APP_CONFIG } from "@/config/app-config";
 import { fontVars } from "@/lib/fonts/registry";
@@ -14,9 +13,6 @@ import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provi
 
 import type { Locale } from "@athyper/i18n";
 import type { Metadata } from "next";
-
-
-
 
 export const metadata: Metadata = {
     title: APP_CONFIG.meta.title,

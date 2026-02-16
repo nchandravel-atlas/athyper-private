@@ -1,7 +1,7 @@
 /**
  * Entity Comment Repository
  *
- * Kysely-based repository for core.entity_comment table.
+ * Kysely-based repository for collab.entity_comment table.
  * Handles CRUD operations for record-level comments.
  */
 
@@ -53,7 +53,7 @@ export class EntityCommentRepository {
    */
   async getById(tenantId: string, commentId: string): Promise<EntityComment | undefined> {
     const row = await this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .selectAll()
       .where("id", "=", commentId)
       .where("tenant_id", "=", tenantId)
@@ -90,7 +90,7 @@ export class EntityCommentRepository {
     } = options ?? {};
 
     let query = this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("entity_type", "=", entityType)
@@ -104,13 +104,12 @@ export class EntityCommentRepository {
     // Apply visibility filtering
     if (!isAdmin && currentUserId) {
       // Non-admin users: filter based on visibility
+      const allowedVisibilities: string[] = ["public"];
+      if (isInternalUser) allowedVisibilities.push("internal");
+
       query = query.where((eb) =>
         eb.or([
-          eb("visibility", "=", "public"),
-          eb.and([
-            eb("visibility", "=", "internal"),
-            eb.val(isInternalUser).is(true)
-          ]),
+          eb("visibility", "in", allowedVisibilities),
           eb.and([
             eb("visibility", "=", "private"),
             eb("commenter_id", "=", currentUserId)
@@ -148,7 +147,7 @@ export class EntityCommentRepository {
     entityId: string
   ): Promise<number> {
     const result = await this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .select(({ fn }) => fn.count<number>("id").as("count"))
       .where("tenant_id", "=", tenantId)
       .where("entity_type", "=", entityType)
@@ -168,7 +167,7 @@ export class EntityCommentRepository {
     const now = new Date();
 
     await this.db
-      .insertInto("core.entity_comment")
+      .insertInto("collab.entity_comment")
       .values({
         id,
         tenant_id: req.tenantId,
@@ -203,7 +202,7 @@ export class EntityCommentRepository {
     const now = new Date();
 
     await this.db
-      .updateTable("core.entity_comment")
+      .updateTable("collab.entity_comment")
       .set({
         comment_text: req.commentText,
         updated_at: now,
@@ -222,7 +221,7 @@ export class EntityCommentRepository {
     const now = new Date();
 
     await this.db
-      .updateTable("core.entity_comment")
+      .updateTable("collab.entity_comment")
       .set({
         deleted_at: now,
         deleted_by: deletedBy,
@@ -243,7 +242,7 @@ export class EntityCommentRepository {
     const { limit = 50, offset = 0 } = options ?? {};
 
     const rows = await this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("commenter_id", "=", commenterId)
@@ -292,7 +291,7 @@ export class EntityCommentRepository {
     const now = new Date();
 
     await this.db
-      .insertInto("core.entity_comment")
+      .insertInto("collab.entity_comment")
       .values({
         id,
         tenant_id: req.tenantId,
@@ -334,7 +333,7 @@ export class EntityCommentRepository {
     } = options ?? {};
 
     let query = this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("parent_comment_id", "=", parentCommentId);
@@ -345,13 +344,12 @@ export class EntityCommentRepository {
 
     // Apply visibility filtering
     if (!isAdmin && currentUserId) {
+      const allowedVisibilities: string[] = ["public"];
+      if (isInternalUser) allowedVisibilities.push("internal");
+
       query = query.where((eb) =>
         eb.or([
-          eb("visibility", "=", "public"),
-          eb.and([
-            eb("visibility", "=", "internal"),
-            eb.val(isInternalUser).is(true)
-          ]),
+          eb("visibility", "in", allowedVisibilities),
           eb.and([
             eb("visibility", "=", "private"),
             eb("commenter_id", "=", currentUserId)
@@ -385,7 +383,7 @@ export class EntityCommentRepository {
    */
   async countReplies(tenantId: string, parentCommentId: string): Promise<number> {
     const result = await this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .select(({ fn }) => fn.count<number>("id").as("count"))
       .where("tenant_id", "=", tenantId)
       .where("parent_comment_id", "=", parentCommentId)
@@ -403,7 +401,7 @@ export class EntityCommentRepository {
     commentId: string
   ): Promise<Attachment[]> {
     const rows = await this.db
-      .selectFrom("core.attachment")
+      .selectFrom("doc.attachment")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", "entity_comment")
@@ -417,7 +415,7 @@ export class EntityCommentRepository {
       ownerEntityId: row.owner_entity_id ?? undefined,
       fileName: row.file_name,
       contentType: row.content_type ?? undefined,
-      sizeBytes: row.size_bytes ?? undefined,
+      sizeBytes: row.size_bytes ? Number(row.size_bytes) : undefined,
       storageBucket: row.storage_bucket,
       storageKey: row.storage_key,
       isVirusScanned: row.is_virus_scanned,
@@ -442,7 +440,7 @@ export class EntityCommentRepository {
     }
 
     const rows = await this.db
-      .selectFrom("core.attachment")
+      .selectFrom("doc.attachment")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", "entity_comment")
@@ -461,7 +459,7 @@ export class EntityCommentRepository {
         ownerEntityId: row.owner_entity_id ?? undefined,
         fileName: row.file_name,
         contentType: row.content_type ?? undefined,
-        sizeBytes: row.size_bytes ?? undefined,
+        sizeBytes: row.size_bytes ? Number(row.size_bytes) : undefined,
         storageBucket: row.storage_bucket,
         storageKey: row.storage_key,
         isVirusScanned: row.is_virus_scanned,

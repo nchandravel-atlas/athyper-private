@@ -156,7 +156,7 @@ export class AuditExportService {
 
     try {
       await this.db
-        .insertInto("core.security_event" as any)
+        .insertInto("sec.security_event" as any)
         .values({
           id: crypto.randomUUID(),
           tenant_id: tenantId,

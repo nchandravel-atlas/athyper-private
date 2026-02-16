@@ -8,7 +8,7 @@ import {
     listParamsSchema,
     chartParamsSchema,
     widgetParamsSchemaMap,
-} from "./widget-params.schema";
+} from "./widget-params.schema.js";
 
 // ─── Heading ────────────────────────────────────────────
 

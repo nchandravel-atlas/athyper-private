@@ -34,7 +34,7 @@ export async function registerMentionNotificationWorker(container: Container) {
 
   try {
     // Check if job queue is available
-    const jobQueue = await container.resolve(TOKENS.jobQueue);
+    const jobQueue = await container.resolve(TOKENS.jobQueue) as any;
     if (!jobQueue) {
       logger.warn("[collab] Job queue not available, mention notifications will not be sent");
       return;
@@ -54,7 +54,7 @@ export async function registerMentionNotificationWorker(container: Container) {
 
       try {
         // Get notification orchestrator
-        const notificationOrchestrator = await container.resolve(TOKENS.notificationOrchestrator);
+        const notificationOrchestrator = await container.resolve(TOKENS.notificationOrchestrator) as any;
 
         // Prepare notification payload
         const notificationPayload: any = {

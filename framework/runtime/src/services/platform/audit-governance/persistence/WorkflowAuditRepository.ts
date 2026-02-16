@@ -35,7 +35,7 @@ export type TraceContextResolver = () => { traceId: string } | undefined;
 // Constants
 // ============================================================================
 
-const TABLE = "core.workflow_audit_event" as keyof DB & string;
+const TABLE = "audit.workflow_audit_event" as keyof DB & string;
 const CURRENT_SCHEMA_VERSION = 1;
 
 // ============================================================================

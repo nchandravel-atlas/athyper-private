@@ -1,16 +1,22 @@
-// app/api/entity-page/[entity]/route.ts
-//
-// Static entity page descriptor endpoint.
-// Returns cacheable metadata (tabs, sections, feature flags) for a given entity type.
-// Uses a registry of known entities; returns 404 for unknown entities.
+/**
+ * GET /api/entity-page/:entity
+ *
+ * Static entity page descriptor endpoint.
+ * Returns cacheable metadata (tabs, sections, feature flags) for a given entity type.
+ * Uses an in-memory registry of known entities; returns 404 for unknown slugs.
+ *
+ * In production this will query the compiled entity model from the metadata store.
+ */
 
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 import type { EntityPageStaticDescriptor, SectionDescriptor, TabDescriptor } from "@/lib/entity-page/types";
-import type { NextRequest } from "next/server";
 
 // ---------------------------------------------------------------------------
 // Entity descriptor registry
+// Each entry defines the entity class, available tabs, form sections, and
+// feature flags that control which shell features are enabled.
 // ---------------------------------------------------------------------------
 
 interface EntityDefinition {
@@ -21,6 +27,7 @@ interface EntityDefinition {
 }
 
 const ENTITY_REGISTRY: Record<string, EntityDefinition> = {
+    // Master entity — reference/standing data, no lifecycle or approvals
     account: {
         entityClass: "master",
         tabs: [
@@ -47,6 +54,7 @@ const ENTITY_REGISTRY: Record<string, EntityDefinition> = {
             documents: true,
         },
     },
+    // Document entity — transactional, with lifecycle states and approval workflow
     "purchase-invoice": {
         entityClass: "document",
         tabs: [
@@ -92,23 +100,33 @@ export async function GET(
     { params }: { params: Promise<{ entity: string }> },
 ) {
     const { entity } = await params;
-    const definition = ENTITY_REGISTRY[entity];
 
-    if (!definition) {
+    try {
+        const definition = ENTITY_REGISTRY[entity];
+
+        if (!definition) {
+            console.warn(`[GET /api/entity-page/${entity}] Unknown entity requested`);
+            return NextResponse.json(
+                { error: { message: `Unknown entity: ${entity}` } },
+                { status: 404 },
+            );
+        }
+
+        const descriptor: EntityPageStaticDescriptor = {
+            entityName: entity,
+            entityClass: definition.entityClass,
+            featureFlags: definition.featureFlags,
+            compiledModelHash: `mock-${entity}-v1`,
+            tabs: definition.tabs,
+            sections: definition.sections,
+        };
+
+        return NextResponse.json({ data: descriptor });
+    } catch (error) {
+        console.error(`[GET /api/entity-page/${entity}] Error:`, error);
         return NextResponse.json(
-            { error: { message: `Unknown entity: ${entity}` } },
-            { status: 404 },
+            { error: { message: "Failed to load entity descriptor" } },
+            { status: 500 },
         );
     }
-
-    const descriptor: EntityPageStaticDescriptor = {
-        entityName: entity,
-        entityClass: definition.entityClass,
-        featureFlags: definition.featureFlags,
-        compiledModelHash: `mock-${entity}-v1`,
-        tabs: definition.tabs,
-        sections: definition.sections,
-    };
-
-    return NextResponse.json({ data: descriptor });
 }

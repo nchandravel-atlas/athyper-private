@@ -5,7 +5,8 @@
  * Checks recent comment count per user within a time window.
  */
 
-import type { Database } from "@athyper/adapter-db";
+import type { Kysely } from "kysely";
+import type { DB } from "@athyper/adapter-db";
 import type { Logger } from "../../../../kernel/logger.js";
 
 /**
@@ -23,7 +24,7 @@ export interface RateLimitResult {
  */
 export class CommentRateLimiter {
   constructor(
-    private readonly db: Database,
+    private readonly db: Kysely<DB>,
     private readonly logger: Logger,
     private readonly config?: {
       commentsPerMinute?: number;
@@ -45,7 +46,7 @@ export class CommentRateLimiter {
 
     // Count recent comments from this user
     const result = await this.db
-      .selectFrom("core.entity_comment")
+      .selectFrom("collab.entity_comment")
       .select(({ fn }) => fn.count<number>("id").as("count"))
       .where("tenant_id", "=", tenantId)
       .where("commenter_id", "=", userId)

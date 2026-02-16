@@ -1,4 +1,4 @@
-import type { AccessPolicy, AccessContext } from "./index.js";
+import type { AccessContext, AccessPolicy } from "./types.js";
 
 /**
  * Role-based access control policy with real implementation

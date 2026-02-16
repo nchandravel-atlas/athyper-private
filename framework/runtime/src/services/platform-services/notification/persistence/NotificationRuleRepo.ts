@@ -1,5 +1,5 @@
 /**
- * NotificationRuleRepo — Kysely repo for meta.notification_rule
+ * NotificationRuleRepo — Kysely repo for notify.notification_rule
  */
 
 import type { Kysely } from "kysely";
@@ -11,7 +11,7 @@ import type {
 } from "../domain/models/NotificationRule.js";
 import type { RuleId } from "../domain/types.js";
 
-const TABLE = "meta.notification_rule" as keyof DB & string;
+const TABLE = "notify.notification_rule" as keyof DB & string;
 
 export class NotificationRuleRepo {
     constructor(private readonly db: Kysely<DB>) {}

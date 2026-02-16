@@ -156,7 +156,7 @@ describe("AuditExportService", () => {
       exportedBy: "admin-user",
     });
 
-    expect(db.insertInto).toHaveBeenCalledWith("core.security_event");
+    expect(db.insertInto).toHaveBeenCalledWith("sec.security_event");
   });
 
   it("should handle empty export", async () => {

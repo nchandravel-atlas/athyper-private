@@ -1,10 +1,17 @@
-// app/api/entity-page/[entity]/[id]/route.ts
-//
-// Dynamic entity page descriptor endpoint.
-// Returns per-record metadata (badges, actions, current state, permissions).
-// Looks up the record from the mock data store to determine state-dependent actions.
+/**
+ * GET /api/entity-page/:entity/:id
+ *
+ * Dynamic entity page descriptor endpoint.
+ * Returns per-record metadata: badges, actions, current lifecycle state, and permissions.
+ * Resolves status from the shared mock data store to keep descriptor and data in sync.
+ *
+ * In production this will evaluate entity policies, lifecycle rules, and approval state.
+ */
 
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+import { ACCOUNTS_BY_ID, PURCHASE_INVOICES_BY_ID } from "@/lib/mock-data/entities";
 
 import type {
     ActionDescriptor,
@@ -12,40 +19,20 @@ import type {
     EntityPageDynamicDescriptor,
     ViewMode,
 } from "@/lib/entity-page/types";
-import type { NextRequest } from "next/server";
-
-// ---------------------------------------------------------------------------
-// Mock record status lookup (minimal — just status per entity/id)
-// ---------------------------------------------------------------------------
-
-const ACCOUNT_STATUSES: Record<string, string> = {
-    "ACC-001": "Active",
-    "ACC-002": "Active",
-    "ACC-003": "Active",
-    "ACC-004": "Active",
-    "ACC-005": "Inactive",
-    "ACC-006": "Active",
-    "ACC-007": "Active",
-    "ACC-008": "Active",
-};
-
-const INVOICE_STATUSES: Record<string, string> = {
-    "PI-001": "Draft",
-    "PI-002": "Submitted",
-    "PI-003": "Approved",
-    "PI-004": "Paid",
-    "PI-005": "Draft",
-    "PI-006": "Submitted",
-    "PI-007": "Approved",
-    "PI-008": "Cancelled",
-};
 
 // ---------------------------------------------------------------------------
 // Descriptor builders
 // ---------------------------------------------------------------------------
 
+/**
+ * Build dynamic descriptor for an Account (Master entity).
+ * Master entities have simple Active/Inactive status and always-available Edit action.
+ * No lifecycle or approval workflow.
+ */
 function buildAccountDescriptor(entityId: string, viewMode: ViewMode): EntityPageDynamicDescriptor {
-    const status = ACCOUNT_STATUSES[entityId] ?? "Active";
+    // Derive status from shared mock data — single source of truth
+    const record = ACCOUNTS_BY_ID[entityId];
+    const status = (record?.status as string) ?? "Active";
     const isActive = status === "Active";
 
     const badges: BadgeDescriptor[] = [
@@ -74,9 +61,23 @@ function buildAccountDescriptor(entityId: string, viewMode: ViewMode): EntityPag
     };
 }
 
+/**
+ * Build dynamic descriptor for a Purchase Invoice (Document entity).
+ * Document entities have a lifecycle state machine that determines:
+ *  - Which badge variant to show (color-coded by state)
+ *  - Which actions are available (state-dependent transitions)
+ *  - Whether the record is editable (only in Draft state)
+ *  - View mode overrides (read-only when past Draft or in terminal state)
+ *
+ * Lifecycle: Draft → Submitted → Approved → Paid
+ *            Draft → Cancelled (from any pre-terminal state)
+ */
 function buildInvoiceDescriptor(entityId: string, viewMode: ViewMode): EntityPageDynamicDescriptor {
-    const status = INVOICE_STATUSES[entityId] ?? "Draft";
+    // Derive status from shared mock data — single source of truth
+    const record = PURCHASE_INVOICES_BY_ID[entityId];
+    const status = (record?.status as string) ?? "Draft";
 
+    // Badge variant per lifecycle state
     const stateVariant: Record<string, BadgeDescriptor["variant"]> = {
         Draft: "secondary",
         Submitted: "default",
@@ -90,7 +91,7 @@ function buildInvoiceDescriptor(entityId: string, viewMode: ViewMode): EntityPag
         { code: "state", label: status, variant: stateVariant[status] ?? "secondary" },
     ];
 
-    // Lifecycle-dependent actions
+    // Lifecycle-dependent actions — only the valid next transition is offered
     const actions: ActionDescriptor[] = [];
 
     if (status === "Draft") {
@@ -129,7 +130,7 @@ function buildInvoiceDescriptor(entityId: string, viewMode: ViewMode): EntityPag
         });
     }
 
-    // Edit action (only for Draft)
+    // Edit is only available in Draft — document is locked once submitted
     if (status === "Draft") {
         actions.push({
             code: "edit",
@@ -143,11 +144,19 @@ function buildInvoiceDescriptor(entityId: string, viewMode: ViewMode): EntityPag
 
     const isTerminal = status === "Paid" || status === "Cancelled";
 
+    // Force read-only for non-Draft states; set reason for the UI notice
+    const resolvedViewMode = isTerminal || status !== "Draft" ? "view" as ViewMode : viewMode;
+    const viewModeReason = isTerminal
+        ? "terminal_state"
+        : status !== "Draft"
+            ? "approval_pending"
+            : undefined;
+
     return {
         entityName: "purchase-invoice",
         entityId,
-        resolvedViewMode: isTerminal || status !== "Draft" ? "view" : viewMode,
-        viewModeReason: isTerminal ? "terminal_state" : status !== "Draft" ? "approval_pending" : undefined,
+        resolvedViewMode,
+        viewModeReason,
         currentState: {
             stateId: `state-${status.toLowerCase()}`,
             stateCode: status.toLowerCase(),
@@ -177,17 +186,27 @@ export async function GET(
     { params }: { params: Promise<{ entity: string; id: string }> },
 ) {
     const { entity, id } = await params;
-    const builder = BUILDERS[entity];
 
-    if (!builder) {
+    try {
+        const builder = BUILDERS[entity];
+
+        if (!builder) {
+            console.warn(`[GET /api/entity-page/${entity}/${id}] Unknown entity requested`);
+            return NextResponse.json(
+                { error: { message: `Unknown entity: ${entity}` } },
+                { status: 404 },
+            );
+        }
+
+        const viewMode = (req.nextUrl.searchParams.get("viewMode") as ViewMode) ?? "view";
+        const descriptor = builder(id, viewMode);
+
+        return NextResponse.json({ data: descriptor });
+    } catch (error) {
+        console.error(`[GET /api/entity-page/${entity}/${id}] Error:`, error);
         return NextResponse.json(
-            { error: { message: `Unknown entity: ${entity}` } },
-            { status: 404 },
+            { error: { message: "Failed to load entity descriptor" } },
+            { status: 500 },
         );
     }
-
-    const viewMode = (req.nextUrl.searchParams.get("viewMode") as ViewMode) ?? "view";
-    const descriptor = builder(id, viewMode);
-
-    return NextResponse.json({ data: descriptor });
 }

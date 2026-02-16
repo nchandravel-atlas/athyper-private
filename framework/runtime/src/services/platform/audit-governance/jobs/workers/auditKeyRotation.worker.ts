@@ -40,7 +40,7 @@ export function createAuditKeyRotationHandler(
   encryption: AuditColumnEncryptionService,
   logger: Logger,
 ) {
-  const TABLE = "core.workflow_audit_event" as keyof DB & string;
+  const TABLE = "audit.workflow_audit_event" as keyof DB & string;
   const DEFAULT_BATCH_SIZE = 100;
 
   return async (payload: KeyRotationPayload): Promise<KeyRotationResult> => {

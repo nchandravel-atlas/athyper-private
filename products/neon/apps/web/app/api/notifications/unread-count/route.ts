@@ -4,10 +4,12 @@
  * Returns the count of unread notifications for the authenticated user.
  */
 
-import { getApiContext, unauthorizedResponse, successResponse, errorResponse } from "@/lib/api-context";
-import { InAppNotificationRepo } from "@athyper/runtime/services/platform-services/notification/persistence/InAppNotificationRepo";
-import { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
+import { Kysely } from "kysely";
+
+import { InAppNotificationRepo } from "@athyper/runtime/services/platform-services/notification/persistence/InAppNotificationRepo";
+
+import { getApiContext, unauthorizedResponse, successResponse, errorResponse } from "@/lib/api-context";
 
 async function getDbClient(): Promise<Kysely<DB>> {
     const { Pool } = await import("pg");

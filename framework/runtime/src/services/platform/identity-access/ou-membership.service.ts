@@ -4,14 +4,14 @@
  * B5: OU Hierarchy & Membership
  * Manages organizational unit (OU) structure and principal membership
  *
- * Since there's no dedicated ou_member table, we use core.principal_attribute:
- * - attr_key='ou_node_id', attr_value=<uuid>
- * - attr_key='ou_path', attr_value=<materialized path>
- * - Additional ABAC attributes: department, cost_center, etc.
+ * Schema changes:
+ * - core.ou_node → core.organizational_unit (cols: id, tenant_id, code, name, description, parent_id, metadata)
+ * - core.principal_attribute removed entirely
+ * - OU membership via core.principal_ou (cols: id, tenant_id, principal_id, ou_id, assigned_at, assigned_by)
  *
  * Tables:
- * - core.ou_node
- * - core.principal_attribute
+ * - core.organizational_unit
+ * - core.principal_ou
  */
 
 import type { DB } from "@athyper/adapter-db";
@@ -26,19 +26,7 @@ export type OUNodeInfo = {
   code: string;
   name: string;
   parentId: string | null;
-  path: string;
-  depth: number;
-  isActive: boolean;
-};
-
-/**
- * Principal attribute
- */
-export type PrincipalAttributeInfo = {
-  key: string;
-  value: string;
-  validFrom: Date | null;
-  validUntil: Date | null;
+  description: string | null;
 };
 
 /**
@@ -55,37 +43,26 @@ export class OUMembershipService {
     code: string;
     name: string;
     parentId?: string;
+    description?: string;
     createdBy: string;
   }): Promise<OUNodeInfo> {
-    // Calculate path and depth
-    let path: string;
-    let depth: number;
-
     if (request.parentId) {
       const parent = await this.getOUNode(request.parentId);
       if (!parent) {
         throw new Error(`Parent OU node not found: ${request.parentId}`);
       }
-      path = `${parent.path}/${request.code}`;
-      depth = parent.depth + 1;
-    } else {
-      // Root node
-      path = `/${request.code}`;
-      depth = 0;
     }
 
     const id = crypto.randomUUID();
     await this.db
-      .insertInto("core.ou_node")
+      .insertInto("core.organizational_unit")
       .values({
         id,
         tenant_id: request.tenantId,
         parent_id: request.parentId ?? null,
         code: request.code,
         name: request.name,
-        path,
-        depth,
-        is_active: true,
+        description: request.description ?? null,
         created_by: request.createdBy,
       })
       .execute();
@@ -96,8 +73,6 @@ export class OUMembershipService {
         id,
         tenantId: request.tenantId,
         code: request.code,
-        path,
-        depth,
       })
     );
 
@@ -107,9 +82,7 @@ export class OUMembershipService {
       code: request.code,
       name: request.name,
       parentId: request.parentId ?? null,
-      path,
-      depth,
-      isActive: true,
+      description: request.description ?? null,
     };
   }
 
@@ -118,16 +91,14 @@ export class OUMembershipService {
    */
   async getOUNode(nodeId: string): Promise<OUNodeInfo | undefined> {
     const result = await this.db
-      .selectFrom("core.ou_node")
+      .selectFrom("core.organizational_unit")
       .select([
         "id",
         "tenant_id",
         "code",
         "name",
         "parent_id",
-        "path",
-        "depth",
-        "is_active",
+        "description",
       ])
       .where("id", "=", nodeId)
       .executeTakeFirst();
@@ -140,9 +111,7 @@ export class OUMembershipService {
       code: result.code,
       name: result.name,
       parentId: result.parent_id,
-      path: result.path,
-      depth: result.depth,
-      isActive: result.is_active,
+      description: result.description,
     };
   }
 
@@ -154,16 +123,14 @@ export class OUMembershipService {
     code: string
   ): Promise<OUNodeInfo | undefined> {
     const result = await this.db
-      .selectFrom("core.ou_node")
+      .selectFrom("core.organizational_unit")
       .select([
         "id",
         "tenant_id",
         "code",
         "name",
         "parent_id",
-        "path",
-        "depth",
-        "is_active",
+        "description",
       ])
       .where("tenant_id", "=", tenantId)
       .where("code", "=", code)
@@ -177,9 +144,7 @@ export class OUMembershipService {
       code: result.code,
       name: result.name,
       parentId: result.parent_id,
-      path: result.path,
-      depth: result.depth,
-      isActive: result.is_active,
+      description: result.description,
     };
   }
 
@@ -190,37 +155,33 @@ export class OUMembershipService {
     principalId: string,
     tenantId: string,
     ouNodeId: string,
-    createdBy: string
+    assignedBy: string
   ): Promise<void> {
     const node = await this.getOUNode(ouNodeId);
     if (!node) {
       throw new Error(`OU node not found: ${ouNodeId}`);
     }
 
-    // Set ou_node_id attribute
-    await this.setPrincipalAttribute(
-      principalId,
-      tenantId,
-      "ou_node_id",
-      ouNodeId,
-      createdBy
-    );
+    // Remove existing OU assignment first (principal can only be in one OU)
+    await this.removePrincipalFromOU(principalId, tenantId);
 
-    // Set ou_path attribute for quick lookups
-    await this.setPrincipalAttribute(
-      principalId,
-      tenantId,
-      "ou_path",
-      node.path,
-      createdBy
-    );
+    // Create new OU assignment
+    await this.db
+      .insertInto("core.principal_ou")
+      .values({
+        id: crypto.randomUUID(),
+        tenant_id: tenantId,
+        principal_id: principalId,
+        ou_id: ouNodeId,
+        assigned_by: assignedBy,
+      })
+      .execute();
 
     console.log(
       JSON.stringify({
         msg: "principal_assigned_to_ou",
         principalId,
         ouNodeId,
-        path: node.path,
       })
     );
   }
@@ -228,11 +189,11 @@ export class OUMembershipService {
   /**
    * Remove principal from OU
    */
-  async removePrincipalFromOU(principalId: string): Promise<void> {
+  async removePrincipalFromOU(principalId: string, tenantId: string): Promise<void> {
     await this.db
-      .deleteFrom("core.principal_attribute")
+      .deleteFrom("core.principal_ou")
       .where("principal_id", "=", principalId)
-      .where("attr_key", "in", ["ou_node_id", "ou_path"])
+      .where("tenant_id", "=", tenantId)
       .execute();
 
     console.log(
@@ -247,125 +208,15 @@ export class OUMembershipService {
    * Get principal's OU
    */
   async getPrincipalOU(principalId: string): Promise<OUNodeInfo | undefined> {
-    const attr = await this.getPrincipalAttribute(principalId, "ou_node_id");
-    if (!attr) return undefined;
-
-    return this.getOUNode(attr.value);
-  }
-
-  /**
-   * Set principal attribute
-   */
-  async setPrincipalAttribute(
-    principalId: string,
-    tenantId: string,
-    key: string,
-    value: string,
-    createdBy: string,
-    validFrom?: Date,
-    validUntil?: Date
-  ): Promise<void> {
-    // Upsert: try to update first, then insert if not exists
-    const existing = await this.getPrincipalAttribute(principalId, key);
-
-    if (existing) {
-      await this.db
-        .updateTable("core.principal_attribute")
-        .set({
-          attr_value: value,
-          valid_from: validFrom ?? null,
-          valid_until: validUntil ?? null,
-        })
-        .where("principal_id", "=", principalId)
-        .where("attr_key", "=", key)
-        .execute();
-    } else {
-      await this.db
-        .insertInto("core.principal_attribute")
-        .values({
-          id: crypto.randomUUID(),
-          tenant_id: tenantId,
-          principal_id: principalId,
-          attr_key: key,
-          attr_value: value,
-          valid_from: validFrom ?? null,
-          valid_until: validUntil ?? null,
-          created_by: createdBy,
-        })
-        .execute();
-    }
-  }
-
-  /**
-   * Get principal attribute
-   */
-  async getPrincipalAttribute(
-    principalId: string,
-    key: string
-  ): Promise<PrincipalAttributeInfo | undefined> {
-    const now = new Date();
-    const result = await this.db
-      .selectFrom("core.principal_attribute")
-      .select(["attr_key", "attr_value", "valid_from", "valid_until"])
+    const assignment = await this.db
+      .selectFrom("core.principal_ou")
+      .select("ou_id")
       .where("principal_id", "=", principalId)
-      .where("attr_key", "=", key)
-      .where((eb) =>
-        eb.or([eb("valid_from", "is", null), eb("valid_from", "<=", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("valid_until", "is", null), eb("valid_until", ">", now)])
-      )
       .executeTakeFirst();
 
-    if (!result) return undefined;
+    if (!assignment) return undefined;
 
-    return {
-      key: result.attr_key,
-      value: result.attr_value,
-      validFrom: result.valid_from,
-      validUntil: result.valid_until,
-    };
-  }
-
-  /**
-   * Get all principal attributes
-   */
-  async getPrincipalAttributes(
-    principalId: string
-  ): Promise<PrincipalAttributeInfo[]> {
-    const now = new Date();
-    const results = await this.db
-      .selectFrom("core.principal_attribute")
-      .select(["attr_key", "attr_value", "valid_from", "valid_until"])
-      .where("principal_id", "=", principalId)
-      .where((eb) =>
-        eb.or([eb("valid_from", "is", null), eb("valid_from", "<=", now)])
-      )
-      .where((eb) =>
-        eb.or([eb("valid_until", "is", null), eb("valid_until", ">", now)])
-      )
-      .execute();
-
-    return results.map((r) => ({
-      key: r.attr_key,
-      value: r.attr_value,
-      validFrom: r.valid_from,
-      validUntil: r.valid_until,
-    }));
-  }
-
-  /**
-   * Set multiple principal attributes
-   */
-  async setPrincipalAttributes(
-    principalId: string,
-    tenantId: string,
-    attributes: Record<string, string>,
-    createdBy: string
-  ): Promise<void> {
-    for (const [key, value] of Object.entries(attributes)) {
-      await this.setPrincipalAttribute(principalId, tenantId, key, value, createdBy);
-    }
+    return this.getOUNode(assignment.ou_id);
   }
 
   /**
@@ -375,22 +226,19 @@ export class OUMembershipService {
     tenantId: string,
     filters?: {
       parentId?: string | null;
-      isActive?: boolean;
       limit?: number;
       offset?: number;
     }
   ): Promise<OUNodeInfo[]> {
     let query = this.db
-      .selectFrom("core.ou_node")
+      .selectFrom("core.organizational_unit")
       .select([
         "id",
         "tenant_id",
         "code",
         "name",
         "parent_id",
-        "path",
-        "depth",
-        "is_active",
+        "description",
       ])
       .where("tenant_id", "=", tenantId);
 
@@ -402,14 +250,10 @@ export class OUMembershipService {
       }
     }
 
-    if (filters?.isActive !== undefined) {
-      query = query.where("is_active", "=", filters.isActive);
-    }
-
     const results = await query
       .limit(filters?.limit ?? 100)
       .offset(filters?.offset ?? 0)
-      .orderBy("path", "asc")
+      .orderBy("name", "asc")
       .execute();
 
     return results.map((r) => ({
@@ -418,45 +262,51 @@ export class OUMembershipService {
       code: r.code,
       name: r.name,
       parentId: r.parent_id,
-      path: r.path,
-      depth: r.depth,
-      isActive: r.is_active,
+      description: r.description,
     }));
   }
 
   /**
-   * Get OU subtree (all descendants)
+   * Get OU subtree (all descendants) via recursive lookup
    */
   async getOUSubtree(nodeId: string): Promise<OUNodeInfo[]> {
     const node = await this.getOUNode(nodeId);
     if (!node) return [];
 
-    const results = await this.db
-      .selectFrom("core.ou_node")
-      .select([
-        "id",
-        "tenant_id",
-        "code",
-        "name",
-        "parent_id",
-        "path",
-        "depth",
-        "is_active",
-      ])
-      .where("tenant_id", "=", node.tenantId)
-      .where("path", "like", `${node.path}%`)
-      .orderBy("path", "asc")
-      .execute();
+    // Since there's no materialized path column, do a breadth-first traversal
+    const results: OUNodeInfo[] = [node];
+    const queue = [nodeId];
 
-    return results.map((r) => ({
-      id: r.id,
-      tenantId: r.tenant_id,
-      code: r.code,
-      name: r.name,
-      parentId: r.parent_id,
-      path: r.path,
-      depth: r.depth,
-      isActive: r.is_active,
-    }));
+    while (queue.length > 0) {
+      const parentId = queue.shift()!;
+      const children = await this.db
+        .selectFrom("core.organizational_unit")
+        .select([
+          "id",
+          "tenant_id",
+          "code",
+          "name",
+          "parent_id",
+          "description",
+        ])
+        .where("tenant_id", "=", node.tenantId)
+        .where("parent_id", "=", parentId)
+        .execute();
+
+      for (const child of children) {
+        const childInfo: OUNodeInfo = {
+          id: child.id,
+          tenantId: child.tenant_id,
+          code: child.code,
+          name: child.name,
+          parentId: child.parent_id,
+          description: child.description,
+        };
+        results.push(childInfo);
+        queue.push(child.id);
+      }
+    }
+
+    return results;
   }
 }

@@ -10,8 +10,7 @@
  */
 
 import type { Request, Response } from "express";
-import type { HttpHandlerContext } from "../../../../platform/foundation/http/http.types.js";
-import type { RouteHandler } from "../../../../platform/foundation/http/http.types.js";
+import type { HttpHandlerContext, RouteHandler } from "../../../../platform/foundation/http/types.js";
 import type { CommentService } from "../../domain/services/CommentService.js";
 import { TOKENS } from "../../../../../kernel/tokens.js";
 

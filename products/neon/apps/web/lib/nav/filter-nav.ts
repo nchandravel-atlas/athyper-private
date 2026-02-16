@@ -3,8 +3,9 @@
 // Filters navigation tree nodes based on the user's authorization context.
 // Removes workspaces, modules, and entities that the user doesn't have access to.
 
-import type { NavEntity, NavModule, NavTree, NavWorkspace } from "./nav-types";
 import type { AuthContextValue } from "../auth/auth-context";
+
+import type { NavEntity, NavModule, NavTree, NavWorkspace } from "./nav-types";
 
 /**
  * Filter a navigation tree based on the user's auth context.

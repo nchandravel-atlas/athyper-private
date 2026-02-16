@@ -2,8 +2,8 @@
 /**
  * athyper-codegen CLI entry point
  *
- * This tool synchronizes Prisma-generated artifacts from framework/adapters/db
- * into packages/contracts for consumption by the rest of the monorepo.
+ * Runs prisma generate to produce Kysely type definitions
+ * from the Prisma schema in framework/adapters/db.
  *
  * Usage:
  *   pnpm codegen         - Run once
@@ -11,17 +11,9 @@
  */
 
 import {
-  CONTRACTS_GEN_DIR,
   DB_DIR,
-  KYSELY_DST,
-  KYSELY_SRC,
   SCHEMA_PATH,
-  ZOD_DST,
-  ZOD_SRC,
-  ensureDir,
   run,
-  syncFolder,
-  writeEntryPoints,
 } from "./lib.js";
 
 const args = new Set(process.argv.slice(2));
@@ -30,16 +22,7 @@ const WATCH = args.has("--watch");
 async function mainOnce(): Promise<void> {
   console.log("\n[Athyper] Running prisma generate...");
   await run("pnpm", ["prisma", "generate"], { cwd: DB_DIR });
-
-  console.log("\n[Athyper] Sync generated artifacts into contracts...");
-  await ensureDir(CONTRACTS_GEN_DIR);
-  await syncFolder(ZOD_SRC, ZOD_DST);
-  await syncFolder(KYSELY_SRC, KYSELY_DST);
-
-  console.log("\n[Athyper] Writing stable entrypoints...");
-  await writeEntryPoints();
-
-  console.log("\n[Athyper] Done: contracts generated artifacts updated.");
+  console.log("\n[Athyper] Done: Kysely types regenerated.");
 }
 
 async function main(): Promise<void> {

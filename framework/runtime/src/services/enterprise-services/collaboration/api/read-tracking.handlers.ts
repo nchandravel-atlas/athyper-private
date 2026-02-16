@@ -4,7 +4,7 @@
  * HTTP handlers for comment read/unread status.
  */
 
-import type { HttpHandlerContext } from "../../../platform/foundation/http/types.js";
+import type { HttpHandlerContext } from "./handlers.js";
 import type { ReadTrackingService } from "../domain/read-tracking.service.js";
 import { TOKENS } from "../../../../kernel/tokens.js";
 
@@ -17,7 +17,7 @@ export class MarkCommentAsReadHandler {
   async handle(ctx: HttpHandlerContext) {
     const service = await ctx.container.resolve<ReadTrackingService>(TOKENS.collabReadTrackingService);
     const tenantId = ctx.tenant.tenantId;
-    const userId = ctx.session.principalId;
+    const userId = ctx.auth.userId || ctx.auth.subject || "anonymous";
     const commentId = ctx.request.params.id;
 
     await service.markAsRead(tenantId, "entity_comment", commentId, userId);
@@ -40,7 +40,7 @@ export class MarkAllCommentsAsReadHandler {
   async handle(ctx: HttpHandlerContext) {
     const service = await ctx.container.resolve<ReadTrackingService>(TOKENS.collabReadTrackingService);
     const tenantId = ctx.tenant.tenantId;
-    const userId = ctx.session.principalId;
+    const userId = ctx.auth.userId || ctx.auth.subject || "anonymous";
     const { commentIds } = ctx.request.body;
 
     if (!Array.isArray(commentIds)) {
@@ -74,7 +74,7 @@ export class GetUnreadCountHandler {
   async handle(ctx: HttpHandlerContext) {
     const service = await ctx.container.resolve<ReadTrackingService>(TOKENS.collabReadTrackingService);
     const tenantId = ctx.tenant.tenantId;
-    const userId = ctx.session.principalId;
+    const userId = ctx.auth.userId || ctx.auth.subject || "anonymous";
     const { entityType, entityId } = ctx.request.query;
 
     const count = await service.countUnread(

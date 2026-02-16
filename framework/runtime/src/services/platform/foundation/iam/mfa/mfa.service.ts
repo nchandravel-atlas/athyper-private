@@ -7,9 +7,12 @@
 
 import { randomBytes } from "crypto";
 
+import type { Kysely } from "kysely";
+
+import type { Logger } from "../../../../../kernel/logger.js";
+
 import { BackupCodesService } from "./backup-codes.service.js";
 import { TotpService } from "./totp.service.js";
-
 import type {
   IMfaService,
   ITotpService,
@@ -31,8 +34,6 @@ import type {
   MfaAuditInput,
   TrustDeviceResult,
 } from "./types.js";
-import type { Logger } from "../../../../../kernel/logger.js";
-import type { Kysely } from "kysely";
 
 // ============================================================================
 // Configuration
@@ -91,7 +92,7 @@ export class MfaService implements IMfaService {
   async getStatus(principalId: string, tenantId: string): Promise<MfaStatus> {
     // Get MFA config
     const config = await this.db
-      .selectFrom("core.mfa_config")
+      .selectFrom("sec.mfa_config")
       .select([
         "id",
         "mfa_type as mfaType",
@@ -107,7 +108,7 @@ export class MfaService implements IMfaService {
     let backupCodesRemaining = 0;
     if (config) {
       const result = await this.db
-        .selectFrom("core.mfa_backup_code")
+        .selectFrom("sec.mfa_backup_code")
         .select(this.db.fn.count<number>("id").as("count"))
         .where("mfa_config_id", "=", config.id)
         .where("is_used", "=", false)
@@ -117,7 +118,7 @@ export class MfaService implements IMfaService {
 
     // Count trusted devices
     const trustedResult = await this.db
-      .selectFrom("core.mfa_trusted_device")
+      .selectFrom("sec.mfa_trusted_device")
       .select(this.db.fn.count<number>("id").as("count"))
       .where("principal_id", "=", principalId)
       .where("tenant_id", "=", tenantId)
@@ -147,7 +148,7 @@ export class MfaService implements IMfaService {
   async isRequired(principalId: string, tenantId: string): Promise<MfaPolicyCheckResult> {
     // Check tenant-level policy
     const tenantPolicy = await this.db
-      .selectFrom("core.mfa_policy")
+      .selectFrom("sec.mfa_policy")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("scope_type", "=", "tenant")
@@ -204,7 +205,7 @@ export class MfaService implements IMfaService {
   ): Promise<EnrollmentStartResult> {
     // Check if already enrolled
     const existing = await this.db
-      .selectFrom("core.mfa_config")
+      .selectFrom("sec.mfa_config")
       .select(["id", "is_enabled as isEnabled", "is_verified as isVerified"])
       .where("principal_id", "=", principalId)
       .where("tenant_id", "=", tenantId)
@@ -240,7 +241,7 @@ export class MfaService implements IMfaService {
     // Upsert MFA config
     if (existing) {
       await this.db
-        .updateTable("core.mfa_config")
+        .updateTable("sec.mfa_config")
         .set({
           totp_secret: secret,
           is_verified: false,
@@ -250,7 +251,7 @@ export class MfaService implements IMfaService {
         .execute();
     } else {
       await this.db
-        .insertInto("core.mfa_config")
+        .insertInto("sec.mfa_config")
         .values({
           principal_id: principalId,
           tenant_id: tenantId,
@@ -279,7 +280,7 @@ export class MfaService implements IMfaService {
 
     // Get pending config
     const config = await this.db
-      .selectFrom("core.mfa_config")
+      .selectFrom("sec.mfa_config")
       .selectAll()
       .where("principal_id", "=", principalId)
       .where("tenant_id", "=", tenantId)
@@ -324,7 +325,7 @@ export class MfaService implements IMfaService {
     // Enable MFA
     const now = new Date();
     await this.db
-      .updateTable("core.mfa_config")
+      .updateTable("sec.mfa_config")
       .set({
         is_enabled: true,
         is_verified: true,
@@ -359,7 +360,7 @@ export class MfaService implements IMfaService {
    */
   async cancelEnrollment(principalId: string, tenantId: string): Promise<void> {
     await this.db
-      .deleteFrom("core.mfa_config")
+      .deleteFrom("sec.mfa_config")
       .where("principal_id", "=", principalId)
       .where("tenant_id", "=", tenantId)
       .where("is_verified", "=", false)
@@ -394,7 +395,7 @@ export class MfaService implements IMfaService {
 
     // Insert challenge
     const result = await this.db
-      .insertInto("core.mfa_challenge")
+      .insertInto("sec.mfa_challenge")
       .values({
         principal_id: principalId,
         tenant_id: tenantId,
@@ -436,7 +437,7 @@ export class MfaService implements IMfaService {
 
     // Get challenge
     const challenge = await this.db
-      .selectFrom("core.mfa_challenge")
+      .selectFrom("sec.mfa_challenge")
       .selectAll()
       .where("challenge_token", "=", challengeToken)
       .where("principal_id", "=", principalId)
@@ -463,7 +464,7 @@ export class MfaService implements IMfaService {
 
     // Get MFA config
     const config = await this.db
-      .selectFrom("core.mfa_config")
+      .selectFrom("sec.mfa_config")
       .selectAll()
       .where("principal_id", "=", principalId)
       .where("tenant_id", "=", tenantId)
@@ -506,7 +507,7 @@ export class MfaService implements IMfaService {
       }
 
       await this.db
-        .updateTable("core.mfa_challenge")
+        .updateTable("sec.mfa_challenge")
         .set({
           attempt_count: newAttemptCount,
           locked_until: lockedUntil,
@@ -534,7 +535,7 @@ export class MfaService implements IMfaService {
 
     // Success - mark challenge complete
     await this.db
-      .updateTable("core.mfa_challenge")
+      .updateTable("sec.mfa_challenge")
       .set({
         is_completed: true,
         completed_at: new Date(),
@@ -544,7 +545,7 @@ export class MfaService implements IMfaService {
 
     // Update last used
     await this.db
-      .updateTable("core.mfa_config")
+      .updateTable("sec.mfa_config")
       .set({ last_used_at: new Date() })
       .where("id", "=", config.id)
       .execute();
@@ -578,7 +579,7 @@ export class MfaService implements IMfaService {
   async disable(principalId: string, tenantId: string, code: string): Promise<boolean> {
     // Get config
     const config = await this.db
-      .selectFrom("core.mfa_config")
+      .selectFrom("sec.mfa_config")
       .selectAll()
       .where("principal_id", "=", principalId)
       .where("tenant_id", "=", tenantId)
@@ -597,13 +598,13 @@ export class MfaService implements IMfaService {
 
     // Delete backup codes
     await this.db
-      .deleteFrom("core.mfa_backup_code")
+      .deleteFrom("sec.mfa_backup_code")
       .where("mfa_config_id", "=", config.id)
       .execute();
 
     // Delete config
     await this.db
-      .deleteFrom("core.mfa_config")
+      .deleteFrom("sec.mfa_config")
       .where("id", "=", config.id)
       .execute();
 
@@ -628,7 +629,7 @@ export class MfaService implements IMfaService {
   async regenerateBackupCodes(principalId: string, tenantId: string): Promise<BackupCodesResult> {
     // Get config
     const config = await this.db
-      .selectFrom("core.mfa_config")
+      .selectFrom("sec.mfa_config")
       .select("id")
       .where("principal_id", "=", principalId)
       .where("tenant_id", "=", tenantId)
@@ -637,7 +638,7 @@ export class MfaService implements IMfaService {
 
     // Delete existing backup codes
     await this.db
-      .deleteFrom("core.mfa_backup_code")
+      .deleteFrom("sec.mfa_backup_code")
       .where("mfa_config_id", "=", config.id)
       .execute();
 
@@ -667,7 +668,7 @@ export class MfaService implements IMfaService {
    */
   async getTrustedDevices(principalId: string, tenantId: string): Promise<TrustedDevice[]> {
     const devices = await this.db
-      .selectFrom("core.mfa_trusted_device")
+      .selectFrom("sec.mfa_trusted_device")
       .selectAll()
       .where("principal_id", "=", principalId)
       .where("tenant_id", "=", tenantId)
@@ -709,7 +710,7 @@ export class MfaService implements IMfaService {
     );
 
     await this.db
-      .insertInto("core.mfa_trusted_device")
+      .insertInto("sec.mfa_trusted_device")
       .values({
         principal_id: principalId,
         tenant_id: tenantId,
@@ -743,7 +744,7 @@ export class MfaService implements IMfaService {
     const tokenHash = await this.hashToken(trustToken);
 
     const device = await this.db
-      .selectFrom("core.mfa_trusted_device")
+      .selectFrom("sec.mfa_trusted_device")
       .select("id")
       .where("principal_id", "=", principalId)
       .where("tenant_id", "=", tenantId)
@@ -755,7 +756,7 @@ export class MfaService implements IMfaService {
     if (device) {
       // Update last used
       await this.db
-        .updateTable("core.mfa_trusted_device")
+        .updateTable("sec.mfa_trusted_device")
         .set({ last_used_at: new Date() })
         .where("id", "=", device.id)
         .execute();
@@ -770,7 +771,7 @@ export class MfaService implements IMfaService {
    */
   async revokeDevice(principalId: string, tenantId: string, deviceId: string): Promise<void> {
     await this.db
-      .updateTable("core.mfa_trusted_device")
+      .updateTable("sec.mfa_trusted_device")
       .set({
         is_revoked: true,
         revoked_at: new Date(),
@@ -786,7 +787,7 @@ export class MfaService implements IMfaService {
    */
   async revokeAllDevices(principalId: string, tenantId: string): Promise<number> {
     const result = await this.db
-      .updateTable("core.mfa_trusted_device")
+      .updateTable("sec.mfa_trusted_device")
       .set({
         is_revoked: true,
         revoked_at: new Date(),
@@ -810,7 +811,7 @@ export class MfaService implements IMfaService {
     for (const code of codes) {
       const hash = await this.backupCodes.hash(code);
       await this.db
-        .insertInto("core.mfa_backup_code")
+        .insertInto("sec.mfa_backup_code")
         .values({
           mfa_config_id: configId,
           code_hash: hash,
@@ -832,7 +833,7 @@ export class MfaService implements IMfaService {
   ): Promise<boolean> {
     // Get unused backup codes
     const codes = await this.db
-      .selectFrom("core.mfa_backup_code")
+      .selectFrom("sec.mfa_backup_code")
       .select(["id", "code_hash as codeHash"])
       .where("mfa_config_id", "=", configId)
       .where("is_used", "=", false)
@@ -843,7 +844,7 @@ export class MfaService implements IMfaService {
       if (match) {
         // Mark as used
         await this.db
-          .updateTable("core.mfa_backup_code")
+          .updateTable("sec.mfa_backup_code")
           .set({
             is_used: true,
             used_at: new Date(),
@@ -881,7 +882,7 @@ export class MfaService implements IMfaService {
    */
   private async logAudit(input: MfaAuditInput): Promise<void> {
     await this.db
-      .insertInto("core.mfa_audit_log")
+      .insertInto("sec.mfa_audit_log")
       .values({
         principal_id: input.principalId,
         tenant_id: input.tenantId,

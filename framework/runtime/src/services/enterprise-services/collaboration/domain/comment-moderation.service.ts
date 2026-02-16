@@ -50,7 +50,7 @@ export class CommentModerationService {
     await this.auditWriter.write({
       ts: new Date().toISOString(),
       type: "comment.flagged",
-      level: "warning",
+      level: "warn",
       actor: { kind: "user", id: req.flaggerUserId },
       meta: {
         tenantId: req.tenantId,
@@ -198,7 +198,7 @@ export class CommentModerationService {
     await this.auditWriter.write({
       ts: new Date().toISOString(),
       type: "comment.hidden",
-      level: "warning",
+      level: "warn",
       actor: { kind: "user", id: moderatorId },
       meta: {
         tenantId,
@@ -275,7 +275,7 @@ export class CommentModerationService {
       await this.auditWriter.write({
         ts: new Date().toISOString(),
         type: "comment.auto_hidden",
-        level: "warning",
+        level: "warn",
         actor: { kind: "system", id: "auto-moderation" },
         meta: {
           tenantId,

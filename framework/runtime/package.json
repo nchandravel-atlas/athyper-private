@@ -62,7 +62,6 @@
     "@athyper/adapter-memorycache": "workspace:*",
     "@athyper/adapter-objectstorage": "workspace:*",
     "@athyper/adapter-telemetry": "workspace:*",
-    "@athyper/contracts": "workspace:*",
     "@athyper/core": "workspace:*",
     "@athyper/dashboard": "workspace:*",
     "@athyper/tsconfig": "workspace:*",

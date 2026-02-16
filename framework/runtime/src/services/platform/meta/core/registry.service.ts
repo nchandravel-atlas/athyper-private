@@ -34,14 +34,15 @@ export class MetaRegistryService implements MetaRegistry {
     ctx: RequestContext
   ): Promise<Entity> {
     const entity = await this.db
-      .insertInto("meta.meta_entities")
+      .insertInto("meta.entity")
       .values({
         id: crypto.randomUUID(),
+        tenant_id: ctx.tenantId ?? "default",
+        module_id: "default",
         name,
-        description: description ?? null,
-        active_version: null,
+        table_name: name,
         created_by: ctx.userId,
-      })
+      } as any)
       .returningAll()
       .executeTakeFirstOrThrow();
 
@@ -50,7 +51,7 @@ export class MetaRegistryService implements MetaRegistry {
 
   async getEntity(name: string): Promise<Entity | undefined> {
     const entity = await this.db
-      .selectFrom("meta.meta_entities")
+      .selectFrom("meta.entity")
       .selectAll()
       .where("name", "=", name)
       .executeTakeFirst();
@@ -67,7 +68,7 @@ export class MetaRegistryService implements MetaRegistry {
 
     // Build query
     let query = this.db
-      .selectFrom("meta.meta_entities")
+      .selectFrom("meta.entity")
       .selectAll();
 
     // Apply filters
@@ -83,7 +84,7 @@ export class MetaRegistryService implements MetaRegistry {
     // Execute count and data queries
     const [countResult, data] = await Promise.all([
       this.db
-        .selectFrom("meta.meta_entities")
+        .selectFrom("meta.entity")
         .select((eb) => eb.fn.countAll().as("count"))
         .executeTakeFirstOrThrow(),
       query.limit(pageSize).offset(offset).execute(),
@@ -116,13 +117,9 @@ export class MetaRegistryService implements MetaRegistry {
       dbUpdates.description = updates.description;
     }
 
-    if (updates.activeVersion !== undefined) {
-      dbUpdates.active_version = updates.activeVersion;
-    }
-
     const entity = await this.db
-      .updateTable("meta.meta_entities")
-      .set(dbUpdates)
+      .updateTable("meta.entity")
+      .set(dbUpdates as any)
       .where("name", "=", name)
       .returningAll()
       .executeTakeFirstOrThrow();
@@ -132,7 +129,7 @@ export class MetaRegistryService implements MetaRegistry {
 
   async deleteEntity(name: string, _ctx: RequestContext): Promise<void> {
     await this.db
-      .deleteFrom("meta.meta_entities")
+      .deleteFrom("meta.entity")
       .where("name", "=", name)
       .execute();
   }
@@ -147,16 +144,22 @@ export class MetaRegistryService implements MetaRegistry {
     schema: EntitySchema,
     ctx: RequestContext
   ): Promise<EntityVersion> {
+    // Look up entity ID from entity name
+    const entityRecord = await this.getEntity(entityName);
+    const entityId = entityRecord?.id ?? entityName;
+
     const entityVersion = await this.db
-      .insertInto("meta.meta_versions")
+      .insertInto("meta.entity_version")
       .values({
         id: crypto.randomUUID(),
-        entity_name: entityName,
-        version,
-        schema: JSON.stringify(schema),
-        is_active: false,
+        tenant_id: ctx.tenantId ?? "default",
+        entity_id: entityId,
+        version_no: parseInt(version, 10) || 1,
+        status: "draft",
+        label: version,
+        behaviors: JSON.stringify(schema),
         created_by: ctx.userId,
-      })
+      } as any)
       .returningAll()
       .executeTakeFirstOrThrow();
 
@@ -167,11 +170,14 @@ export class MetaRegistryService implements MetaRegistry {
     entityName: string,
     version: string
   ): Promise<EntityVersion | undefined> {
+    const entity = await this.getEntity(entityName);
+    if (!entity) return undefined;
+
     const entityVersion = await this.db
-      .selectFrom("meta.meta_versions")
+      .selectFrom("meta.entity_version")
       .selectAll()
-      .where("entity_name", "=", entityName)
-      .where("version", "=", version)
+      .where("entity_id", "=", entity.id)
+      .where("label", "=", version)
       .executeTakeFirst();
 
     return entityVersion ? this.mapVersionFromDb(entityVersion) : undefined;
@@ -180,11 +186,14 @@ export class MetaRegistryService implements MetaRegistry {
   async getActiveVersion(
     entityName: string
   ): Promise<EntityVersion | undefined> {
+    const entity = await this.getEntity(entityName);
+    if (!entity) return undefined;
+
     const entityVersion = await this.db
-      .selectFrom("meta.meta_versions")
+      .selectFrom("meta.entity_version")
       .selectAll()
-      .where("entity_name", "=", entityName)
-      .where("is_active", "=", true)
+      .where("entity_id", "=", entity.id)
+      .where("status", "=", "active")
       .executeTakeFirst();
 
     return entityVersion ? this.mapVersionFromDb(entityVersion) : undefined;
@@ -194,15 +203,18 @@ export class MetaRegistryService implements MetaRegistry {
     entityName: string,
     options: ListOptions = {}
   ): Promise<PaginatedResponse<EntityVersion>> {
+    const entity = await this.getEntity(entityName);
+    const entityId = entity?.id ?? entityName;
+
     const page = options.page ?? 1;
     const pageSize = Math.min(options.pageSize ?? 20, 100);
     const offset = (page - 1) * pageSize;
 
     // Build query
     let query = this.db
-      .selectFrom("meta.meta_versions")
+      .selectFrom("meta.entity_version")
       .selectAll()
-      .where("entity_name", "=", entityName);
+      .where("entity_id", "=", entityId);
 
     // Apply ordering
     const orderBy = options.orderBy ?? "created_at";
@@ -212,9 +224,9 @@ export class MetaRegistryService implements MetaRegistry {
     // Execute count and data queries
     const [countResult, data] = await Promise.all([
       this.db
-        .selectFrom("meta.meta_versions")
+        .selectFrom("meta.entity_version")
         .select((eb) => eb.fn.countAll().as("count"))
-        .where("entity_name", "=", entityName)
+        .where("entity_id", "=", entityId)
         .executeTakeFirstOrThrow(),
       query.limit(pageSize).offset(offset).execute(),
     ]);
@@ -240,28 +252,24 @@ export class MetaRegistryService implements MetaRegistry {
     version: string,
     _ctx: RequestContext
   ): Promise<EntityVersion> {
+    const entity = await this.getEntity(entityName);
+    const entityId = entity?.id ?? entityName;
+
     // Deactivate all versions for this entity
     await this.db
-      .updateTable("meta.meta_versions")
-      .set({ is_active: false })
-      .where("entity_name", "=", entityName)
+      .updateTable("meta.entity_version")
+      .set({ status: "inactive" } as any)
+      .where("entity_id", "=", entityId)
       .execute();
 
     // Activate the specified version
     const entityVersion = await this.db
-      .updateTable("meta.meta_versions")
-      .set({ is_active: true })
-      .where("entity_name", "=", entityName)
-      .where("version", "=", version)
+      .updateTable("meta.entity_version")
+      .set({ status: "active" } as any)
+      .where("entity_id", "=", entityId)
+      .where("label", "=", version)
       .returningAll()
       .executeTakeFirstOrThrow();
-
-    // Update entity's active_version
-    await this.db
-      .updateTable("meta.meta_entities")
-      .set({ active_version: version })
-      .where("name", "=", entityName)
-      .execute();
 
     return this.mapVersionFromDb(entityVersion);
   }
@@ -271,23 +279,16 @@ export class MetaRegistryService implements MetaRegistry {
     version: string,
     _ctx: RequestContext
   ): Promise<EntityVersion> {
+    const entity = await this.getEntity(entityName);
+    const entityId = entity?.id ?? entityName;
+
     const entityVersion = await this.db
-      .updateTable("meta.meta_versions")
-      .set({ is_active: false })
-      .where("entity_name", "=", entityName)
-      .where("version", "=", version)
+      .updateTable("meta.entity_version")
+      .set({ status: "inactive" } as any)
+      .where("entity_id", "=", entityId)
+      .where("label", "=", version)
       .returningAll()
       .executeTakeFirstOrThrow();
-
-    // Clear entity's active_version if this was the active one
-    const entity = await this.getEntity(entityName);
-    if (entity?.activeVersion === version) {
-      await this.db
-        .updateTable("meta.meta_entities")
-        .set({ active_version: null })
-        .where("name", "=", entityName)
-        .execute();
-    }
 
     return this.mapVersionFromDb(entityVersion);
   }
@@ -298,11 +299,14 @@ export class MetaRegistryService implements MetaRegistry {
     schema: EntitySchema,
     _ctx: RequestContext
   ): Promise<EntityVersion> {
+    const entity = await this.getEntity(entityName);
+    const entityId = entity?.id ?? entityName;
+
     const entityVersion = await this.db
-      .updateTable("meta.meta_versions")
-      .set({ schema: JSON.stringify(schema) })
-      .where("entity_name", "=", entityName)
-      .where("version", "=", version)
+      .updateTable("meta.entity_version")
+      .set({ behaviors: JSON.stringify(schema) } as any)
+      .where("entity_id", "=", entityId)
+      .where("label", "=", version)
       .returningAll()
       .executeTakeFirstOrThrow();
 
@@ -314,10 +318,13 @@ export class MetaRegistryService implements MetaRegistry {
     version: string,
     _ctx: RequestContext
   ): Promise<void> {
+    const entity = await this.getEntity(entityName);
+    const entityId = entity?.id ?? entityName;
+
     await this.db
-      .deleteFrom("meta.meta_versions")
-      .where("entity_name", "=", entityName)
-      .where("version", "=", version)
+      .deleteFrom("meta.entity_version")
+      .where("entity_id", "=", entityId)
+      .where("label", "=", version)
       .execute();
   }
 

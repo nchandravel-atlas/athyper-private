@@ -465,15 +465,15 @@ export class PolicyGateService implements IPolicyGate {
     principalId: string,
     _tenantId: string
   ): Promise<{ nodeId: string; path: string } | undefined> {
-    // ou_membership table may not be in generated Kysely types yet; use `as any` to bypass strict type checking
-    const membership = await (this.db as any)
-      .selectFrom("core.ou_membership")
-      .select(["ou_node_id as nodeId", "ou_path as path"])
-      .where("principal_id", "=", principalId)
-      .where("is_primary", "=", true)
-      .executeTakeFirst() as { nodeId: string; path: string } | undefined;
+    const result = await this.db
+      .selectFrom("core.principal_ou as po")
+      .innerJoin("core.organizational_unit as ou", "ou.id", "po.ou_id")
+      .select(["ou.id", "ou.code"])
+      .where("po.principal_id", "=", principalId)
+      .executeTakeFirst();
 
-    return membership ?? undefined;
+    if (!result) return undefined;
+    return { nodeId: result.id, path: result.code };
   }
 
   /**

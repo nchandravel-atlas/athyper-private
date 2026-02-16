@@ -1,5 +1,5 @@
 /**
- * NotificationSuppressionRepo — Kysely repo for core.notification_suppression
+ * NotificationSuppressionRepo — Kysely repo for notify.notification_suppression
  */
 
 import type { Kysely } from "kysely";
@@ -10,7 +10,7 @@ import type {
 } from "../domain/models/NotificationSuppression.js";
 import type { SuppressionId, ChannelCode } from "../domain/types.js";
 
-const TABLE = "core.notification_suppression" as keyof DB & string;
+const TABLE = "notify.notification_suppression" as keyof DB & string;
 
 export class NotificationSuppressionRepo {
     constructor(private readonly db: Kysely<DB>) {}

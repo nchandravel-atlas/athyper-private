@@ -10,6 +10,7 @@
 import type { Request, Response } from "express";
 import type { RouteHandler, HttpHandlerContext } from "../../foundation/http/types.js";
 import { META_TOKENS } from "@athyper/core/meta";
+import type { AuditLogger } from "@athyper/core/meta";
 
 import type {
   IOverlayRepository,
@@ -132,6 +133,19 @@ export class CreateOverlayHandler implements RouteHandler {
       // Create overlay
       const overlay = await overlayRepository.create(input, tenantId, userId);
 
+      // Audit log
+      const auditLogger = await ctx.container.resolve<AuditLogger>(META_TOKENS.auditLogger);
+      await auditLogger.log({
+        eventType: "meta.overlay.create",
+        userId,
+        tenantId,
+        realmId: ctx.auth.realmKey ?? "default",
+        action: "create",
+        resource: `overlay:${overlay.overlayKey}`,
+        details: { overlayId: overlay.id, overlayKey: overlay.overlayKey, entityName: entity },
+        result: "success",
+      });
+
       res.status(201).json({
         success: true,
         data: overlay,
@@ -204,6 +218,20 @@ export class UpdateOverlayHandler implements RouteHandler {
       // Update overlay
       const overlay = await overlayRepository.update(id, input, userId);
 
+      // Audit log
+      const tenantId = ctx.tenant.tenantKey ?? "default";
+      const auditLogger = await ctx.container.resolve<AuditLogger>(META_TOKENS.auditLogger);
+      await auditLogger.log({
+        eventType: "meta.overlay.update",
+        userId,
+        tenantId,
+        realmId: ctx.auth.realmKey ?? "default",
+        action: "update",
+        resource: `overlay:${overlay.overlayKey}`,
+        details: { overlayId: id, changes: input },
+        result: "success",
+      });
+
       res.status(200).json({
         success: true,
         data: overlay,
@@ -233,6 +261,21 @@ export class DeleteOverlayHandler implements RouteHandler {
 
       // Delete overlay (cascades to changes)
       await overlayRepository.delete(id);
+
+      // Audit log
+      const tenantId = ctx.tenant.tenantKey ?? "default";
+      const userId = ctx.auth.userId ?? ctx.auth.subject ?? "system";
+      const auditLogger = await ctx.container.resolve<AuditLogger>(META_TOKENS.auditLogger);
+      await auditLogger.log({
+        eventType: "meta.overlay.delete",
+        userId,
+        tenantId,
+        realmId: ctx.auth.realmKey ?? "default",
+        action: "delete",
+        resource: `overlay:${id}`,
+        details: { overlayId: id },
+        result: "success",
+      });
 
       res.status(200).json({
         success: true,
@@ -445,9 +488,24 @@ export class AddChangeHandler implements RouteHandler {
 
       // Parse input
       const changeInput = req.body as CreateOverlayChangeInput;
+      const tenantId = ctx.tenant.tenantKey ?? "default";
+      const createdBy = ctx.auth.userId ?? ctx.auth.subject ?? "system";
 
       // Add change
-      const change = await overlayRepository.addChange(id, changeInput);
+      const change = await overlayRepository.addChange(id, changeInput, tenantId, createdBy);
+
+      // Audit log
+      const auditLogger = await ctx.container.resolve<AuditLogger>(META_TOKENS.auditLogger);
+      await auditLogger.log({
+        eventType: "meta.overlay.addChange",
+        userId: createdBy,
+        tenantId,
+        realmId: ctx.auth?.realmKey ?? "default",
+        action: "create",
+        resource: `overlay:${id}/change:${change.id}`,
+        details: { overlayId: id, changeId: change.id, kind: changeInput.kind, path: changeInput.path },
+        result: "success",
+      });
 
       res.status(201).json({
         success: true,
@@ -478,6 +536,21 @@ export class RemoveChangeHandler implements RouteHandler {
 
       // Remove change
       await overlayRepository.removeChange(changeId);
+
+      // Audit log
+      const tenantId = ctx.tenant.tenantKey ?? "default";
+      const userId = ctx.auth.userId ?? ctx.auth.subject ?? "system";
+      const auditLogger = await ctx.container.resolve<AuditLogger>(META_TOKENS.auditLogger);
+      await auditLogger.log({
+        eventType: "meta.overlay.removeChange",
+        userId,
+        tenantId,
+        realmId: ctx.auth.realmKey ?? "default",
+        action: "delete",
+        resource: `overlay/change:${changeId}`,
+        details: { changeId },
+        result: "success",
+      });
 
       res.status(200).json({
         success: true,
@@ -521,6 +594,21 @@ export class ReorderChangesHandler implements RouteHandler {
 
       // Reorder changes
       await overlayRepository.reorderChanges(id, changeIds);
+
+      // Audit log
+      const tenantId = ctx.tenant.tenantKey ?? "default";
+      const userId = ctx.auth.userId ?? ctx.auth.subject ?? "system";
+      const auditLogger = await ctx.container.resolve<AuditLogger>(META_TOKENS.auditLogger);
+      await auditLogger.log({
+        eventType: "meta.overlay.reorderChanges",
+        userId,
+        tenantId,
+        realmId: ctx.auth.realmKey ?? "default",
+        action: "update",
+        resource: `overlay:${id}/changes`,
+        details: { overlayId: id, changeIds },
+        result: "success",
+      });
 
       res.status(200).json({
         success: true,

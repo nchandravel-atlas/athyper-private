@@ -1143,16 +1143,16 @@ export class MetaCompilerService implements MetaCompiler {
     // Apply changes in order
     for (const change of changes) {
       switch (change.changeKind) {
-        case "add_field":
+        case "addField":
           this.applyAddField(modifiedSchema, change);
           break;
-        case "modify_field":
+        case "modifyField":
           this.applyModifyField(modifiedSchema, change);
           break;
-        case "remove_field":
+        case "removeField":
           this.applyRemoveField(modifiedSchema, change);
           break;
-        case "tweak_policy":
+        case "tweakPolicy":
           this.applyTweakPolicy(modifiedSchema, change);
           break;
         default:

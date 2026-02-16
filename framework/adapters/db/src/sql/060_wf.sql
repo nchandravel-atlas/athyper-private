@@ -281,6 +281,111 @@ create index if not exists idx_approval_comment_commenter
   on wf.approval_comment (commenter_id, created_at desc);
 
 -- ============================================================================
+-- WF: Approval Stage (runtime stage within an approval instance)
+-- ============================================================================
+create table if not exists wf.approval_stage (
+  id                   uuid primary key default gen_random_uuid(),
+  tenant_id            uuid not null references core.tenant(id) on delete cascade,
+  approval_instance_id uuid not null references wf.approval_instance(id) on delete cascade,
+
+  stage_no             int not null,
+  name                 text,
+  mode                 text not null default 'serial',
+  quorum               jsonb,
+  status               text not null default 'pending',
+
+  started_at           timestamptz,
+  completed_at         timestamptz,
+
+  created_at           timestamptz not null default now(),
+  created_by           text not null,
+
+  constraint approval_stage_mode_chk check (mode in ('serial','parallel')),
+  constraint approval_stage_status_chk check (status in ('pending','active','completed','skipped','canceled')),
+  constraint approval_stage_instance_order_uniq unique (approval_instance_id, stage_no)
+);
+
+comment on table wf.approval_stage is 'Runtime stage within an approval instance (serial or parallel mode with quorum).';
+
+create index if not exists idx_approval_stage_instance
+  on wf.approval_stage (approval_instance_id, stage_no);
+
+-- ============================================================================
+-- WF: Approval Assignment Snapshot
+-- ============================================================================
+create table if not exists wf.approval_assignment_snapshot (
+  id                    uuid primary key default gen_random_uuid(),
+  tenant_id             uuid not null references core.tenant(id) on delete cascade,
+  approval_instance_id  uuid not null references wf.approval_instance(id) on delete cascade,
+
+  stage_id              uuid references wf.approval_stage(id) on delete cascade,
+  assignee_principal_id uuid,
+  assignee_group_id     uuid,
+  resolution_strategy   text,
+  resolved_at           timestamptz,
+  snapshot_data         jsonb,
+
+  created_at            timestamptz not null default now(),
+  created_by            text not null
+);
+
+comment on table wf.approval_assignment_snapshot is 'Point-in-time snapshot of approver assignments for audit trail.';
+
+create index if not exists idx_approval_assignment_instance
+  on wf.approval_assignment_snapshot (approval_instance_id);
+
+-- ============================================================================
+-- WF: Approval Escalation
+-- ============================================================================
+create table if not exists wf.approval_escalation (
+  id                    uuid primary key default gen_random_uuid(),
+  tenant_id             uuid not null references core.tenant(id) on delete cascade,
+  approval_instance_id  uuid not null references wf.approval_instance(id) on delete cascade,
+
+  kind                  text not null default 'sla_breach',
+  payload               jsonb,
+  occurred_at           timestamptz not null default now(),
+
+  created_at            timestamptz not null default now()
+);
+
+comment on table wf.approval_escalation is 'SLA escalation events recorded during approval processing.';
+
+create index if not exists idx_approval_escalation_instance
+  on wf.approval_escalation (approval_instance_id, occurred_at);
+
+-- ============================================================================
+-- WF: Approval Event (audit log of approval lifecycle events)
+-- ============================================================================
+create table if not exists wf.approval_event (
+  id                    uuid primary key default gen_random_uuid(),
+  tenant_id             uuid not null references core.tenant(id) on delete cascade,
+  approval_instance_id  uuid not null references wf.approval_instance(id) on delete cascade,
+
+  event_type            text not null,
+  actor_id              text,
+  payload               jsonb,
+
+  created_at            timestamptz not null default now()
+);
+
+comment on table wf.approval_event is 'Append-only audit log of approval lifecycle events.';
+
+create index if not exists idx_approval_event_instance
+  on wf.approval_event (approval_instance_id, created_at);
+
+create index if not exists idx_approval_event_type
+  on wf.approval_event (tenant_id, event_type);
+
+-- ============================================================================
+-- WF: Approval Task — additional columns for stage binding and SLA
+-- ============================================================================
+alter table wf.approval_task add column if not exists approval_stage_id uuid references wf.approval_stage(id) on delete cascade;
+alter table wf.approval_task add column if not exists assignee_principal_id uuid;
+alter table wf.approval_task add column if not exists assignee_group_id uuid;
+alter table wf.approval_task add column if not exists due_at timestamptz;
+
+-- ============================================================================
 -- WF: Lifecycle Timer Schedule
 -- ============================================================================
 -- Tracks active lifecycle timer jobs for auto-transitions and reminders.

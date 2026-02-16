@@ -13,13 +13,13 @@
  * Overlay change kind - defines the type of modification
  */
 export type OverlayChangeKind =
-  | "add_field"          // Add a new field to entity
-  | "modify_field"       // Modify existing field properties
-  | "remove_field"       // Remove a field from entity
-  | "tweak_policy"       // Modify policy configuration
-  | "add_index"          // Add database index (future)
-  | "remove_index"       // Remove database index (future)
-  | "tweak_relation";    // Modify relationship (future)
+  | "addField"          // Add a new field to entity
+  | "modifyField"       // Modify existing field properties
+  | "removeField"       // Remove a field from entity
+  | "tweakPolicy"       // Modify policy configuration
+  | "addIndex"          // Add database index (future)
+  | "removeIndex"       // Remove database index (future)
+  | "tweakRelation";    // Modify relationship (future)
 
 /**
  * Overlay conflict resolution mode

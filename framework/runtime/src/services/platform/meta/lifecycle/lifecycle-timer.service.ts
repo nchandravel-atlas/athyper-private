@@ -29,6 +29,7 @@ import type {
   RequestContext,
   LifecycleManager,
   ConditionGroup,
+  GenericDataAPI,
 } from "@athyper/core/meta";
 
 import { uuid, now } from "../data/db-helpers.js";
@@ -51,6 +52,7 @@ export const TIMER_JOB_TYPES = {
 export class LifecycleTimerServiceImpl implements LifecycleTimerService {
   private jobQueue?: JobQueue;
   private lifecycleManager?: LifecycleManager;
+  private genericDataAPI?: GenericDataAPI;
 
   constructor(private readonly db: LifecycleDB_Type) {}
 
@@ -62,6 +64,10 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
 
   setLifecycleManager(manager: LifecycleManager): void {
     this.lifecycleManager = manager;
+  }
+
+  setGenericDataAPI(api: GenericDataAPI): void {
+    this.genericDataAPI = api;
   }
 
   // ===== Timer Scheduling =====
@@ -392,13 +398,48 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
 
     // Evaluate conditions (if any) - requires entity record
     if (policyRules.conditions) {
-      // For now, log warning if conditions exist but we can't evaluate
-      // TODO: Fetch entity record from GenericDataAPI for condition evaluation
-      console.warn(JSON.stringify({
-        msg: "lifecycle_timer_condition_evaluation_skipped",
-        scheduleId,
-        reason: "entity_record_fetch_not_implemented",
-      }));
+      if (!this.genericDataAPI) {
+        console.warn(JSON.stringify({
+          msg: "lifecycle_timer_condition_evaluation_skipped",
+          scheduleId,
+          reason: "generic_data_api_not_available",
+        }));
+      } else {
+        const evalCtx: RequestContext = {
+          userId: "system",
+          tenantId,
+          realmId: "system",
+          roles: ["system"],
+          metadata: { _timerExecution: true },
+        };
+        const record = await this.genericDataAPI.get(
+          schedule.entity_name,
+          schedule.entity_id,
+          evalCtx
+        );
+        if (!record) {
+          console.warn(JSON.stringify({
+            msg: "lifecycle_timer_condition_entity_not_found",
+            scheduleId,
+            entityName: schedule.entity_name,
+            entityId: schedule.entity_id,
+          }));
+          return;
+        }
+        const conditionMet = evaluateConditionGroup(
+          policyRules.conditions as ConditionGroup,
+          record as Record<string, unknown>
+        );
+        if (!conditionMet) {
+          console.log(JSON.stringify({
+            msg: "lifecycle_timer_condition_not_met",
+            scheduleId,
+            entityName: schedule.entity_name,
+            entityId: schedule.entity_id,
+          }));
+          return;
+        }
+      }
     }
 
     // Execute transition
@@ -435,6 +476,54 @@ export class LifecycleTimerServiceImpl implements LifecycleTimerService {
       error: result.error,
       reason: result.reason,
     }));
+  }
+
+  // ===== Reminder Processing =====
+
+  async processReminder(scheduleId: string, tenantId: string): Promise<void> {
+    // Load schedule record
+    const schedule = await this.db
+      .selectFrom("wf.lifecycle_timer_schedule")
+      .selectAll()
+      .where("id", "=", scheduleId)
+      .where("tenant_id", "=", tenantId)
+      .executeTakeFirst();
+
+    if (!schedule) {
+      console.warn(JSON.stringify({
+        msg: "lifecycle_reminder_schedule_not_found",
+        scheduleId,
+        tenantId,
+      }));
+      return;
+    }
+
+    if (schedule.status !== "scheduled") {
+      console.log(JSON.stringify({
+        msg: "lifecycle_reminder_already_processed",
+        scheduleId,
+        status: schedule.status,
+      }));
+      return;
+    }
+
+    // Mark as fired
+    await this.db
+      .updateTable("wf.lifecycle_timer_schedule")
+      .set({ status: "fired" })
+      .where("id", "=", scheduleId)
+      .execute();
+
+    console.log(JSON.stringify({
+      msg: "lifecycle_reminder_fired",
+      scheduleId,
+      tenantId,
+      entityName: schedule.entity_name,
+      entityId: schedule.entity_id,
+      timerType: schedule.timer_type,
+    }));
+
+    // TODO (P1): Send notification via NotificationService
   }
 
   // ===== Timer Rehydration =====

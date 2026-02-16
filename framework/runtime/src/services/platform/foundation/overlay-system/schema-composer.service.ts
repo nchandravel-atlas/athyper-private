@@ -164,13 +164,13 @@ export class SchemaComposerService {
     for (const overlay of allOverlays) {
       for (const change of overlay.changes) {
         switch (change.kind) {
-          case "add_field":
+          case "addField":
             addedFields.push(change.path);
             break;
-          case "modify_field":
+          case "modifyField":
             modifiedFields.push(change.path);
             break;
-          case "remove_field":
+          case "removeField":
             removedFields.push(change.path);
             break;
         }
@@ -204,25 +204,25 @@ export class SchemaComposerService {
   ): { success: boolean; conflict?: string } {
     try {
       switch (change.kind) {
-        case "add_field":
+        case "addField":
           return this.applyAddField(schema, change, conflictMode);
 
-        case "modify_field":
+        case "modifyField":
           return this.applyModifyField(schema, change, conflictMode);
 
-        case "remove_field":
+        case "removeField":
           return this.applyRemoveField(schema, change);
 
-        case "tweak_policy":
+        case "tweakPolicy":
           return this.applyTweakPolicy(schema, change, conflictMode);
 
-        case "add_index":
+        case "addIndex":
           return this.applyAddIndex(schema, change, conflictMode);
 
-        case "remove_index":
+        case "removeIndex":
           return this.applyRemoveIndex(schema, change);
 
-        case "tweak_relation":
+        case "tweakRelation":
           // Future implementation
           this.logger.warn({
             msg: "unsupported_change_kind",
@@ -460,7 +460,7 @@ export class SchemaComposerService {
     }
 
     // Validate value based on kind
-    if (change.kind === "add_field" || change.kind === "modify_field") {
+    if (change.kind === "addField" || change.kind === "modifyField") {
       if (change.value === undefined) {
         errors.push({
           changeIndex: index,
@@ -472,7 +472,7 @@ export class SchemaComposerService {
     }
 
     // Validate index operations (EPIC I - I2)
-    if (change.kind === "add_index") {
+    if (change.kind === "addIndex") {
       if (!change.value || typeof change.value !== "object") {
         errors.push({
           changeIndex: index,
@@ -501,7 +501,7 @@ export class SchemaComposerService {
       }
     }
 
-    if (change.kind === "remove_index") {
+    if (change.kind === "removeIndex") {
       if (!change.value || typeof change.value !== "string") {
         errors.push({
           changeIndex: index,
@@ -526,7 +526,7 @@ export class SchemaComposerService {
     const existing = this.getValueAtPath(schema, change.path);
 
     switch (change.kind) {
-      case "add_field":
+      case "addField":
         if (existing !== undefined) {
           warnings.push({
             changeIndex: index,
@@ -537,7 +537,7 @@ export class SchemaComposerService {
         }
         break;
 
-      case "modify_field":
+      case "modifyField":
         if (existing === undefined) {
           warnings.push({
             changeIndex: index,
@@ -548,7 +548,7 @@ export class SchemaComposerService {
         }
         break;
 
-      case "remove_field":
+      case "removeField":
         if (existing === undefined) {
           warnings.push({
             changeIndex: index,

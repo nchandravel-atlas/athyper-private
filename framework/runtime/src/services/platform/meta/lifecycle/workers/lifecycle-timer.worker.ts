@@ -53,7 +53,10 @@ export function createAutoTransitionHandler(
 /**
  * Creates a BullMQ handler for lifecycle reminder jobs.
  *
- * Future enhancement: Send notifications before deadlines.
+ * Delegates to LifecycleTimerService.processReminder() which:
+ * - Verifies the schedule is still active
+ * - Marks the schedule as fired
+ * - Logs the reminder event
  *
  * @param timerService - Lifecycle timer service
  * @returns BullMQ job handler function
@@ -62,21 +65,9 @@ export function createReminderHandler(
   timerService: LifecycleTimerService
 ): JobHandler<LifecycleTimerPayload, void> {
   return async (job: Job<LifecycleTimerPayload>): Promise<void> => {
-    const { scheduleId, tenantId, entityName, entityId, timerType } = job.data.payload;
+    const { scheduleId, tenantId } = job.data.payload;
 
-    // TODO: Implement reminder logic
-    // - Send email/notification to assignees
-    // - Log reminder event
-    // - Update notification tracking
-
-    console.log(JSON.stringify({
-      msg: "lifecycle_reminder_fired",
-      scheduleId,
-      tenantId,
-      entityName,
-      entityId,
-      timerType,
-      note: "reminder_not_implemented",
-    }));
+    // Delegate to timer service (includes guard checks)
+    await timerService.processReminder(scheduleId, tenantId);
   };
 }

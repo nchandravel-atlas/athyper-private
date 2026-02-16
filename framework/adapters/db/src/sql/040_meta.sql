@@ -681,6 +681,9 @@ create index if not exists idx_overlay_priority
 create index if not exists idx_overlay_active
   on meta.overlay (is_active) where is_active = true;
 
+-- Optimistic locking version column
+alter table meta.overlay add column if not exists version integer not null default 1;
+
 -- ============================================================================
 -- META: Overlay Change Deltas
 -- ============================================================================
@@ -699,7 +702,8 @@ create table if not exists meta.overlay_change (
 
   constraint overlay_change_kind_chk check (kind in (
     'addField','removeField','modifyField',
-    'tweakPolicy','overrideValidation','overrideUi'
+    'tweakPolicy','overrideValidation','overrideUi',
+    'addIndex','removeIndex','tweakRelation'
   )),
   constraint overlay_change_order_uniq unique (overlay_id, change_order)
 );

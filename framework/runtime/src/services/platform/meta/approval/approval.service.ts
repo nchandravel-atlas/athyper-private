@@ -622,7 +622,7 @@ export class ApprovalServiceImpl implements ApprovalService {
   async isStageComplete(stageId: string, tenantId: string): Promise<boolean> {
     const stage = await this.db
       .selectFrom("wf.approval_stage")
-      .select(["mode"])
+      .selectAll()
       .where("id", "=", stageId)
       .where("tenant_id", "=", tenantId)
       .executeTakeFirst();
@@ -638,7 +638,29 @@ export class ApprovalServiceImpl implements ApprovalService {
 
     if (tasks.length === 0) return true;
 
-    // No tasks should be in "pending" state
+    const mode = (stage as any).mode as string;
+    const quorum = (stage as any).quorum as { type?: string; value?: number } | null;
+
+    if (mode === "serial") {
+      // Serial: all tasks must be completed in order (no pending tasks)
+      return tasks.every((t) => t.status !== "pending");
+    }
+
+    // Parallel mode: check quorum
+    if (quorum && quorum.type === "count" && typeof quorum.value === "number") {
+      // Count-based quorum: N approvals needed
+      const approvedCount = tasks.filter((t) => t.status === "approved").length;
+      return approvedCount >= quorum.value;
+    }
+
+    if (quorum && quorum.type === "percentage" && typeof quorum.value === "number") {
+      // Percentage-based quorum: X% of tasks must be approved
+      const approvedCount = tasks.filter((t) => t.status === "approved").length;
+      const requiredCount = Math.ceil((quorum.value / 100) * tasks.length);
+      return approvedCount >= requiredCount;
+    }
+
+    // Default parallel: all tasks must be non-pending (unanimous)
     return tasks.every((t) => t.status !== "pending");
   }
 

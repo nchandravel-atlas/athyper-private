@@ -1024,6 +1024,15 @@ export interface LifecycleTimerService {
    */
   processTimer(scheduleId: string, tenantId: string): Promise<void>;
 
+  /**
+   * Process a reminder when BullMQ job fires.
+   * Marks the schedule as fired and logs the reminder event.
+   *
+   * @param scheduleId - Timer schedule ID
+   * @param tenantId - Tenant ID
+   */
+  processReminder(scheduleId: string, tenantId: string): Promise<void>;
+
   // ===== Timer Rehydration =====
 
   /**
@@ -1062,6 +1071,11 @@ export interface LifecycleTimerService {
    * Set lifecycle manager (late binding to prevent circular dependencies)
    */
   setLifecycleManager(manager: LifecycleManager): void;
+
+  /**
+   * Set generic data API (late binding for condition evaluation)
+   */
+  setGenericDataAPI(api: GenericDataAPI): void;
 
   // ===== Health Check =====
 

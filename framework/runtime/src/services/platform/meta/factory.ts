@@ -268,6 +268,9 @@ export function createMetaServices(
     config.fieldSecurityFilter,
   );
 
+  // 11.3 Wire GenericDataAPI to timer service (for condition evaluation)
+  lifecycleTimerService.setGenericDataAPI(dataAPI);
+
   // 8. MetaStore (depends on registry, compiler, auditLogger)
   const metaStore = new MetaStoreService(registry, compiler, auditLogger);
 

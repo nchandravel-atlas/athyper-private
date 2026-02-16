@@ -1,0 +1,359 @@
+{
+  "_comment": "Refactored client configurations following naming conventions",
+  "_pattern": "<product>-<type>-<name>",
+
+  "clients": [
+    {
+      "clientId": "neon-web",
+      "name": "Neon ERP Web UI",
+      "description": "Public browser client for Neon ERP user authentication",
+      "enabled": true,
+      "publicClient": true,
+      "bearerOnly": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "realm_client": "false",
+        "post.logout.redirect.uris": "http://localhost:3001/*",
+        "consent.screen.text": "Login Terms to use Neon"
+      },
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:3001/*",
+        "https://neon.athyper.local/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://neon.athyper.local"
+      ],
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "consentRequired": true,
+      "frontchannelLogout": true,
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "athyper-api-runtime audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "athyper-api-runtime",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "organization",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "clientId": "neon-svc-bff",
+      "name": "Neon BFF Service Account",
+      "description": "Confidential service account for Neon BFF system operations",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "**GENERATE-IN-KEYCLOAK**",
+      "attributes": {
+        "realm_client": "false",
+        "client.secret.creation.time": "1739721600",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "client.use.lightweight.access.token.enabled": "false"
+      },
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": false,
+      "frontchannelLogout": false,
+      "redirectUris": [],
+      "webOrigins": [],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "organization",
+        "offline_access",
+        "microprofile-jwt"
+      ],
+      "_serviceAccountRoles": {
+        "_comment": "Assign these roles from athyper-api-runtime after creating the client",
+        "athyper-api-runtime": [
+          "runtime:invoke",
+          "doc:read",
+          "doc:write",
+          "content:read",
+          "content:sign:url"
+        ]
+      }
+    },
+    {
+      "clientId": "athyper-svc-runtime-worker",
+      "name": "Athyper Runtime Background Worker",
+      "description": "Service account for async jobs, schedulers, timers, event handlers",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "**GENERATE-IN-KEYCLOAK**",
+      "attributes": {
+        "realm_client": "false",
+        "client.secret.creation.time": "1739721600",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "client.use.lightweight.access.token.enabled": "false"
+      },
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": false,
+      "frontchannelLogout": false,
+      "redirectUris": [],
+      "webOrigins": [],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "organization",
+        "offline_access",
+        "microprofile-jwt"
+      ],
+      "_serviceAccountRoles": {
+        "_comment": "Assign these roles from athyper-api-runtime after creating the client",
+        "athyper-api-runtime": [
+          "wf:timer:run",
+          "wf:approval:execute",
+          "event:publish",
+          "audit:write",
+          "outbox:process"
+        ]
+      }
+    },
+    {
+      "clientId": "athyper-api-runtime",
+      "name": "Athyper Runtime API",
+      "description": "Bearer-only resource server for Athyper Runtime REST APIs",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false"
+      },
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": false,
+      "frontchannelLogout": false,
+      "redirectUris": [],
+      "webOrigins": [],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "organization",
+        "offline_access",
+        "microprofile-jwt"
+      ],
+      "_clientRoles": {
+        "_comment": "Create these client roles on athyper-api-runtime",
+        "roles": [
+          {
+            "name": "runtime:read",
+            "description": "Read access to Runtime APIs"
+          },
+          {
+            "name": "runtime:write",
+            "description": "Write access to Runtime APIs"
+          },
+          {
+            "name": "runtime:admin",
+            "description": "Administrative access to Runtime"
+          },
+          {
+            "name": "runtime:invoke",
+            "description": "Invoke Runtime services"
+          },
+          {
+            "name": "wf:read",
+            "description": "Read workflows"
+          },
+          {
+            "name": "wf:execute",
+            "description": "Execute workflows"
+          },
+          {
+            "name": "wf:timer:run",
+            "description": "Run workflow timers"
+          },
+          {
+            "name": "wf:approval:execute",
+            "description": "Execute workflow approvals"
+          },
+          {
+            "name": "doc:read",
+            "description": "Read documents"
+          },
+          {
+            "name": "doc:write",
+            "description": "Create/update documents"
+          },
+          {
+            "name": "doc:sign:url",
+            "description": "Generate signed document URLs"
+          },
+          {
+            "name": "content:read",
+            "description": "Read content"
+          },
+          {
+            "name": "content:write",
+            "description": "Create/update content"
+          },
+          {
+            "name": "content:overlay:apply",
+            "description": "Apply content overlays"
+          },
+          {
+            "name": "content:sign:url",
+            "description": "Generate signed content URLs"
+          },
+          {
+            "name": "audit:read",
+            "description": "Read audit logs"
+          },
+          {
+            "name": "audit:write",
+            "description": "Write audit logs"
+          },
+          {
+            "name": "event:read",
+            "description": "Read events"
+          },
+          {
+            "name": "event:publish",
+            "description": "Publish events"
+          },
+          {
+            "name": "outbox:read",
+            "description": "Read outbox messages"
+          },
+          {
+            "name": "outbox:process",
+            "description": "Process outbox messages"
+          }
+        ]
+      }
+    }
+  ],
+
+  "existingClientRoles_neon-web": {
+    "_comment": "Update existing neon-web client roles to use singular namespace",
+    "_changes": [
+      "neon:PERSONAS:* → neon:PERSONA:*",
+      "neon:MODULES:* → neon:MODULE:*"
+    ],
+    "roles": [
+      {
+        "name": "neon:WORKBENCH:ADMIN",
+        "description": "Workbench administrator"
+      },
+      {
+        "name": "neon:WORKBENCH:USER",
+        "description": "Workbench standard user"
+      },
+      {
+        "name": "neon:WORKBENCH:OPS",
+        "description": "Workbench operations"
+      },
+      {
+        "name": "neon:WORKBENCH:PARTNER",
+        "description": "Workbench partner access"
+      },
+      {
+        "name": "neon:PERSONA:tenant_admin",
+        "description": "Tenant administrator persona"
+      },
+      {
+        "name": "neon:PERSONA:module_admin",
+        "description": "Module administrator persona"
+      },
+      {
+        "name": "neon:PERSONA:manager",
+        "description": "Manager persona"
+      },
+      {
+        "name": "neon:PERSONA:viewer",
+        "description": "Viewer persona"
+      },
+      {
+        "name": "neon:PERSONA:reporter",
+        "description": "Reporter persona"
+      },
+      {
+        "name": "neon:PERSONA:requester",
+        "description": "Requester persona"
+      },
+      {
+        "name": "neon:PERSONA:agent",
+        "description": "Agent persona"
+      },
+      {
+        "name": "neon:MODULE:ACC",
+        "description": "Finance (Core Accounting) module"
+      },
+      {
+        "name": "neon:MODULE:PAY",
+        "description": "Payment Processing module"
+      }
+    ]
+  }
+}

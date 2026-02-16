@@ -66,7 +66,7 @@ export class ExplainabilityService {
 
         return {
             messageId,
-            eventType: message.eventType,
+            eventCode: message.eventCode,
             eventId: message.eventId,
             timestamp: message.createdAt.toISOString(),
             steps,

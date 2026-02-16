@@ -4,7 +4,7 @@
  * Evidence-grade integrity verification for audit data:
  *   - Range verification: hash chain continuity + anchor match + partition completeness
  *   - Export verification: SHA-256 re-computation against manifest
- *   - Persistent reports in core.audit_integrity_report
+ *   - Persistent reports in core.integrity_report
  *
  * All verification results are persisted and logged to core.security_event.
  */
@@ -110,7 +110,7 @@ export class AuditIntegrityService {
         const batch = await sql<any>`
           SELECT id, hash_prev, hash_curr, event_timestamp, event_type,
                  instance_id, actor_user_id, action, entity_id
-          FROM core.workflow_audit_event
+          FROM core.workflow_event_log
           WHERE tenant_id = ${tenantId}::uuid
             AND event_timestamp >= ${startDate.toISOString()}::timestamptz
             AND event_timestamp <= ${endDate.toISOString()}::timestamptz
@@ -329,7 +329,7 @@ export class AuditIntegrityService {
    */
   async getReport(tenantId: string, reportId: string): Promise<IntegrityReport | undefined> {
     const result = await sql<any>`
-      SELECT * FROM core.audit_integrity_report
+      SELECT * FROM core.integrity_report
       WHERE id = ${reportId}::uuid AND tenant_id = ${tenantId}::uuid
     `.execute(this.db);
 
@@ -343,7 +343,7 @@ export class AuditIntegrityService {
    */
   async listReports(tenantId: string, limit = 25): Promise<IntegrityReport[]> {
     const result = await sql<any>`
-      SELECT * FROM core.audit_integrity_report
+      SELECT * FROM core.integrity_report
       WHERE tenant_id = ${tenantId}::uuid
       ORDER BY created_at DESC
       LIMIT ${limit}
@@ -368,7 +368,7 @@ export class AuditIntegrityService {
         event_count: number;
       }>`
         SELECT anchor_date, last_hash, event_count
-        FROM core.audit_hash_anchor
+        FROM core.hash_anchor
         WHERE tenant_id = ${tenantId}::uuid
           AND anchor_date >= ${startDate.toISOString()}::date
           AND anchor_date <= ${endDate.toISOString()}::date
@@ -389,7 +389,7 @@ export class AuditIntegrityService {
 
         const countResult = await sql<{ count: string }>`
           SELECT COUNT(*) as count
-          FROM core.workflow_audit_event
+          FROM core.workflow_event_log
           WHERE tenant_id = ${tenantId}::uuid
             AND event_timestamp >= ${dayStart.toISOString()}::timestamptz
             AND event_timestamp <= ${dayEnd.toISOString()}::timestamptz
@@ -458,7 +458,7 @@ export class AuditIntegrityService {
     endDate?: Date,
   ): Promise<void> {
     await sql`
-      INSERT INTO core.audit_integrity_report (
+      INSERT INTO core.integrity_report (
         id, tenant_id, verification_type, start_date, end_date,
         status, initiated_by, created_at
       ) VALUES (
@@ -480,7 +480,7 @@ export class AuditIntegrityService {
       : sql`started_at`;
 
     await sql`
-      UPDATE core.audit_integrity_report
+      UPDATE core.integrity_report
       SET status = ${status}, started_at = ${startedAt}
       WHERE id = ${id}::uuid
     `.execute(this.db);
@@ -496,7 +496,7 @@ export class AuditIntegrityService {
       : null;
 
     await sql`
-      UPDATE core.audit_integrity_report
+      UPDATE core.integrity_report
       SET status = ${status},
           events_checked = ${(fields.events_checked as number) ?? sql`events_checked`},
           chain_valid = ${fields.chain_valid !== undefined ? sql`${fields.chain_valid as boolean}` : sql`chain_valid`},

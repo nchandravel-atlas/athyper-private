@@ -69,10 +69,10 @@ describe("SQL Migration 157: Role Separation Specification", () => {
 
   it("should grant athyper_app_writer INSERT-only on 5 audit tables", () => {
     const tables = [
-      "workflow_audit_event",
+      "workflow_event_log",
       "audit_outbox",
-      "audit_hash_anchor",
-      "audit_dlq",
+      "hash_anchor",
+      "dlq",
       "security_event",
     ];
 
@@ -85,10 +85,10 @@ describe("SQL Migration 157: Role Separation Specification", () => {
 
   it("should grant athyper_audit_reader SELECT-only on 8 audit tables", () => {
     const tables = [
-      "workflow_audit_event",
+      "workflow_event_log",
       "audit_outbox",
-      "audit_hash_anchor",
-      "audit_dlq",
+      "hash_anchor",
+      "dlq",
       "security_event",
       "permission_decision_log",
       "field_access_log",
@@ -102,9 +102,9 @@ describe("SQL Migration 157: Role Separation Specification", () => {
   it("should grant athyper_audit_admin SELECT on 8 tables + INSERT on security_event", () => {
     // Specification: audit admin can read all tables + write audit-of-audit events
     const readTables = [
-      "workflow_audit_event",
-      "audit_hash_anchor",
-      "audit_dlq",
+      "workflow_event_log",
+      "hash_anchor",
+      "dlq",
       "security_event",
       "permission_decision_log",
       "field_access_log",
@@ -144,11 +144,11 @@ describe("SQL Migration 157: Role Separation Specification", () => {
     // - SECURITY DEFINER (runs with owner's privileges)
     // - Owner: athyper_retention
     // - Validates table name against allowlist
-    // - Allowlist: workflow_audit_event, audit_log, permission_decision_log, field_access_log, security_event
+    // - Allowlist: workflow_event_log, audit_log, permission_decision_log, field_access_log, security_event
     // - Raises restrict_violation for non-allowed tables
 
     const allowedTables = [
-      "workflow_audit_event",
+      "workflow_event_log",
       "audit_log",
       "permission_decision_log",
       "field_access_log",
@@ -159,8 +159,8 @@ describe("SQL Migration 157: Role Separation Specification", () => {
 
     // core.audit_outbox is NOT in the allowlist (has its own cleanup path)
     expect(allowedTables).not.toContain("audit_outbox");
-    // audit_hash_anchor is NOT in the allowlist (anchors should not be deleted via retention)
-    expect(allowedTables).not.toContain("audit_hash_anchor");
+    // hash_anchor is NOT in the allowlist (anchors should not be deleted via retention)
+    expect(allowedTables).not.toContain("hash_anchor");
   });
 });
 
@@ -226,14 +226,14 @@ describe("callRetentionDelete()", () => {
     const mockDb = {} as any;
 
     await expect(
-      callRetentionDelete(mockDb, "workflow_audit_event", new Date(), "not-a-uuid"),
+      callRetentionDelete(mockDb, "workflow_event_log", new Date(), "not-a-uuid"),
     ).rejects.toThrow("Invalid tenant ID format");
   });
 
   it("should accept null tenant ID (global retention)", () => {
     // callRetentionDelete allows tenantId to be undefined for global retention
     // This test verifies the parameter is optional
-    const tableName = "workflow_audit_event";
+    const tableName = "workflow_event_log";
     const cutoffDate = new Date("2025-01-01");
 
     // Just verify it doesn't throw on validation

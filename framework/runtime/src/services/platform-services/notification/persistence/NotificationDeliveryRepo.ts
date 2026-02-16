@@ -1,5 +1,5 @@
 /**
- * NotificationDeliveryRepo — Kysely repo for notify.notification_delivery
+ * NotificationDeliveryRepo — Kysely repo for notify.delivery
  */
 
 import type { Kysely } from "kysely";
@@ -11,7 +11,7 @@ import type {
 } from "../domain/models/NotificationDelivery.js";
 import type { DeliveryId, MessageId, DeliveryStatus } from "../domain/types.js";
 
-const TABLE = "notify.notification_delivery" as keyof DB & string;
+const TABLE = "notify.delivery" as keyof DB & string;
 
 export class NotificationDeliveryRepo {
     constructor(private readonly db: Kysely<DB>) {}

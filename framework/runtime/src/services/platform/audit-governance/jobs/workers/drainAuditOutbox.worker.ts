@@ -2,7 +2,7 @@
  * drainAuditOutbox.worker — BullMQ job handler for the audit outbox drain.
  *
  * Picks a batch of pending outbox rows, persists them to
- * core.workflow_audit_event via WorkflowAuditRepository,
+ * core.workflow_event_log via WorkflowAuditRepository,
  * and marks rows as persisted/failed/dead.
  *
  * Dead items (exceeded max_attempts) are moved to the DLQ for

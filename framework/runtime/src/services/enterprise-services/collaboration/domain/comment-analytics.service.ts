@@ -119,7 +119,7 @@ export class CommentAnalyticsService {
     limit: number = 10
   ): Promise<UserEngagement[]> {
     const rows = await this.db
-      .selectFrom("collab.comment_user_engagement")
+      .selectFrom("collab.comment_user_analytics")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("period_start", "=", periodStart as any)

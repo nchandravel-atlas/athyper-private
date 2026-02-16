@@ -51,7 +51,7 @@ export class InAppAdapter implements IChannelAdapter {
                     deliveryId: request.deliveryId,
                     correlationId: request.correlationId,
                 },
-                createdBy: "system",
+                createdByService: "system",
             });
 
             return {

@@ -7,7 +7,7 @@
 | Setting | Default | Source | Override |
 |---------|---------|--------|----------|
 | `retentionDays` | 90 | `config.audit.retentionDays` | Per-tenant via `core.feature_flag` |
-| Partition granularity | Monthly | `workflow_audit_event` range partitions | N/A |
+| Partition granularity | Monthly | `workflow_event_log` range partitions | N/A |
 | Pre-creation window | 3 months | `config.audit.partitionPreCreateMonths` | Per-tenant |
 
 **Retention mechanism**: Daily BullMQ job (`auditPartitionLifecycle.worker`) drops partitions older than `retentionDays`. Uses DDL (`DROP TABLE`) which naturally bypasses the immutability trigger (DML-only protection).
@@ -21,10 +21,10 @@
 - **Genesis**: `GENESIS_0000000000000000000000000000000000000000000000000000000000000000`
 - **Scope**: Per-tenant chain (each tenant starts from genesis independently)
 - **Canonical payload**: Deterministic JSON of `{tenant_id, event_timestamp, instance_id, event_type, actor_user_id, action, entity_id}`
-- **Storage**: `hash_prev` and `hash_curr` columns on `core.workflow_audit_event`
+- **Storage**: `hash_prev` and `hash_curr` columns on `core.workflow_event_log`
 
 ### Daily Anchors
-- Table: `core.audit_hash_anchor` (tenant_id, anchor_date, last_hash, event_count)
+- Table: `core.hash_anchor` (tenant_id, anchor_date, last_hash, event_count)
 - Written daily by `AuditHashChainService.writeAnchor()`
 - Enables efficient verification windows without replaying full chain
 
@@ -43,7 +43,7 @@
 | Table owner | Bypass RLS | Bypass RLS | Bypass RLS | Bypass RLS | All tenants |
 
 ### Row-Level Security (RLS)
-- Enabled on: `workflow_audit_event`, `audit_outbox`, `audit_hash_anchor`, `audit_dlq`
+- Enabled on: `workflow_event_log`, `audit_outbox`, `hash_anchor`, `dlq`
 - Policy: `tenant_id = current_setting('athyper.current_tenant')::uuid`
 - Set via: `SET LOCAL athyper.current_tenant = '<tenant-uuid>'` (transaction-scoped)
 
@@ -116,7 +116,7 @@
 6. Document finding in incident report
 
 ### DLQ Depth Alert
-1. Alert fires on `audit_dlq_depth > 100` (unhealthy) or `> 0` (degraded)
+1. Alert fires on `dlq_depth > 100` (unhealthy) or `> 0` (degraded)
 2. List unreplayed DLQ entries via admin API
 3. Inspect failure reasons: DB connectivity, schema drift, data corruption
 4. Replay once root cause resolved: `AuditDlqManager.bulkReplay()`
@@ -134,7 +134,7 @@
 ### Verify hash chain for a tenant
 ```sql
 SELECT id, event_type, hash_prev, hash_curr, event_timestamp
-FROM core.workflow_audit_event
+FROM core.workflow_event_log
 WHERE tenant_id = '<tenant-uuid>'
 ORDER BY event_timestamp ASC;
 ```
@@ -144,7 +144,7 @@ ORDER BY event_timestamp ASC;
 WITH ordered AS (
   SELECT id, hash_prev, hash_curr, event_timestamp,
          LAG(hash_curr) OVER (ORDER BY event_timestamp) AS expected_prev
-  FROM core.workflow_audit_event
+  FROM core.workflow_event_log
   WHERE tenant_id = '<tenant-uuid>'
 )
 SELECT * FROM ordered
@@ -154,7 +154,7 @@ WHERE hash_prev != COALESCE(expected_prev, 'GENESIS_0000000000000000000000000000
 ### Count redacted events
 ```sql
 SELECT COUNT(*), is_redacted, redaction_version
-FROM core.workflow_audit_event
+FROM core.workflow_event_log
 WHERE tenant_id = '<tenant-uuid>'
 GROUP BY is_redacted, redaction_version;
 ```
@@ -162,7 +162,7 @@ GROUP BY is_redacted, redaction_version;
 ### Check encryption coverage
 ```sql
 SELECT COUNT(*), key_version
-FROM core.workflow_audit_event
+FROM core.workflow_event_log
 WHERE tenant_id = '<tenant-uuid>'
 GROUP BY key_version;
 ```
@@ -170,7 +170,7 @@ GROUP BY key_version;
 ### DLQ health
 ```sql
 SELECT COUNT(*), error_category, replayed_at IS NOT NULL AS replayed
-FROM core.audit_dlq
+FROM core.dlq
 WHERE tenant_id = '<tenant-uuid>'
 GROUP BY error_category, replayed;
 ```

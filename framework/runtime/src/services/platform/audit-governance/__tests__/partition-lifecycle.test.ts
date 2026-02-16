@@ -40,17 +40,17 @@ describe("Partition Lifecycle Worker", () => {
 // ─── Partition Naming Convention ───────────────────────────────────
 
 describe("Partition Naming Convention", () => {
-  it("should follow pattern: workflow_audit_event_YYYY_MM", () => {
+  it("should follow pattern: workflow_event_log_YYYY_MM", () => {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
-    const expected = `workflow_audit_event_${year}_${month}`;
+    const expected = `workflow_event_log_${year}_${month}`;
 
-    expect(expected).toMatch(/^workflow_audit_event_\d{4}_\d{2}$/);
+    expect(expected).toMatch(/^workflow_event_log_\d{4}_\d{2}$/);
   });
 
   it("should extract year and month from partition name", () => {
-    const name = "workflow_audit_event_2025_06";
+    const name = "workflow_event_log_2025_06";
     const match = name.match(/_(\d{4})_(\d{2})$/);
 
     expect(match).not.toBeNull();
@@ -89,10 +89,10 @@ describe("Retention Calculation", () => {
   it("should only drop partitions strictly before the cutoff month", () => {
     const cutoffMonth = new Date(2025, 2, 1); // March 2025
     const partitions = [
-      { name: "workflow_audit_event_2025_01", date: new Date(2025, 0, 1) }, // Jan → DROP
-      { name: "workflow_audit_event_2025_02", date: new Date(2025, 1, 1) }, // Feb → DROP
-      { name: "workflow_audit_event_2025_03", date: new Date(2025, 2, 1) }, // Mar → KEEP
-      { name: "workflow_audit_event_2025_04", date: new Date(2025, 3, 1) }, // Apr → KEEP
+      { name: "workflow_event_log_2025_01", date: new Date(2025, 0, 1) }, // Jan → DROP
+      { name: "workflow_event_log_2025_02", date: new Date(2025, 1, 1) }, // Feb → DROP
+      { name: "workflow_event_log_2025_03", date: new Date(2025, 2, 1) }, // Mar → KEEP
+      { name: "workflow_event_log_2025_04", date: new Date(2025, 3, 1) }, // Apr → KEEP
     ];
 
     const toDrop = partitions.filter(p => p.date < cutoffMonth);
@@ -101,8 +101,8 @@ describe("Retention Calculation", () => {
     expect(toDrop).toHaveLength(2);
     expect(toKeep).toHaveLength(2);
     expect(toDrop.map(p => p.name)).toEqual([
-      "workflow_audit_event_2025_01",
-      "workflow_audit_event_2025_02",
+      "workflow_event_log_2025_01",
+      "workflow_event_log_2025_02",
     ]);
   });
 });
@@ -112,11 +112,11 @@ describe("Retention Calculation", () => {
 describe("SQL Function Specifications", () => {
   it("spec: create_audit_partition_for_month creates a monthly partition", () => {
     // core.create_audit_partition_for_month('2025-06-01'::date)
-    // Creates: core.workflow_audit_event_2025_06
+    // Creates: core.workflow_event_log_2025_06
     // Range: [2025-06-01, 2025-07-01)
     const input = "2025-06-01";
-    const expectedPartition = "workflow_audit_event_2025_06";
-    expect(expectedPartition).toBe("workflow_audit_event_2025_06");
+    const expectedPartition = "workflow_event_log_2025_06";
+    expect(expectedPartition).toBe("workflow_event_log_2025_06");
   });
 
   it("spec: list_audit_partitions returns name, row_count, size_bytes", () => {
@@ -164,7 +164,7 @@ describe("Pre-creation Logic", () => {
       target.setMonth(target.getMonth() + i);
       const year = target.getFullYear();
       const month = String(target.getMonth() + 1).padStart(2, "0");
-      partitions.push(`workflow_audit_event_${year}_${month}`);
+      partitions.push(`workflow_event_log_${year}_${month}`);
     }
 
     // Current + 3 ahead = 4 partitions

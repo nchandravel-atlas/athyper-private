@@ -56,7 +56,7 @@ export class AuditExplainabilityService {
     const eventsResult = await sql<any>`
       SELECT id, event_type, severity, actor_user_id, event_timestamp,
              comment, instance_id, trace_id
-      FROM core.workflow_audit_event
+      FROM core.workflow_event_log
       WHERE tenant_id = ${tenantId}::uuid
         AND correlation_id = ${correlationId}
       ORDER BY event_timestamp ASC

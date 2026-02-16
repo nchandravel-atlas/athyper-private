@@ -44,12 +44,12 @@ Workflow Engine
               WorkflowAuditRepository.recordEvent()
                            │
                            ▼
-              core.workflow_audit_event  (partitioned)
+              core.workflow_event_log  (partitioned)
 ```
 
 ## Table Schemas
 
-### core.workflow_audit_event (partitioned by month)
+### core.workflow_event_log (partitioned by month)
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -74,7 +74,7 @@ Workflow Engine
 | trace_id | TEXT | OTel trace correlation |
 | event_timestamp | TIMESTAMPTZ | Business event time (partition key) |
 
-### core.audit_hash_anchor
+### core.hash_anchor
 
 Daily checkpoint of the hash chain per tenant. Enables efficient verification windows.
 
@@ -116,13 +116,13 @@ Where `canonical_payload` is a deterministic JSON string of:
 
 - First event uses `GENESIS_0000...` as hash_prev
 - Chains are per-tenant (Map<tenantId, lastHash>)
-- Daily anchors written to `core.audit_hash_anchor` for external verification
+- Daily anchors written to `core.hash_anchor` for external verification
 - `verifyChain()` walks events and recomputes hashes to detect tampering
 
 ## Immutability Guarantees
 
 The `core.prevent_audit_mutation()` trigger function blocks all UPDATE and DELETE on:
-- `core.workflow_audit_event`
+- `core.workflow_event_log`
 - `core.audit_log`
 - `core.permission_decision_log`
 - `core.field_access_log`
@@ -164,7 +164,7 @@ The `AuditRateLimiter` uses Redis token bucket (500 events/tenant/minute default
 
 ## Partitioning Strategy
 
-`core.workflow_audit_event` uses monthly range partitions on `event_timestamp`:
+`core.workflow_event_log` uses monthly range partitions on `event_timestamp`:
 
 - Partitions auto-created monthly via `core.create_next_audit_partition()` (schedule on 25th)
 - Retention: `core.drop_audit_partition(year, month)` — DDL, not DML — bypasses immutability
@@ -207,7 +207,7 @@ Registered as `audit-pipeline` (internal, non-required):
 
 The `ActivityTimelineService` merges events from 5 tables via UNION ALL:
 
-- `core.workflow_audit_event` — workflow events
+- `core.workflow_event_log` — workflow events
 - `core.permission_decision_log` — access decisions
 - `core.field_access_log` — field access tracking
 - `core.security_event` — security events

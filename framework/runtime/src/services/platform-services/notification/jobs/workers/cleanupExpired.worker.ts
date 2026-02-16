@@ -1,7 +1,7 @@
 /**
  * cleanupExpired.worker — BullMQ job handler for TTL cleanup.
  *
- * Removes old notification_message and notification_delivery rows
+ * Removes old notify.message and notify.delivery rows
  * past their retention period. Also cleans expired suppressions.
  */
 
@@ -12,8 +12,8 @@ import type { CleanupExpiredPayload } from "../../domain/services/NotificationOr
 import type { NotificationSuppressionRepo } from "../../persistence/NotificationSuppressionRepo.js";
 import type { Logger } from "../../../../../kernel/logger.js";
 
-const MESSAGE_TABLE = "notify.notification_message" as keyof DB & string;
-const DELIVERY_TABLE = "notify.notification_delivery" as keyof DB & string;
+const MESSAGE_TABLE = "notify.message" as keyof DB & string;
+const DELIVERY_TABLE = "notify.delivery" as keyof DB & string;
 
 export interface RetentionDefaults {
     messageDays: number;

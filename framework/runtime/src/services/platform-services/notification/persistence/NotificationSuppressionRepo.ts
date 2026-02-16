@@ -1,5 +1,5 @@
 /**
- * NotificationSuppressionRepo — Kysely repo for notify.notification_suppression
+ * NotificationSuppressionRepo — Kysely repo for notify.suppression
  */
 
 import type { Kysely } from "kysely";
@@ -10,7 +10,7 @@ import type {
 } from "../domain/models/NotificationSuppression.js";
 import type { SuppressionId, ChannelCode } from "../domain/types.js";
 
-const TABLE = "notify.notification_suppression" as keyof DB & string;
+const TABLE = "notify.suppression" as keyof DB & string;
 
 export class NotificationSuppressionRepo {
     constructor(private readonly db: Kysely<DB>) {}
@@ -102,7 +102,8 @@ export class NotificationSuppressionRepo {
                 metadata: input.metadata ? JSON.stringify(input.metadata) : null,
                 suppressed_at: now,
                 expires_at: input.expiresAt ?? null,
-                created_by: input.createdBy,
+                created_by_principal_id: input.createdByPrincipalId ?? null,
+                created_by_service: input.createdByService ?? null,
             })
             .onConflict((oc: any) =>
                 oc.columns(["tenant_id", "channel", "address"]).doUpdateSet({
@@ -127,7 +128,8 @@ export class NotificationSuppressionRepo {
             metadata: input.metadata ?? null,
             suppressedAt: now,
             expiresAt: input.expiresAt ?? null,
-            createdBy: input.createdBy,
+            createdByPrincipalId: input.createdByPrincipalId ?? null,
+            createdByService: input.createdByService ?? null,
         };
     }
 
@@ -168,7 +170,8 @@ export class NotificationSuppressionRepo {
             metadata: this.parseJson(row.metadata),
             suppressedAt: new Date(row.suppressed_at),
             expiresAt: row.expires_at ? new Date(row.expires_at) : null,
-            createdBy: row.created_by,
+            createdByPrincipalId: row.created_by_principal_id ?? null,
+            createdByService: row.created_by_service ?? null,
         };
     }
 

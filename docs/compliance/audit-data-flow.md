@@ -39,7 +39,7 @@
 │         drainAuditOutbox.worker              │
 │                                              │
 │  1. Pick pending items (batch of 50)         │
-│  2. Write to workflow_audit_event via repo   │
+│  2. Write to workflow_event_log via repo   │
 │  3. Encrypt columns if enabled               │
 │  4. Mark outbox entry as "persisted"         │
 │  5. On failure: retry with backoff           │
@@ -56,7 +56,7 @@
       ▼               ▼
 ┌──────────────┐ ┌──────────────┐
 │ workflow_    │ │ core.        │
-│ audit_event  │ │ audit_dlq    │
+│ audit_event  │ │ dlq    │
 │ (partitioned)│ │ (dead letter)│
 └──────┬───────┘ └──────────────┘
        │
@@ -155,7 +155,7 @@ Level 2: Per-row IV (random, 96 bits, stored alongside ciphertext)
 | `audit_memory_buffer_depth` | Gauge | > 0 → degraded |
 | `audit_outbox_lag` | Gauge | > 50K → unhealthy |
 | `audit_outbox_dead` | Gauge | > 100 → degraded |
-| `audit_dlq_depth` | Gauge | > 0 → degraded, > 100 → unhealthy |
+| `dlq_depth` | Gauge | > 0 → degraded, > 100 → unhealthy |
 | `audit_hash_chain_discontinuity_total` | Counter | > 0 → alert |
 | `audit_insert_latency_ms` | Histogram | p95 > 100ms → investigate |
 | `audit_outbox_lag_seconds` | Gauge | > 300s → investigate |

@@ -1,5 +1,5 @@
 /**
- * AuditArchiveMarkerRepo — Kysely repo for core.audit_archive_marker
+ * AuditArchiveMarkerRepo — Kysely repo for core.archive_marker
  *
  * Tracks which partitions have been archived to cold storage.
  * Used by the storage tiering service and archive worker.
@@ -39,7 +39,7 @@ export interface CreateArchiveMarkerInput {
 // Repository
 // ============================================================================
 
-const TABLE = "audit.audit_archive_marker" as keyof DB & string;
+const TABLE = "audit.archive_marker" as keyof DB & string;
 
 export class AuditArchiveMarkerRepo {
   constructor(private readonly db: Kysely<DB>) {}

@@ -31,24 +31,23 @@ model Tenant {
   attachment                      attachment[]
   attachment_access_log           attachment_access_log[]
   attachment_comment              attachment_comment[]
-  audit_dlq                       audit_dlq[]
-  audit_hash_anchor               audit_hash_anchor[]
+  dlq                       dlq[]
+  hash_anchor               hash_anchor[]
   audit_log                       audit_log[]
   comment_analytics_daily         comment_analytics_daily[]
   comment_draft                   comment_draft[]
   comment_flag                    comment_flag[]
   comment_mention                 comment_mention[]
-  comment_moderation_status       comment_moderation_status[]
+  comment_moderation       comment_moderation[]
   comment_reaction                comment_reaction[]
-  comment_read_status             comment_read_status[]
-  comment_response_history        comment_response_history[]
+  comment_read             comment_read[]
+  comment_response        comment_response[]
   comment_retention_log           comment_retention_log[]
   comment_retention_policy        comment_retention_policy[]
   comment_sla_config              comment_sla_config[]
   comment_sla_metrics             comment_sla_metrics[]
-  comment_sla_tracking            comment_sla_tracking[]
   comment_thread_analytics        comment_thread_analytics[]
-  comment_user_engagement         comment_user_engagement[]
+  comment_user_analytics         comment_user_analytics[]
   contact_phone                   contact_phone[]
   contact_point                   contact_point[]
   conversation                    conversation[]
@@ -82,13 +81,13 @@ model Tenant {
   mfa_challenge                   mfa_challenge[]
   mfa_config                      mfa_config[]
   multipart_upload                multipart_upload[]
-  notification_digest_staging     notification_digest_staging[]
-  notification_delivery           notification_delivery[]
-  notification_dlq                notification_dlq[]
-  notification_message            notification_message[]
-  core_notification_preference    core_notification_preference[]
+  notify_digest_staging           notify_digest_staging[]
+  notify_delivery                 notify_delivery[]
+  notify_dlq                      notify_dlq[]
+  notify_message                  notify_message[]
+  notify_preference               notify_preference[]
   notification_rule               notification_rule[]
-  notification_suppression        notification_suppression[]
+  notify_suppression              notify_suppression[]
   notification_template           notification_template[]
   organizational_unit             organizational_unit[]
   outbox                          outbox[]
@@ -112,7 +111,7 @@ model Tenant {
   trusted_device                  trusted_device[]
   webauthn_credential             webauthn_credential[]
   whatsapp_consent                whatsapp_consent[]
-  workflow_audit_event            workflow_audit_event[]
+  workflow_event_log            workflow_event_log[]
   workflow_instance               workflow_instance[]
   workflow_transition             workflow_transition[]
   workspace_feature               workspace_feature[]
@@ -208,15 +207,13 @@ model Principal {
   comment_flag_comment_flag_flagger_user_idToprincipal                   comment_flag[]               @relation("comment_flag_flagger_user_idToprincipal")
   comment_flag_comment_flag_reviewed_byToprincipal                       comment_flag[]               @relation("comment_flag_reviewed_byToprincipal")
   comment_mention                                                        comment_mention[]
-  comment_moderation_status                                              comment_moderation_status[]
+  comment_moderation                                              comment_moderation[]
   comment_reaction                                                       comment_reaction[]
-  comment_read_status                                                    comment_read_status[]
-  comment_response_history                                               comment_response_history[]
+  comment_read                                                    comment_read[]
+  comment_response                                               comment_response[]
   comment_sla_metrics_comment_sla_metrics_first_comment_byToprincipal    comment_sla_metrics[]        @relation("comment_sla_metrics_first_comment_byToprincipal")
   comment_sla_metrics_comment_sla_metrics_first_response_byToprincipal   comment_sla_metrics[]        @relation("comment_sla_metrics_first_response_byToprincipal")
-  comment_sla_tracking_comment_sla_tracking_first_comment_byToprincipal  comment_sla_tracking[]       @relation("comment_sla_tracking_first_comment_byToprincipal")
-  comment_sla_tracking_comment_sla_tracking_first_response_byToprincipal comment_sla_tracking[]       @relation("comment_sla_tracking_first_response_byToprincipal")
-  comment_user_engagement                                                comment_user_engagement[]
+  comment_user_analytics                                                comment_user_analytics[]
   conversation_participant                                               conversation_participant[]
   entitlement                                                            entitlement[]
   entity_comment                                                         entity_comment[]
@@ -242,6 +239,7 @@ model Principal {
   dashboard_widget                                                       dashboard_widget[]
   notification_notification_recipient_idToprincipal                      notification[]               @relation("notification_recipient_idToprincipal")
   notification_notification_sender_idToprincipal                         notification[]               @relation("notification_sender_idToprincipal")
+  notify_preference                                                      notify_preference[]
   recent_activity                                                        recent_activity[]
   saved_view                                                             saved_view[]
   search_history                                                         search_history[]
@@ -2453,8 +2451,9 @@ model dashboard_widget {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// Partitioned by RANGE on created_at (monthly).
 model notification {
-  id                                             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                                             String     @db.Uuid @default(dbgenerated("gen_random_uuid()"))
   tenant_id                                      String     @db.Uuid
   recipient_id                                   String     @db.Uuid
   sender_id                                      String?    @db.Uuid
@@ -2474,13 +2473,16 @@ model notification {
   expires_at                                     DateTime?  @db.Timestamptz(6)
   metadata                                       Json?
   created_at                                     DateTime   @default(now()) @db.Timestamptz(6)
-  created_by                                     String
+  created_by_principal_id                        String?    @db.Uuid
+  created_by_service                             String?
   principal_notification_recipient_idToprincipal Principal  @relation("notification_recipient_idToprincipal", fields: [recipient_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   principal_notification_sender_idToprincipal    Principal? @relation("notification_sender_idToprincipal", fields: [sender_id], references: [id], onUpdate: NoAction)
   tenant                                         Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@id([id, created_at])
   @@index([tenant_id, entity_type, entity_id], map: "idx_notification_entity")
   @@index([tenant_id, recipient_id, created_at(sort: Desc)], map: "idx_notification_recipient_time")
+  @@index([tenant_id, recipient_id, created_at(sort: Desc)], map: "idx_notification_recipient_active", where: raw("(is_dismissed = false)"))
   @@index([expires_at], map: "idx_notification_expires", where: raw("(expires_at IS NOT NULL)"))
   @@index([recipient_id, is_read, created_at(sort: Desc)], map: "idx_notification_recipient_unread", where: raw("(is_read = false)"))
   @@schema("notify")
@@ -2571,7 +2573,7 @@ model user_preference {
 
 /// Append-only audit trail for approval workflow events. Immutable after insert.
 /// This table contains check constraints and requires additional setup for migrations.
-model workflow_audit_event {
+model workflow_event_log {
   id                        String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id                 String   @db.Uuid
   event_type                String
@@ -2626,7 +2628,7 @@ model workflow_audit_event {
 }
 
 /// Daily hash chain anchors for tamper-evidence verification.
-model audit_hash_anchor {
+model hash_anchor {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id   String   @db.Uuid
   anchor_date DateTime @db.Date
@@ -2635,12 +2637,12 @@ model audit_hash_anchor {
   created_at  DateTime @default(now()) @db.Timestamptz(6)
   tenant      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([tenant_id, anchor_date], map: "audit_hash_anchor_uniq")
-  @@index([tenant_id, anchor_date(sort: Desc)], map: "idx_audit_hash_anchor_tenant")
+  @@unique([tenant_id, anchor_date], map: "hash_anchor_uniq")
+  @@index([tenant_id, anchor_date(sort: Desc)], map: "idx_hash_anchor_tenant")
   @@schema("audit")
 }
 
-model audit_archive_marker {
+model archive_marker {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   partition_name  String    @unique
   partition_month DateTime  @unique @db.Date
@@ -2658,7 +2660,7 @@ model audit_archive_marker {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model audit_dlq {
+model dlq {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id      String    @db.Uuid
   outbox_id      String    @db.Uuid
@@ -2675,15 +2677,15 @@ model audit_dlq {
   created_at     DateTime  @default(now()) @db.Timestamptz(6)
   tenant         Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([correlation_id], map: "idx_audit_dlq_correlation", where: raw("(correlation_id IS NOT NULL)"))
-  @@index([tenant_id, created_at(sort: Desc)], map: "idx_audit_dlq_tenant")
-  @@index([tenant_id, dead_at(sort: Desc)], map: "idx_audit_dlq_unreplayed", where: raw("(replayed_at IS NULL)"))
+  @@index([correlation_id], map: "idx_dlq_correlation", where: raw("(correlation_id IS NOT NULL)"))
+  @@index([tenant_id, created_at(sort: Desc)], map: "idx_dlq_tenant")
+  @@index([tenant_id, dead_at(sort: Desc)], map: "idx_dlq_unreplayed", where: raw("(replayed_at IS NULL)"))
   @@schema("audit")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model audit_integrity_report {
+model integrity_report {
   id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id           String    @db.Uuid
   verification_type   String
@@ -2947,14 +2949,14 @@ model template_version {
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model notification_digest_staging {
+model notify_digest_staging {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id    String    @db.Uuid
-  principal_id String    @db.Uuid
+  recipient_id String    @db.Uuid
   channel      String
   frequency    String
   message_id   String    @db.Uuid
-  event_type   String
+  event_code   String
   subject      String?
   payload      Json
   template_key String
@@ -2962,14 +2964,16 @@ model notification_digest_staging {
   metadata     Json?
   staged_at    DateTime  @default(now()) @db.Timestamptz(6)
   delivered_at DateTime? @db.Timestamptz(6)
-  tenant       Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "notification_digest_staging_tenant_fkey")
+  tenant       Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "digest_staging_tenant_fkey")
 
   @@index([frequency, staged_at], map: "idx_digest_staging_frequency", where: raw("(delivered_at IS NULL)"))
-  @@index([tenant_id, principal_id, channel, frequency], map: "idx_digest_staging_pending", where: raw("(delivered_at IS NULL)"))
+  @@index([tenant_id, recipient_id, channel, frequency], map: "idx_digest_staging_pending", where: raw("(delivered_at IS NULL)"))
+  @@index([tenant_id, recipient_id, staged_at], map: "idx_digest_staging_pending_order", where: raw("(delivered_at IS NULL)"))
+  @@map("digest_staging")
   @@schema("notify")
 }
 
-model notification_dlq {
+model notify_dlq {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id      String    @db.Uuid
   delivery_id    String    @db.Uuid
@@ -2988,34 +2992,37 @@ model notification_dlq {
   replayed_by    String?
   replay_count   Int       @default(0)
   created_at     DateTime  @default(now()) @db.Timestamptz(6)
-  tenant         Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "notification_dlq_tenant_fkey")
+  tenant         Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "dlq_tenant_fkey")
 
-  @@index([tenant_id, dead_at(sort: Desc)], map: "idx_notification_dlq_tenant")
-  @@index([tenant_id], map: "idx_notification_dlq_unreplayed", where: raw("(replayed_at IS NULL)"))
+  @@index([tenant_id, dead_at(sort: Desc)], map: "idx_dlq_tenant")
+  @@index([tenant_id], map: "idx_dlq_unreplayed", where: raw("(replayed_at IS NULL)"))
+  @@map("dlq")
   @@schema("notify")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model core_notification_preference {
-  id          String    @id(map: "core_notification_preference_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id   String    @db.Uuid
-  scope       String
-  scope_id    String    @db.Uuid
-  event_code  String
-  channel     String
-  is_enabled  Boolean   @default(true)
-  frequency   String    @default("immediate")
-  quiet_hours Json?
-  metadata    Json?
-  created_at  DateTime  @default(now()) @db.Timestamptz(6)
-  created_by  String
-  updated_at  DateTime? @db.Timestamptz(6)
-  updated_by  String?
-  tenant      Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "core_notification_preference_tenant_fkey")
+model notify_preference {
+  id                    String    @id(map: "preference_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String    @db.Uuid
+  scope                 String
+  user_principal_id     String?   @db.Uuid
+  org_unit_id           String?   @db.Uuid
+  event_code            String
+  channel               String
+  is_enabled            Boolean   @default(true)
+  frequency             String    @default("immediate")
+  quiet_hours           Json?
+  metadata              Json?
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  created_by_principal_id String? @db.Uuid
+  created_by_service    String?
+  updated_at            DateTime? @db.Timestamptz(6)
+  updated_by            String?
+  tenant                Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "preference_tenant_fkey")
+  user_principal        Principal? @relation(fields: [user_principal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "preference_user_principal_fkey")
 
-  @@unique([tenant_id, scope, scope_id, event_code, channel], map: "core_notification_preference_scope_uniq")
-  @@index([tenant_id, scope_id, event_code, channel], map: "idx_core_notification_preference_lookup")
-  @@map("notification_preference")
+  @@index([tenant_id, event_code, channel], map: "idx_preference_lookup")
+  @@map("preference")
   @@schema("notify")
 }
 
@@ -3380,7 +3387,7 @@ model comment_reaction {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model comment_read_status {
+model comment_read {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id    String    @db.Uuid
   comment_type String
@@ -3390,9 +3397,9 @@ model comment_read_status {
   tenant       Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   principal    Principal @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([tenant_id, comment_type, comment_id, user_id], map: "comment_read_status_unique")
-  @@index([tenant_id, comment_type, comment_id], map: "idx_comment_read_status_comment")
-  @@index([tenant_id, user_id, read_at(sort: Desc)], map: "idx_comment_read_status_user")
+  @@unique([tenant_id, comment_type, comment_id, user_id], map: "comment_read_unique")
+  @@index([tenant_id, comment_type, comment_id], map: "idx_comment_read_comment")
+  @@index([tenant_id, user_id, read_at(sort: Desc)], map: "idx_comment_read_user")
   @@schema("collab")
 }
 
@@ -3444,7 +3451,7 @@ model comment_flag {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model comment_moderation_status {
+model comment_moderation {
   id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id       String     @db.Uuid
   comment_type    String
@@ -3467,7 +3474,7 @@ model comment_moderation_status {
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model comment_response_history {
+model comment_response {
   id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id             String    @db.Uuid
   entity_type           String
@@ -3480,8 +3487,8 @@ model comment_response_history {
   principal             Principal @relation(fields: [commenter_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tenant                Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([tenant_id, comment_id], map: "comment_response_history_unique")
-  @@index([tenant_id, entity_type, entity_id, created_at(sort: Desc)], map: "idx_comment_response_history_entity")
+  @@unique([tenant_id, comment_id], map: "comment_response_unique")
+  @@index([tenant_id, entity_type, entity_id, created_at(sort: Desc)], map: "idx_comment_response_entity")
   @@schema("collab")
 }
 
@@ -3596,7 +3603,7 @@ model comment_thread_analytics {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains an index with non-default null sort order and requires additional setup for migrations. Visit https://pris.ly/d/default-index-null-ordering for more info.
-model comment_user_engagement {
+model comment_user_analytics {
   id                        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id                 String    @db.Uuid
   user_id                   String    @db.Uuid
@@ -3614,33 +3621,8 @@ model comment_user_engagement {
   tenant                    Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   principal                 Principal @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([tenant_id, user_id, period_start, period_end], map: "comment_user_engagement_unique")
-  @@index([tenant_id, engagement_score(sort: Desc), period_start(sort: Desc)], map: "idx_comment_user_engagement_score")
-  @@schema("collab")
-}
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model comment_sla_tracking {
-  id                                                          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id                                                   String     @db.Uuid
-  entity_type                                                 String
-  entity_id                                                   String     @db.Uuid
-  first_comment_at                                            DateTime   @db.Timestamptz(6)
-  first_comment_by                                            String?    @db.Uuid
-  first_response_at                                           DateTime?  @db.Timestamptz(6)
-  first_response_by                                           String?    @db.Uuid
-  first_response_time_seconds                                 Int?
-  sla_target_seconds                                          Int?
-  is_sla_met                                                  Boolean?
-  created_at                                                  DateTime   @default(now()) @db.Timestamptz(6)
-  updated_at                                                  DateTime?  @db.Timestamptz(6)
-  principal_comment_sla_tracking_first_comment_byToprincipal  Principal? @relation("comment_sla_tracking_first_comment_byToprincipal", fields: [first_comment_by], references: [id], onUpdate: NoAction)
-  principal_comment_sla_tracking_first_response_byToprincipal Principal? @relation("comment_sla_tracking_first_response_byToprincipal", fields: [first_response_by], references: [id], onUpdate: NoAction)
-  tenant                                                      Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([tenant_id, entity_type, entity_id], map: "comment_sla_tracking_uniq")
-  @@index([tenant_id, is_sla_met, first_comment_at(sort: Desc)], map: "idx_comment_sla_tracking_breached", where: raw("(is_sla_met = false)"))
-  @@index([tenant_id, first_comment_at(sort: Desc)], map: "idx_comment_sla_tracking_pending", where: raw("(first_response_at IS NULL)"))
+  @@unique([tenant_id, user_id, period_start, period_end], map: "comment_user_analytics_unique")
+  @@index([tenant_id, engagement_score(sort: Desc), period_start(sort: Desc)], map: "idx_comment_user_analytics_score")
   @@schema("collab")
 }
 
@@ -3735,7 +3717,7 @@ model notification_rule {
   updated_at           DateTime?              @db.Timestamptz(6)
   updated_by           String?
   tenant               Tenant?                @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "notification_rule_tenant_id_fkey")
-  notification_message notification_message[]
+  notify_message       notify_message[]
 
   @@unique([tenant_id, code], map: "notification_rule_tenant_code_uniq")
   @@index([event_type, is_enabled], map: "idx_notification_rule_event")
@@ -3744,11 +3726,11 @@ model notification_rule {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model notification_message {
+model notify_message {
   id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id             String                  @db.Uuid
   event_id              String
-  event_type            String
+  event_code            String
   rule_id               String?                 @db.Uuid
   template_key          String
   template_version      Int
@@ -3766,68 +3748,75 @@ model notification_message {
   created_at            DateTime                @default(now()) @db.Timestamptz(6)
   completed_at          DateTime?               @db.Timestamptz(6)
   expires_at            DateTime?               @db.Timestamptz(6)
-  notification_rule     notification_rule?      @relation(fields: [rule_id], references: [id], onUpdate: NoAction, map: "notification_message_rule_id_fkey")
-  tenant                Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "notification_message_tenant_id_fkey")
-  notification_delivery notification_delivery[]
+  notification_rule     notification_rule?      @relation(fields: [rule_id], references: [id], onUpdate: NoAction, map: "message_rule_id_fkey")
+  tenant                Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "message_tenant_id_fkey")
+  notify_delivery       notify_delivery[]
 
-  @@index([tenant_id, created_at(sort: Desc)], map: "idx_notification_message_tenant")
-  @@index([event_id], map: "idx_notification_message_event")
-  @@index([status], map: "idx_notification_message_status", where: raw("(status <> 'completed'::text)"))
+  @@index([tenant_id, created_at(sort: Desc)], map: "idx_message_tenant")
+  @@index([event_id], map: "idx_message_event")
+  @@index([status], map: "idx_message_status", where: raw("(status <> 'completed'::text)"))
+  @@map("message")
   @@schema("notify")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model notification_delivery {
-  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  message_id           String                @db.Uuid
-  tenant_id            String                @db.Uuid
-  channel              String
-  provider_code        String
-  recipient_id         String?               @db.Uuid
-  recipient_addr       String
-  status               String                @default("pending")
-  attempt_count        Int                   @default(0)
-  max_attempts         Int                   @default(3)
-  last_error           String?
-  error_category       String?
-  external_id          String?
-  sent_at              DateTime?             @db.Timestamptz(6)
-  delivered_at         DateTime?             @db.Timestamptz(6)
-  opened_at            DateTime?             @db.Timestamptz(6)
-  clicked_at           DateTime?             @db.Timestamptz(6)
-  bounced_at           DateTime?             @db.Timestamptz(6)
-  metadata             Json?
-  created_at           DateTime              @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime?             @db.Timestamptz(6)
-  notification_message notification_message  @relation(fields: [message_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "notification_delivery_message_id_fkey")
-  tenant               Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "notification_delivery_tenant_id_fkey")
+/// Partitioned by RANGE on created_at (monthly).
+model notify_delivery {
+  id              String          @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  message_id      String          @db.Uuid
+  tenant_id       String          @db.Uuid
+  channel         String
+  provider_code   String
+  recipient_id    String?         @db.Uuid
+  recipient_addr  String
+  status          String          @default("pending")
+  attempt_count   Int             @default(0)
+  max_attempts    Int             @default(3)
+  last_error      String?
+  error_category  String?
+  external_id     String?
+  sent_at         DateTime?       @db.Timestamptz(6)
+  delivered_at    DateTime?       @db.Timestamptz(6)
+  opened_at       DateTime?       @db.Timestamptz(6)
+  clicked_at      DateTime?       @db.Timestamptz(6)
+  bounced_at      DateTime?       @db.Timestamptz(6)
+  metadata        Json?
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?       @db.Timestamptz(6)
+  notify_message  notify_message  @relation(fields: [message_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "delivery_message_id_fkey")
+  tenant          Tenant          @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "delivery_tenant_id_fkey")
 
-  @@index([message_id], map: "idx_notification_delivery_message")
-  @@index([status], map: "idx_notification_delivery_status", where: raw("(status = ANY (ARRAY['pending'::text, 'queued'::text, 'sent'::text]))"))
-  @@index([external_id], map: "idx_notification_delivery_external", where: raw("(external_id IS NOT NULL)"))
-  @@index([tenant_id, created_at(sort: Desc)], map: "idx_notification_delivery_tenant_time")
+  @@id([id, created_at])
+  @@index([message_id], map: "idx_delivery_message")
+  @@index([status], map: "idx_delivery_status", where: raw("(status = ANY (ARRAY['pending'::text, 'queued'::text, 'sent'::text]))"))
+  @@index([external_id], map: "idx_delivery_external", where: raw("(external_id IS NOT NULL)"))
+  @@index([tenant_id, created_at(sort: Desc)], map: "idx_delivery_tenant_time")
+  @@index([channel, provider_code, status, created_at], map: "idx_delivery_pickup", where: raw("(status = ANY (ARRAY['pending'::text, 'queued'::text]))"))
+  @@map("delivery")
   @@schema("notify")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model notification_suppression {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id      String    @db.Uuid
-  channel        String
-  address        String
-  reason         String
-  source         String?
-  provider_code  String?
-  metadata       Json?
-  suppressed_at  DateTime  @default(now()) @db.Timestamptz(6)
-  expires_at     DateTime? @db.Timestamptz(6)
-  created_by     String
-  tenant         Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "notification_suppression_tenant_id_fkey")
+model notify_suppression {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String    @db.Uuid
+  channel               String
+  address               String
+  reason                String
+  source                String?
+  provider_code         String?
+  metadata              Json?
+  suppressed_at         DateTime  @default(now()) @db.Timestamptz(6)
+  expires_at            DateTime? @db.Timestamptz(6)
+  created_by_principal_id String? @db.Uuid
+  created_by_service    String?
+  tenant                Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "suppression_tenant_id_fkey")
 
-  @@unique([tenant_id, channel, address], map: "notification_suppression_tenant_channel_address_uniq")
-  @@index([channel, address], map: "idx_notification_suppression_lookup")
+  @@unique([tenant_id, channel, address], map: "suppression_tenant_channel_address_uniq")
+  @@index([channel, address], map: "idx_suppression_lookup")
+  @@map("suppression")
   @@schema("notify")
 }
 

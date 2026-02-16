@@ -1,5 +1,5 @@
 /**
- * AuditDlqRepo — Kysely repo for core.audit_dlq
+ * AuditDlqRepo — Kysely repo for core.dlq
  *
  * Dead-letter queue for audit outbox items that exceeded max retry attempts.
  * Follows the NotificationDlqRepo pattern exactly.
@@ -9,7 +9,7 @@ import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type { AuditDlqEntry, CreateAuditDlqInput } from "../domain/models/AuditDlqEntry.js";
 
-const TABLE = "audit.audit_dlq" as keyof DB & string;
+const TABLE = "audit.dlq" as keyof DB & string;
 
 export class AuditDlqRepo {
   constructor(private readonly db: Kysely<DB>) {}

@@ -179,7 +179,7 @@ export function createAuditArchiveHandler(
     if (detachAfterArchive && !dryRun) {
       try {
         await sql`
-          ALTER TABLE core.workflow_audit_event
+          ALTER TABLE core.workflow_event_log
           DETACH PARTITION core.${sql.ref(partitionName)}
         `.execute(db);
         await archiveMarkerRepo.markDetached(partitionName);

@@ -53,7 +53,8 @@ export class SetTenantPreferenceHandler {
             isEnabled: body.isEnabled,
             frequency: body.frequency,
             quietHours: body.quietHours,
-            createdBy: ctx.auth.userId ?? "admin",
+            createdByPrincipalId: ctx.auth.userId,
+            createdByService: ctx.auth.userId ? undefined : "admin",
         });
 
         res.status(200).json({ success: true, data: pref });
@@ -95,7 +96,8 @@ export class SetOrgPreferenceHandler {
             isEnabled: body.isEnabled,
             frequency: body.frequency,
             quietHours: body.quietHours,
-            createdBy: ctx.auth.userId ?? "admin",
+            createdByPrincipalId: ctx.auth.userId,
+            createdByService: ctx.auth.userId ? undefined : "admin",
         });
 
         res.status(200).json({ success: true, data: pref });

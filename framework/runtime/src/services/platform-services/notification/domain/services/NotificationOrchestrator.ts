@@ -78,7 +78,7 @@ export interface CleanupExpiredPayload {
 // ─── Priority Mapping ───────────────────────────────────────────────
 
 const PRIORITY_MAP: Record<string, number> = {
-    critical: 1,
+    urgent: 1,
     high: 5,
     normal: 10,
     low: 20,
@@ -270,7 +270,7 @@ export class NotificationOrchestrator {
         const message = await this.messageRepo.create({
             tenantId: input.tenantId,
             eventId: input.eventId,
-            eventType: input.eventType,
+            eventCode: input.eventType,
             ruleId: plan.rule.id,
             templateKey: plan.templateKey,
             templateVersion,
@@ -346,11 +346,11 @@ export class NotificationOrchestrator {
 
                     await this.digestAggregator.stage({
                         tenantId: input.tenantId,
-                        principalId: recipient.principalId,
+                        recipientId: recipient.principalId,
                         channel: channel as ChannelCode,
                         frequency: prefResult.frequency,
                         messageId: message.id as string,
-                        eventType: input.eventType,
+                        eventCode: input.eventType,
                         subject,
                         payload: input.payload,
                         templateKey: plan.templateKey,

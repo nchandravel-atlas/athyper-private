@@ -1,5 +1,5 @@
 /**
- * NotificationDlqRepo — Kysely repo for notify.notification_dlq
+ * NotificationDlqRepo — Kysely repo for notify.dlq
  */
 
 import type { Kysely } from "kysely";
@@ -10,7 +10,7 @@ import type {
 } from "../domain/models/NotificationDlqEntry.js";
 import type { DlqEntryId } from "../domain/types.js";
 
-const TABLE = "notify.notification_dlq" as keyof DB & string;
+const TABLE = "notify.dlq" as keyof DB & string;
 
 export class NotificationDlqRepo {
     constructor(private readonly db: Kysely<DB>) {}

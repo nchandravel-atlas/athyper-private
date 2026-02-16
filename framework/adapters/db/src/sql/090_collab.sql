@@ -144,7 +144,7 @@ create index if not exists idx_comment_reaction_user
 -- ============================================================================
 -- COLLAB: Comment Read Status (read tracking)
 -- ============================================================================
-create table if not exists collab.comment_read_status (
+create table if not exists collab.comment_read (
   id           uuid primary key default gen_random_uuid(),
   tenant_id    uuid not null references core.tenant(id) on delete cascade,
 
@@ -155,17 +155,17 @@ create table if not exists collab.comment_read_status (
   user_id      uuid not null references core.principal(id) on delete cascade,
   read_at      timestamptz not null default now(),
 
-  constraint comment_read_status_type_chk check (comment_type in ('entity_comment','approval_comment')),
-  constraint comment_read_status_uniq unique (tenant_id, comment_type, comment_id, user_id)
+  constraint comment_read_type_chk check (comment_type in ('entity_comment','approval_comment')),
+  constraint comment_read_uniq unique (tenant_id, comment_type, comment_id, user_id)
 );
 
-comment on table collab.comment_read_status is 'Tracks which comments have been read by which users (for unread badges).';
+comment on table collab.comment_read is 'Tracks which comments have been read by which users (for unread badges).';
 
-create index if not exists idx_comment_read_status_user
-  on collab.comment_read_status (tenant_id, user_id, comment_type);
+create index if not exists idx_comment_read_user
+  on collab.comment_read (tenant_id, user_id, comment_type);
 
-create index if not exists idx_comment_read_status_comment
-  on collab.comment_read_status (tenant_id, comment_type, comment_id);
+create index if not exists idx_comment_read_comment
+  on collab.comment_read (tenant_id, comment_type, comment_id);
 
 
 -- ============================================================================
@@ -243,7 +243,7 @@ create index if not exists idx_comment_flag_comment
 -- ============================================================================
 -- COLLAB: Comment Moderation Status (aggregate moderation state)
 -- ============================================================================
-create table if not exists collab.comment_moderation_status (
+create table if not exists collab.comment_moderation (
   id               uuid primary key default gen_random_uuid(),
   tenant_id        uuid not null references core.tenant(id) on delete cascade,
 
@@ -262,18 +262,18 @@ create table if not exists collab.comment_moderation_status (
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now(),
 
-  constraint comment_moderation_status_type_chk check (comment_type in ('entity_comment','approval_comment')),
-  constraint comment_moderation_status_uniq unique (tenant_id, comment_type, comment_id)
+  constraint comment_moderation_type_chk check (comment_type in ('entity_comment','approval_comment')),
+  constraint comment_moderation_uniq unique (tenant_id, comment_type, comment_id)
 );
 
-comment on table collab.comment_moderation_status is 'Aggregate moderation state per comment (denormalized for performance).';
+comment on table collab.comment_moderation is 'Aggregate moderation state per comment (denormalized for performance).';
 
 create index if not exists idx_comment_moderation_hidden
-  on collab.comment_moderation_status (tenant_id, is_hidden, updated_at desc)
+  on collab.comment_moderation (tenant_id, is_hidden, updated_at desc)
   where is_hidden = true;
 
 create index if not exists idx_comment_moderation_flags
-  on collab.comment_moderation_status (tenant_id, flag_count desc, last_flagged_at desc)
+  on collab.comment_moderation (tenant_id, flag_count desc, last_flagged_at desc)
   where flag_count > 0;
 
 
@@ -305,44 +305,7 @@ create index if not exists idx_comment_sla_config_active
 
 
 -- ============================================================================
--- COLLAB: Comment SLA Tracking (SLA compliance per entity)
--- ============================================================================
-create table if not exists collab.comment_sla_tracking (
-  id                         uuid primary key default gen_random_uuid(),
-  tenant_id                  uuid not null references core.tenant(id) on delete cascade,
-
-  entity_type                text not null,
-  entity_id                  uuid not null,
-
-  first_comment_at           timestamptz not null,
-  first_comment_by           uuid references core.principal(id) on delete set null,
-
-  first_response_at          timestamptz,
-  first_response_by          uuid references core.principal(id) on delete set null,
-  first_response_time_seconds int,
-
-  sla_target_seconds         int,
-  is_sla_met                 boolean,
-
-  created_at                 timestamptz not null default now(),
-  updated_at                 timestamptz,
-
-  constraint comment_sla_tracking_uniq unique (tenant_id, entity_type, entity_id)
-);
-
-comment on table collab.comment_sla_tracking is 'SLA violation tracking per entity (first comment and first response times).';
-
-create index if not exists idx_comment_sla_tracking_breached
-  on collab.comment_sla_tracking (tenant_id, is_sla_met, first_comment_at desc)
-  where is_sla_met = false;
-
-create index if not exists idx_comment_sla_tracking_pending
-  on collab.comment_sla_tracking (tenant_id, first_comment_at desc)
-  where first_response_at is null;
-
-
--- ============================================================================
--- COLLAB: Comment SLA Metrics (aggregate SLA measurements per entity)
+-- COLLAB: Comment SLA Metrics (single source of truth for SLA tracking per entity)
 -- ============================================================================
 create table if not exists collab.comment_sla_metrics (
   id                        uuid primary key default gen_random_uuid(),
@@ -391,7 +354,7 @@ create index if not exists idx_comment_sla_response_time
 -- ============================================================================
 -- COLLAB: Comment Response History (response time log)
 -- ============================================================================
-create table if not exists collab.comment_response_history (
+create table if not exists collab.comment_response (
   id                  uuid primary key default gen_random_uuid(),
   tenant_id           uuid not null references core.tenant(id) on delete cascade,
 
@@ -405,13 +368,13 @@ create table if not exists collab.comment_response_history (
 
   created_at          timestamptz not null default now(),
 
-  constraint comment_response_history_uniq unique (tenant_id, comment_id)
+  constraint comment_response_uniq unique (tenant_id, comment_id)
 );
 
-comment on table collab.comment_response_history is 'Historical log of all comment response times.';
+comment on table collab.comment_response is 'Historical log of all comment response times.';
 
-create index if not exists idx_comment_response_history_entity
-  on collab.comment_response_history (tenant_id, entity_type, entity_id, created_at desc);
+create index if not exists idx_comment_response_entity
+  on collab.comment_response (tenant_id, entity_type, entity_id, created_at desc);
 
 
 -- ============================================================================
@@ -447,7 +410,7 @@ create index if not exists idx_comment_analytics_daily_date
 -- ============================================================================
 -- COLLAB: Comment User Engagement (user engagement metrics)
 -- ============================================================================
-create table if not exists collab.comment_user_engagement (
+create table if not exists collab.comment_user_analytics (
   id                       uuid primary key default gen_random_uuid(),
   tenant_id                uuid not null references core.tenant(id) on delete cascade,
 
@@ -466,14 +429,14 @@ create table if not exists collab.comment_user_engagement (
   created_at               timestamptz not null default now(),
   updated_at               timestamptz not null default now(),
 
-  constraint comment_user_engagement_uniq unique (tenant_id, user_id, period_start, period_end)
+  constraint comment_user_analytics_uniq unique (tenant_id, user_id, period_start, period_end)
 );
 
-comment on table collab.comment_user_engagement is 'User engagement metrics for leaderboards and gamification.';
-comment on column collab.comment_user_engagement.engagement_score is 'Calculated engagement score (0-100).';
+comment on table collab.comment_user_analytics is 'User engagement metrics for leaderboards and gamification.';
+comment on column collab.comment_user_analytics.engagement_score is 'Calculated engagement score (0-100).';
 
-create index if not exists idx_comment_user_engagement_score
-  on collab.comment_user_engagement (tenant_id, engagement_score desc nulls last, period_start desc);
+create index if not exists idx_comment_user_analytics_score
+  on collab.comment_user_analytics (tenant_id, engagement_score desc nulls last, period_start desc);
 
 
 -- ============================================================================

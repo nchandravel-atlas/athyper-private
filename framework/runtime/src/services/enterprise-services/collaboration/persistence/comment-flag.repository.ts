@@ -178,7 +178,7 @@ export class CommentFlagRepository {
     commentId: string
   ): Promise<CommentModerationStatus | undefined> {
     const row = await this.db
-      .selectFrom("collab.comment_moderation_status")
+      .selectFrom("collab.comment_moderation")
       .selectAll()
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
@@ -203,7 +203,7 @@ export class CommentFlagRepository {
     const now = new Date();
 
     await this.db
-      .insertInto("collab.comment_moderation_status")
+      .insertInto("collab.comment_moderation")
       .values({
         id: crypto.randomUUID(),
         tenant_id: tenantId,
@@ -238,7 +238,7 @@ export class CommentFlagRepository {
     commentId: string
   ): Promise<void> {
     await this.db
-      .updateTable("collab.comment_moderation_status")
+      .updateTable("collab.comment_moderation")
       .set({
         is_hidden: false,
         hidden_reason: null,
@@ -263,7 +263,7 @@ export class CommentFlagRepository {
     const now = new Date();
 
     await this.db
-      .insertInto("collab.comment_moderation_status")
+      .insertInto("collab.comment_moderation")
       .values({
         id: crypto.randomUUID(),
         tenant_id: tenantId,
@@ -277,7 +277,7 @@ export class CommentFlagRepository {
       })
       .onConflict((oc) =>
         oc.columns(['tenant_id', 'comment_type', 'comment_id']).doUpdateSet({
-          flag_count: (eb: any) => eb.raw('collab.comment_moderation_status.flag_count + 1'),
+          flag_count: (eb: any) => eb.raw('collab.comment_moderation.flag_count + 1'),
           last_flagged_at: now,
           updated_at: now,
         } as any)

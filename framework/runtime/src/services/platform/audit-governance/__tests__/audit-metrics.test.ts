@@ -52,11 +52,11 @@ describe("AuditMetrics", () => {
     const registry = createMockRegistry();
     const metrics = new AuditMetrics(registry);
 
-    metrics.insertLatency(15.5, { table: "workflow_audit_event" });
+    metrics.insertLatency(15.5, { table: "workflow_event_log" });
     expect(registry.recordHistogram).toHaveBeenCalledWith(
       "audit_insert_latency_ms",
       15.5,
-      { table: "workflow_audit_event" },
+      { table: "workflow_event_log" },
     );
   });
 });

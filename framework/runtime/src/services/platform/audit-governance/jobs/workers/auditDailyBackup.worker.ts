@@ -125,7 +125,7 @@ async function getActiveTenants(db: Kysely<DB>): Promise<string[]> {
   try {
     const result = await sql<{ tenant_id: string }>`
       SELECT DISTINCT tenant_id::text
-      FROM core.workflow_audit_event
+      FROM core.workflow_event_log
       WHERE event_timestamp >= now() - interval '30 days'
       LIMIT 1000
     `.execute(db);

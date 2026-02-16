@@ -34,19 +34,19 @@ These tables are referenced in code but do NOT exist in the `export type DB = { 
 | `core.attachment_access_log` | AccessLogRepo.ts |
 | `core.document_acl` | DocumentAclRepo.ts |
 | `core.comment_flag` | collaboration/moderation/ |
-| `core.comment_moderation_status` | collaboration/moderation/ |
+| `core.comment_moderation` | collaboration/moderation/ |
 | `core.comment_draft` | collaboration/drafts/ |
 | `core.entity_comment` | collaboration/comment/ |
-| `core.comment_read_status` | collaboration/comment/ |
+| `core.comment_read` | collaboration/comment/ |
 | `core.comment_reaction` | collaboration/reactions/ |
 | `core.comment_mention` | collaboration/mentions/ |
 | `core.comment_retention_policy` | collaboration/retention/ |
 | `core.comment_analytics_daily` | collaboration/analytics/ |
 | `core.comment_thread_analytics` | collaboration/analytics/ |
-| `core.comment_user_engagement` | collaboration/analytics/ |
+| `core.comment_user_analytics` | collaboration/analytics/ |
 | `core.comment_sla_metrics` | collaboration/sla/ |
 | `core.comment_sla_config` | collaboration/sla/ |
-| `core.comment_response_history` | collaboration/sla/ |
+| `core.comment_response` | collaboration/sla/ |
 
 ### Messaging (4 tables)
 
@@ -61,10 +61,12 @@ These tables are referenced in code but do NOT exist in the `export type DB = { 
 
 | Missing Table | Referenced In |
 |---|---|
-| `core.notification_message` | notification/persistence/ |
-| `core.notification_suppression` | notification/persistence/ |
-| `core.notification_delivery` | notification/persistence/ |
-| `core.org_unit_member` | notification/persistence/ |
+| `notify.message` | notification/persistence/NotificationMessageRepo.ts |
+| `notify.suppression` | notification/persistence/NotificationSuppressionRepo.ts |
+| `notify.delivery` | notification/persistence/NotificationDeliveryRepo.ts |
+| `notify.dlq` | notification/persistence/NotificationDlqRepo.ts |
+| `notify.digest_staging` | notification/persistence/DigestStagingRepo.ts |
+| `notify.preference` | notification/persistence/ScopedNotificationPreferenceRepo.ts |
 | `meta.notification_provider` | notification/persistence/ |
 | `meta.notification_channel` | notification/persistence/ |
 | `meta.notification_template` | notification/persistence/ |
@@ -104,12 +106,12 @@ These tables are referenced in code but do NOT exist in the `export type DB = { 
 
 | Missing Table | Referenced In |
 |---|---|
-| `core.workflow_audit_event` | WorkflowAuditRepository.ts + 10 other files |
-| `core.audit_hash_anchor` | hash-chain.service.ts, audit-integrity.service.ts |
-| `core.audit_integrity_report` | audit-integrity.service.ts |
+| `core.workflow_event_log` | WorkflowAuditRepository.ts + 10 other files |
+| `core.hash_anchor` | hash-chain.service.ts, audit-integrity.service.ts |
+| `core.integrity_report` | audit-integrity.service.ts |
 | `core.audit_outbox` | AuditOutboxRepo.ts, audit-log-retention.job.ts |
-| `core.audit_dlq` | AuditDlqRepo.ts |
-| `core.audit_archive_marker` | AuditArchiveMarkerRepo.ts |
+| `core.dlq` | AuditDlqRepo.ts |
+| `core.archive_marker` | AuditArchiveMarkerRepo.ts |
 | `meta.audit_policy` | audit-load-shedding.service.ts |
 
 ### Workflow Engine (5 tables)
@@ -250,8 +252,8 @@ These tables exist in the DB interface under one schema but are referenced in co
 
 ### C. Notification Persistence
 
-- **Tables:** core.notification_message, core.notification_suppression, core.notification_delivery, core.org_unit_member, meta.notification_provider, meta.notification_channel, meta.notification_template, meta.notification_rule
-- **Note:** All 8 tables missing from DB interface. Repos use standard CRUD patterns with tenant isolation.
+- **Tables:** notify.message, notify.delivery, notify.suppression, notify.dlq, notify.digest_staging, notify.preference, notify.notification, notify.whatsapp_consent, meta.notification_provider, meta.notification_channel, meta.notification_template, meta.notification_rule
+- **Note:** Table names updated: dropped `notification_` prefix inside notify schema (e.g. `notification_message` → `message`, `notification_delivery` → `delivery`). Column renames: `event_type` → `event_code` (message, digest_staging), `principal_id` → `recipient_id` (digest_staging), `created_by` → `created_by_principal_id`/`created_by_service` (notification, suppression, preference). Scope refactored: `scope_id` → `user_principal_id`/`org_unit_id` (preference). notification and delivery are now partitioned by month on created_at.
 
 ---
 
@@ -264,7 +266,7 @@ These tables exist in the DB interface under one schema but are referenced in co
 
 ### E. Collaboration Persistence
 
-- **Tables:** core.entity_comment, core.comment_flag, core.comment_moderation_status, core.comment_draft, core.comment_read_status, core.comment_reaction, core.comment_mention, core.comment_retention_policy, core.comment_analytics_daily, core.comment_thread_analytics, core.comment_user_engagement, core.comment_sla_metrics, core.comment_sla_config, core.comment_response_history
+- **Tables:** core.entity_comment, core.comment_flag, core.comment_moderation, core.comment_draft, core.comment_read, core.comment_reaction, core.comment_mention, core.comment_retention_policy, core.comment_analytics_daily, core.comment_thread_analytics, core.comment_user_analytics, core.comment_sla_metrics, core.comment_sla_config, core.comment_response
 - **Note:** All 14 tables missing from DB interface. Extensive comment, moderation, analytics, and SLA subsystem.
 
 ---
@@ -355,7 +357,7 @@ These tables exist in the DB interface under one schema but are referenced in co
 ### H. Audit & Governance
 
 #### `WorkflowAuditRepository.ts`
-- **Table:** `core.workflow_audit_event` (MISSING)
+- **Table:** `core.workflow_event_log` (MISSING)
 - **Operations:** insertInto, selectFrom, selectAll, where, orderBy, limit, offset, fn.countAll
 - **35 columns:** id, tenant_id, event_type, severity, schema_version, instance_id, step_instance_id, entity_type, entity_id, entity, workflow, workflow_template_code, workflow_template_version, actor, actor_user_id, actor_is_admin, module_code, action, previous_state, new_state, comment, attachments, details, ip_address, user_agent, correlation_id, session_id, trace_id, hash_prev, hash_curr, is_redacted, redaction_version, key_version, event_timestamp, created_at
 
@@ -365,29 +367,29 @@ These tables exist in the DB interface under one schema but are referenced in co
 - **Columns:** id, tenant_id, event_type, payload, status, attempts, max_attempts, available_at, created_at, locked_at, locked_by, last_error
 
 #### `AuditDlqRepo.ts`
-- **Table:** `core.audit_dlq` (MISSING)
+- **Table:** `core.dlq` (MISSING)
 - **Operations:** insertInto, selectFrom, updateTable
 - **Columns:** id, tenant_id, outbox_id, event_type, payload, last_error, error_category, attempt_count, dead_at, replay_count, correlation_id, created_at, replayed_at, replayed_by
 
 #### `AuditArchiveMarkerRepo.ts`
-- **Table:** `core.audit_archive_marker` (MISSING)
+- **Table:** `core.archive_marker` (MISSING)
 - **Operations:** insertInto, selectFrom, updateTable
 - **Columns:** id, partition_name, partition_month, ndjson_key, sha256, row_count, archived_at, archived_by, detached_at, created_at
 
 #### `hash-chain.service.ts`
-- **Tables:** `core.workflow_audit_event` (MISSING), `core.audit_hash_anchor` (MISSING)
+- **Tables:** `core.workflow_event_log` (MISSING), `core.hash_anchor` (MISSING)
 - **Operations:** selectFrom, insertInto (with onConflict doNothing)
 
 #### `audit-integrity.service.ts`
-- **Tables:** `core.workflow_audit_event`, `core.audit_hash_anchor`, `core.audit_integrity_report` (all MISSING), `core.security_event` (EXISTS)
+- **Tables:** `core.workflow_event_log`, `core.hash_anchor`, `core.integrity_report` (all MISSING), `core.security_event` (EXISTS)
 - **Operations:** raw SQL (select, insert, update)
 
 #### `activity-timeline.service.ts`
-- **Tables:** `core.workflow_audit_event` (MISSING), `core.permission_decision_log` (EXISTS), `core.field_access_log` (EXISTS), `core.security_event` (EXISTS), `core.audit_log` (EXISTS)
+- **Tables:** `core.workflow_event_log` (MISSING), `core.permission_decision_log` (EXISTS), `core.field_access_log` (EXISTS), `core.security_event` (EXISTS), `core.audit_log` (EXISTS)
 - **Operations:** raw SQL UNION ALL query
 
 #### `audit-log-retention.job.ts`
-- **Tables:** `meta.meta_audit` (EXISTS), `core.permission_decision_log` (EXISTS), `core.workflow_audit_event` (MISSING), `core.audit_outbox` (MISSING)
+- **Tables:** `meta.meta_audit` (EXISTS), `core.permission_decision_log` (EXISTS), `core.workflow_event_log` (MISSING), `core.audit_outbox` (MISSING)
 - **Operations:** raw SQL DELETE with RETURNING
 
 #### `audit-load-shedding.service.ts`
@@ -474,8 +476,7 @@ core.security_event, core.sms_otp_instance, core.system_config, core.tenant,
 core.tenant_locale_policy, core.tenant_module_subscription, core.tenant_profile,
 core.totp_instance, core.trusted_device, core.webauthn_credential,
 core.workflow_instance, core.workflow_transition, core.workspace,
-core.workspace_feature, core.workspace_usage_metric, core.notification_dlq,
-core.notification_digest_staging, core.notification_preference, core.whatsapp_consent
+core.workspace_feature, core.workspace_usage_metric
 ```
 
 ### meta.* (25 tables)
@@ -498,6 +499,12 @@ meta.meta_versions, meta.numbering_sequence, meta.operation, meta.relation
 ref.commodity_code, ref.commodity_domain, ref.country, ref.currency,
 ref.industry_code, ref.industry_domain, ref.label, ref.language, ref.locale,
 ref.state_region, ref.timezone, ref.uom
+```
+
+### notify.* (8 tables)
+```
+notify.notification, notify.preference, notify.dlq, notify.digest_staging,
+notify.whatsapp_consent, notify.message, notify.delivery, notify.suppression
 ```
 
 ### ui.* (7 tables)

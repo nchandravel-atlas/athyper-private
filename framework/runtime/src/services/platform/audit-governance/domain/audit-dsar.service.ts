@@ -52,20 +52,20 @@ export class AuditDsarService {
     let encryptedCount = 0;
     let redactedCount = 0;
 
-    // 1. workflow_audit_event
+    // 1. workflow_event_log
     const wae = await this.countInTable(
-      "audit.workflow_audit_event",
+      "audit.workflow_event_log",
       "actor_user_id",
       tenantId,
       subjectUserId,
       "event_timestamp",
     );
-    tables.push({ tableName: "workflow_audit_event", ...wae });
+    tables.push({ tableName: "workflow_event_log", ...wae });
     totalEvents += wae.eventCount;
 
     // Count encrypted and redacted events
     const encryptedResult = await sql<{ count: string }>`
-      SELECT COUNT(*) as count FROM core.workflow_audit_event
+      SELECT COUNT(*) as count FROM core.workflow_event_log
       WHERE tenant_id = ${tenantId}::uuid
         AND actor_user_id = ${subjectUserId}
         AND key_version IS NOT NULL
@@ -73,7 +73,7 @@ export class AuditDsarService {
     encryptedCount = Number(encryptedResult.rows[0]?.count ?? 0);
 
     const redactedResult = await sql<{ count: string }>`
-      SELECT COUNT(*) as count FROM core.workflow_audit_event
+      SELECT COUNT(*) as count FROM core.workflow_event_log
       WHERE tenant_id = ${tenantId}::uuid
         AND actor_user_id = ${subjectUserId}
         AND is_redacted = true

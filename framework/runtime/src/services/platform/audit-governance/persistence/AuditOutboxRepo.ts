@@ -2,7 +2,7 @@
  * AuditOutboxRepo — Kysely repo for core.audit_outbox
  *
  * Fast async ingestion buffer for audit events.
- * Worker drains outbox rows to core.workflow_audit_event with retries.
+ * Worker drains outbox rows to core.workflow_event_log with retries.
  * Follows the OutboxRepo pattern from integration-hub.
  */
 

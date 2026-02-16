@@ -16,7 +16,7 @@ export interface NotificationMessage {
     id: MessageId;
     tenantId: string;
     eventId: string;
-    eventType: string;
+    eventCode: string;
     ruleId: RuleId | null;
     templateKey: string;
     templateVersion: number;
@@ -39,7 +39,7 @@ export interface NotificationMessage {
 export interface CreateMessageInput {
     tenantId: string;
     eventId: string;
-    eventType: string;
+    eventCode: string;
     ruleId: RuleId | null;
     templateKey: string;
     templateVersion: number;

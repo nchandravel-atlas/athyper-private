@@ -49,7 +49,7 @@ export class ReadTrackingRepository {
 
     // Write to PostgreSQL (upsert)
     await this.db
-      .insertInto("collab.comment_read_status")
+      .insertInto("collab.comment_read")
       .values({
         id: crypto.randomUUID(),
         tenant_id: req.tenantId,
@@ -96,7 +96,7 @@ export class ReadTrackingRepository {
     }));
 
     await this.db
-      .insertInto("collab.comment_read_status")
+      .insertInto("collab.comment_read")
       .values(values)
       .onConflict((oc) =>
         oc
@@ -138,7 +138,7 @@ export class ReadTrackingRepository {
 
     // Fallback: Check PostgreSQL
     const row = await this.db
-      .selectFrom("collab.comment_read_status")
+      .selectFrom("collab.comment_read")
       .select("id")
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
@@ -166,7 +166,7 @@ export class ReadTrackingRepository {
 
     // Query PostgreSQL for read comments
     const readRows = await this.db
-      .selectFrom("collab.comment_read_status")
+      .selectFrom("collab.comment_read")
       .select("comment_id")
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
@@ -217,7 +217,7 @@ export class ReadTrackingRepository {
 
     // Count read comments
     let readCommentsQuery = this.db
-      .selectFrom("collab.comment_read_status as crs")
+      .selectFrom("collab.comment_read as crs")
       .innerJoin("collab.entity_comment as ec", (join) =>
         join
           .onRef("crs.comment_id", "=", "ec.id")
@@ -250,7 +250,7 @@ export class ReadTrackingRepository {
     commentId: string
   ): Promise<void> {
     await this.db
-      .deleteFrom("collab.comment_read_status")
+      .deleteFrom("collab.comment_read")
       .where("tenant_id", "=", tenantId)
       .where("comment_type", "=", commentType)
       .where("comment_id", "=", commentId)

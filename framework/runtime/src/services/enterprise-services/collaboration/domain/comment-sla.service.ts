@@ -312,7 +312,7 @@ export class CommentSLAService {
     responseTimeSeconds: number | null
   ): Promise<void> {
     await this.db
-      .insertInto("collab.comment_response_history")
+      .insertInto("collab.comment_response")
       .values({
         id: crypto.randomUUID(),
         tenant_id: tenantId,

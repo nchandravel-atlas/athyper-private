@@ -33,7 +33,7 @@ describe("Tenant Context Setter", () => {
 
     it("should reject SQL injection attempts", async () => {
       const { db } = createMockDb();
-      await expect(setTenantContext(db, "'; DROP TABLE core.workflow_audit_event; --")).rejects.toThrow("Invalid tenant ID format");
+      await expect(setTenantContext(db, "'; DROP TABLE core.workflow_event_log; --")).rejects.toThrow("Invalid tenant ID format");
     });
 
     it("should reject empty string", async () => {
@@ -69,7 +69,7 @@ describe("Tenant Context Setter", () => {
 describe("Immutability Guard (strengthened specifications)", () => {
   it("spec: bypass now requires athyper_retention role for DELETE", () => {
     // SET LOCAL athyper.audit_retention_bypass = 'true';
-    // DELETE FROM core.workflow_audit_event WHERE ...
+    // DELETE FROM core.workflow_event_log WHERE ...
     // Must have pg_has_role(current_user, 'athyper_retention', 'MEMBER') = true
     const requiredRole = "athyper_retention";
     const allowedOp = "DELETE";
@@ -79,7 +79,7 @@ describe("Immutability Guard (strengthened specifications)", () => {
 
   it("spec: bypass now requires athyper_admin role for UPDATE", () => {
     // SET LOCAL athyper.audit_retention_bypass = 'true';
-    // UPDATE core.workflow_audit_event SET key_version = 2 WHERE ...
+    // UPDATE core.workflow_event_log SET key_version = 2 WHERE ...
     // Must have pg_has_role(current_user, 'athyper_admin', 'MEMBER') = true
     const requiredRole = "athyper_admin";
     const allowedOp = "UPDATE";
@@ -104,7 +104,7 @@ describe("Immutability Guard (strengthened specifications)", () => {
 
   it("spec: bypass without correct role raises restrict_violation", () => {
     // SET LOCAL athyper.audit_retention_bypass = 'true';
-    // DELETE FROM core.workflow_audit_event WHERE ... (as regular user)
+    // DELETE FROM core.workflow_event_log WHERE ... (as regular user)
     // Should raise: 'Audit mutation bypass requires appropriate role'
     const expectedError = "Audit mutation bypass requires appropriate role";
     expect(expectedError).toContain("appropriate role");
@@ -121,7 +121,7 @@ describe("Immutability Guard (strengthened specifications)", () => {
 
   it("spec: retention role has DELETE grant on 5 audit tables", () => {
     const tables = [
-      "audit.workflow_audit_event",
+      "audit.workflow_event_log",
       "audit.audit_log",
       "audit.permission_decision_log",
       "audit.field_access_log",
@@ -136,10 +136,10 @@ describe("Immutability Guard (strengthened specifications)", () => {
 describe("Row-Level Security (specifications)", () => {
   it("spec: RLS enabled on 4 audit tables", () => {
     const rlsTables = [
-      "audit.workflow_audit_event",
+      "audit.workflow_event_log",
       "core.outbox",
-      "audit.audit_hash_anchor",
-      "audit.audit_dlq",
+      "audit.hash_anchor",
+      "audit.dlq",
     ];
     expect(rlsTables).toHaveLength(4);
   });

@@ -1,5 +1,5 @@
 /**
- * DigestStagingRepo — Kysely repo for notify.notification_digest_staging
+ * DigestStagingRepo — Kysely repo for notify.digest_staging
  *
  * Stages non-immediate notifications for batch digest delivery.
  */
@@ -8,16 +8,16 @@ import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type { PreferenceFrequency, ChannelCode } from "../domain/types.js";
 
-const TABLE = "notify.notification_digest_staging" as keyof DB & string;
+const TABLE = "notify.digest_staging" as keyof DB & string;
 
 export interface DigestStagingEntry {
     id: string;
     tenantId: string;
-    principalId: string;
+    recipientId: string;
     channel: ChannelCode;
     frequency: PreferenceFrequency;
     messageId: string;
-    eventType: string;
+    eventCode: string;
     subject: string | null;
     payload: Record<string, unknown>;
     templateKey: string;
@@ -29,11 +29,11 @@ export interface DigestStagingEntry {
 
 export interface StagingInput {
     tenantId: string;
-    principalId: string;
+    recipientId: string;
     channel: ChannelCode;
     frequency: PreferenceFrequency;
     messageId: string;
-    eventType: string;
+    eventCode: string;
     subject?: string;
     payload: Record<string, unknown>;
     templateKey: string;
@@ -53,11 +53,11 @@ export class DigestStagingRepo {
             .values({
                 id,
                 tenant_id: input.tenantId,
-                principal_id: input.principalId,
+                recipient_id: input.recipientId,
                 channel: input.channel,
                 frequency: input.frequency,
                 message_id: input.messageId,
-                event_type: input.eventType,
+                event_code: input.eventCode,
                 subject: input.subject ?? null,
                 payload: JSON.stringify(input.payload),
                 template_key: input.templateKey,
@@ -113,11 +113,11 @@ export class DigestStagingRepo {
         return {
             id: row.id,
             tenantId: row.tenant_id,
-            principalId: row.principal_id,
+            recipientId: row.recipient_id,
             channel: row.channel,
             frequency: row.frequency,
             messageId: row.message_id,
-            eventType: row.event_type,
+            eventCode: row.event_code,
             subject: row.subject,
             payload: this.parseJson(row.payload) ?? {},
             templateKey: row.template_key,

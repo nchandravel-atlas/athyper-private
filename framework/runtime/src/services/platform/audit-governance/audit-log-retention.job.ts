@@ -100,7 +100,7 @@ export async function processAuditLogRetention(
       );
 
       workflowAuditEventsDeleted = await callRetentionDelete(
-        db, "workflow_audit_event", cutoffDate, tenantId,
+        db, "workflow_event_log", cutoffDate, tenantId,
       );
 
       const outboxResult = await deleteOldOutboxItems(db, cutoffDate);
@@ -253,7 +253,7 @@ async function deleteOldWorkflowAuditEvents(
 ): Promise<{ deletedCount: number }> {
   const query = sql<{ count: number }>`
     WITH deleted AS (
-      DELETE FROM core.workflow_audit_event
+      DELETE FROM core.workflow_event_log
       WHERE created_at < ${cutoffDate.toISOString()}::timestamptz
         ${tenantId ? sql`AND tenant_id = ${tenantId}::uuid` : sql``}
       RETURNING id
@@ -296,7 +296,7 @@ async function countOldWorkflowAuditEvents(
 ): Promise<number> {
   const query = sql<{ count: number }>`
     SELECT COUNT(*) as count
-    FROM core.workflow_audit_event
+    FROM core.workflow_event_log
     WHERE created_at < ${cutoffDate.toISOString()}::timestamptz
       ${tenantId ? sql`AND tenant_id = ${tenantId}::uuid` : sql``}
   `;

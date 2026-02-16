@@ -238,7 +238,7 @@ export interface EffectivePreference {
 // ─── Explainability Trace ───────────────────────────────────────────
 export interface NotificationExplainTrace {
     messageId: string;
-    eventType: string;
+    eventCode: string;
     eventId: string;
     timestamp: string;
     steps: ExplainStep[];

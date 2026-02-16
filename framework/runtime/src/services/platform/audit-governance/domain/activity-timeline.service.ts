@@ -5,7 +5,7 @@
  * chronological timeline. Queries by (tenant, entity, time range) using
  * UNION ALL across:
  *
- *   - core.workflow_audit_event  (workflow events)
+ *   - core.workflow_event_log  (workflow events)
  *   - core.permission_decision_log (access decisions)
  *   - core.field_access_log      (field access)
  *   - core.security_event        (security events)
@@ -236,7 +236,7 @@ export class ActivityTimelineService {
         COALESCE(comment, event_type) AS summary,
         details,
         event_timestamp AS occurred_at
-      FROM core.workflow_audit_event
+      FROM core.workflow_event_log
       WHERE ${where}
     `;
   }

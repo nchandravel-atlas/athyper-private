@@ -29,7 +29,8 @@ export interface InAppNotification {
     expiresAt: Date | null;
     metadata: Record<string, unknown> | null;
     createdAt: Date;
-    createdBy: string;
+    createdByPrincipalId: string | null;
+    createdByService: string | null;
 }
 
 export interface CreateInAppInput {
@@ -47,7 +48,8 @@ export interface CreateInAppInput {
     entityId?: string;
     expiresAt?: Date;
     metadata?: Record<string, unknown>;
-    createdBy: string;
+    createdByPrincipalId?: string;
+    createdByService?: string;
 }
 
 const TABLE = "notify.notification" as keyof DB & string;
@@ -135,7 +137,8 @@ export class InAppNotificationRepo {
                 expires_at: input.expiresAt ?? null,
                 metadata: input.metadata ? JSON.stringify(input.metadata) : null,
                 created_at: now,
-                created_by: input.createdBy,
+                created_by_principal_id: input.createdByPrincipalId ?? null,
+                created_by_service: input.createdByService ?? null,
             })
             .execute();
 
@@ -160,7 +163,8 @@ export class InAppNotificationRepo {
             expiresAt: input.expiresAt ?? null,
             metadata: input.metadata ?? null,
             createdAt: now,
-            createdBy: input.createdBy,
+            createdByPrincipalId: input.createdByPrincipalId ?? null,
+            createdByService: input.createdByService ?? null,
         };
     }
 
@@ -214,7 +218,8 @@ export class InAppNotificationRepo {
             expiresAt: row.expires_at ? new Date(row.expires_at) : null,
             metadata: this.parseJson(row.metadata),
             createdAt: new Date(row.created_at),
-            createdBy: row.created_by,
+            createdByPrincipalId: row.created_by_principal_id ?? null,
+            createdByService: row.created_by_service ?? null,
         };
     }
 

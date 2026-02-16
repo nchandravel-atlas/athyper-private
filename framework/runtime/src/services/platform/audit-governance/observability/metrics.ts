@@ -53,7 +53,7 @@ export class AuditMetrics {
     this.registry.incrementCounter(METRIC.eventsIngested, 1, labels as MetricLabels);
   }
 
-  /** Audit event persisted to core.workflow_audit_event by drain worker. */
+  /** Audit event persisted to core.workflow_event_log by drain worker. */
   eventPersisted(labels: { tenant: string; event_type: string }): void {
     this.registry.incrementCounter(METRIC.eventsPersisted, 1, labels as MetricLabels);
   }

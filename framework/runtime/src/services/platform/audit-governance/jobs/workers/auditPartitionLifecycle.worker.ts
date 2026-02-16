@@ -67,7 +67,7 @@ export function createPartitionLifecycleHandler(
 
       const year = targetDate.getFullYear();
       const month = String(targetDate.getMonth() + 1).padStart(2, "0");
-      const partitionName = `workflow_audit_event_${year}_${month}`;
+      const partitionName = `workflow_event_log_${year}_${month}`;
 
       try {
         if (!dryRun) {
@@ -92,7 +92,7 @@ export function createPartitionLifecycleHandler(
         JOIN pg_class c ON c.oid = i.inhrelid
         JOIN pg_class p ON p.oid = i.inhparent
         JOIN pg_namespace n ON n.oid = p.relnamespace
-        WHERE n.nspname = 'core' AND p.relname = 'workflow_audit_event'
+        WHERE n.nspname = 'core' AND p.relname = 'workflow_event_log'
         ORDER BY c.relname
       `.execute(db);
 
@@ -135,12 +135,12 @@ export function createPartitionLifecycleHandler(
         JOIN pg_class c ON c.oid = i.inhrelid
         JOIN pg_class p ON p.oid = i.inhparent
         JOIN pg_namespace n ON n.oid = p.relnamespace
-        WHERE n.nspname = 'core' AND p.relname = 'workflow_audit_event'
+        WHERE n.nspname = 'core' AND p.relname = 'workflow_event_log'
         ORDER BY c.relname
       `.execute(db);
 
       for (const row of partitions.rows) {
-        // Extract year_month from partition name: workflow_audit_event_YYYY_MM
+        // Extract year_month from partition name: workflow_event_log_YYYY_MM
         const match = row.partition_name.match(/_(\d{4})_(\d{2})$/);
         if (!match) continue;
 
@@ -169,7 +169,7 @@ export function createPartitionLifecycleHandler(
     // ── Step 4: VACUUM ANALYZE if we dropped partitions ───────────
     if (result.partitionsDropped.length > 0 && !dryRun) {
       try {
-        await sql`VACUUM ANALYZE core.workflow_audit_event`.execute(db);
+        await sql`VACUUM ANALYZE core.workflow_event_log`.execute(db);
         result.vacuumRan = true;
         logger.info({}, "[audit:partition] VACUUM ANALYZE complete");
       } catch (err) {

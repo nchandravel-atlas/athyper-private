@@ -2,7 +2,7 @@
  * DigestAggregator — Stages and processes digest notifications.
  *
  * Non-immediate notifications are staged. When the digest cron fires,
- * entries are grouped by (principalId, channel), rendered into a digest
+ * entries are grouped by (recipientId, channel), rendered into a digest
  * template, and enqueued as a single delivery.
  */
 
@@ -42,7 +42,7 @@ export class DigestAggregator {
         this.logger.debug(
             {
                 id,
-                principalId: input.principalId,
+                recipientId: input.recipientId,
                 channel: input.channel,
                 frequency: input.frequency,
             },
@@ -60,10 +60,10 @@ export class DigestAggregator {
         const pending = await this.stagingRepo.getPending(frequency);
         if (pending.length === 0) return { sent: 0, errors: 0 };
 
-        // Group by tenantId + principalId + channel
+        // Group by tenantId + recipientId + channel
         const groups = new Map<string, DigestStagingEntry[]>();
         for (const entry of pending) {
-            const key = `${entry.tenantId}:${entry.principalId}:${entry.channel}`;
+            const key = `${entry.tenantId}:${entry.recipientId}:${entry.channel}`;
             const group = groups.get(key) ?? [];
             group.push(entry);
             groups.set(key, group);
@@ -82,7 +82,7 @@ export class DigestAggregator {
                 errors++;
                 this.logger.warn(
                     {
-                        principalId: entries[0].principalId,
+                        recipientId: entries[0].recipientId,
                         channel: entries[0].channel,
                         count: entries.length,
                         error: String(err),
@@ -106,7 +106,7 @@ export class DigestAggregator {
     private async sendDigest(entries: DigestStagingEntry[]): Promise<void> {
         const first = entries[0];
         const tenantId = first.tenantId;
-        const principalId = first.principalId;
+        const recipientId = first.recipientId;
         const channel = first.channel;
 
         // Limit items per digest
@@ -114,11 +114,11 @@ export class DigestAggregator {
 
         // Build digest payload
         const digestPayload: Record<string, unknown> = {
-            recipientId: principalId,
+            recipientId,
             itemCount: limited.length,
             totalCount: entries.length,
             items: limited.map(e => ({
-                eventType: e.eventType,
+                eventCode: e.eventCode,
                 subject: e.subject,
                 stagedAt: e.stagedAt.toISOString(),
                 priority: e.priority,
@@ -145,7 +145,7 @@ export class DigestAggregator {
         const message = await this.messageRepo.create({
             tenantId,
             eventId: `digest-${first.frequency}-${Date.now()}`,
-            eventType: `notification.digest.${first.frequency}`,
+            eventCode: `notification.digest.${first.frequency}`,
             ruleId: null as any,
             templateKey: DIGEST_TEMPLATE_KEY,
             templateVersion: 1,
@@ -162,8 +162,8 @@ export class DigestAggregator {
             tenantId,
             channel,
             providerCode: adapter.providerCode,
-            recipientId: principalId,
-            recipientAddr: principalId, // Will be resolved by adapter
+            recipientId,
+            recipientAddr: recipientId, // Will be resolved by adapter
             maxAttempts: 3,
             metadata: { isDigest: true },
         };
@@ -179,8 +179,8 @@ export class DigestAggregator {
                 tenantId,
                 channel,
                 providerCode: adapter.providerCode,
-                recipientAddr: principalId,
-                recipientId: principalId,
+                recipientAddr: recipientId,
+                recipientId,
                 templateKey: DIGEST_TEMPLATE_KEY,
                 templateVersion: 1,
                 subject: rendered?.rendered.subject,

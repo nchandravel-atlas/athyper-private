@@ -23,7 +23,8 @@ export interface NotificationSuppression {
     metadata: Record<string, unknown> | null;
     suppressedAt: Date;
     expiresAt: Date | null;
-    createdBy: string;
+    createdByPrincipalId: string | null;
+    createdByService: string | null;
 }
 
 export interface CreateSuppressionInput {
@@ -35,5 +36,6 @@ export interface CreateSuppressionInput {
     providerCode?: string;
     metadata?: Record<string, unknown>;
     expiresAt?: Date;
-    createdBy: string;
+    createdByPrincipalId?: string;
+    createdByService?: string;
 }

@@ -138,10 +138,22 @@ create index if not exists idx_field_access_log_request
 -- Merged: key_version column from 153
 -- ============================================================================
 
--- Drop non-partitioned table if it exists (safe at migration time)
-drop table if exists audit.workflow_audit_event cascade;
+-- Drop non-partitioned version if it exists (one-time migration to partitioned).
+-- Guarded: only drops if the table is NOT already partitioned.
+do $$
+begin
+  if exists (
+    select 1 from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'audit' and c.relname = 'workflow_event_log'
+      and c.relkind = 'r'  -- ordinary table, NOT 'p' (partitioned)
+  ) then
+    drop table audit.workflow_event_log cascade;
+    raise notice 'Dropped non-partitioned audit.workflow_event_log for migration to partitioned.';
+  end if;
+end $$;
 
-create table if not exists audit.workflow_audit_event (
+create table if not exists audit.workflow_event_log (
   id                       uuid not null default gen_random_uuid(),
   tenant_id                uuid not null,
 
@@ -213,9 +225,9 @@ create table if not exists audit.workflow_audit_event (
   constraint wf_audit_module_chk     check (module_code in ('WF','META','CORE','AUTH','SEC'))
 ) partition by range (event_timestamp);
 
-comment on table audit.workflow_audit_event is
+comment on table audit.workflow_event_log is
   'Partitioned workflow audit event log (monthly range on event_timestamp). Immutable after insert.';
-comment on column audit.workflow_audit_event.key_version is
+comment on column audit.workflow_event_log.key_version is
   'Encryption key version used for ip_address, user_agent, comment, attachments columns. NULL = plaintext.';
 
 -- FK: tenant_id references core.tenant
@@ -225,9 +237,9 @@ begin
     select 1 from information_schema.table_constraints
     where constraint_name = 'wf_audit_tenant_fk'
       and table_schema = 'audit'
-      and table_name = 'workflow_audit_event'
+      and table_name = 'workflow_event_log'
   ) then
-    alter table audit.workflow_audit_event
+    alter table audit.workflow_event_log
       add constraint wf_audit_tenant_fk foreign key (tenant_id)
       references core.tenant(id) on delete cascade;
   end if;
@@ -244,10 +256,10 @@ begin
   for i in 0..3 loop
     v_start := v_month + (i || ' months')::interval;
     v_end   := v_month + ((i + 1) || ' months')::interval;
-    v_name  := 'workflow_audit_event_' || to_char(v_start, 'YYYY_MM');
+    v_name  := 'workflow_event_log_' || to_char(v_start, 'YYYY_MM');
 
     execute format(
-      'create table if not exists audit.%I partition of audit.workflow_audit_event
+      'create table if not exists audit.%I partition of audit.workflow_event_log
          for values from (%L) to (%L)',
       v_name, v_start, v_end
     );
@@ -257,43 +269,43 @@ $$;
 
 -- Indexes on the partitioned parent (auto-created per partition by PostgreSQL)
 create index if not exists idx_wf_audit_tenant_time
-  on audit.workflow_audit_event (tenant_id, event_timestamp desc);
+  on audit.workflow_event_log (tenant_id, event_timestamp desc);
 
 create index if not exists idx_wf_audit_instance
-  on audit.workflow_audit_event (tenant_id, instance_id, event_timestamp asc);
+  on audit.workflow_event_log (tenant_id, instance_id, event_timestamp asc);
 
 create index if not exists idx_wf_audit_step
-  on audit.workflow_audit_event (tenant_id, step_instance_id)
+  on audit.workflow_event_log (tenant_id, step_instance_id)
   where step_instance_id is not null;
 
 create index if not exists idx_wf_audit_correlation
-  on audit.workflow_audit_event (tenant_id, correlation_id)
+  on audit.workflow_event_log (tenant_id, correlation_id)
   where correlation_id is not null;
 
 create index if not exists idx_wf_audit_event_type
-  on audit.workflow_audit_event (tenant_id, event_type, event_timestamp desc);
+  on audit.workflow_event_log (tenant_id, event_type, event_timestamp desc);
 
 create index if not exists idx_wf_audit_entity
-  on audit.workflow_audit_event (tenant_id, entity_type, entity_id);
+  on audit.workflow_event_log (tenant_id, entity_type, entity_id);
 
 create index if not exists idx_wf_audit_actor
-  on audit.workflow_audit_event (tenant_id, actor_user_id, event_timestamp desc);
+  on audit.workflow_event_log (tenant_id, actor_user_id, event_timestamp desc);
 
 create index if not exists idx_wf_audit_template
-  on audit.workflow_audit_event (tenant_id, workflow_template_code);
+  on audit.workflow_event_log (tenant_id, workflow_template_code);
 
 create index if not exists idx_wf_audit_details_gin
-  on audit.workflow_audit_event using gin (details)
+  on audit.workflow_event_log using gin (details)
   where details is not null;
 
 -- Key rotation worker index (find rows with old key versions)
 create index if not exists idx_audit_event_key_version
-  on audit.workflow_audit_event (tenant_id, key_version)
+  on audit.workflow_event_log (tenant_id, key_version)
   where key_version is not null;
 
 -- Replay dedup partial unique index (159)
 create unique index if not exists idx_audit_event_dedup
-  on audit.workflow_audit_event (
+  on audit.workflow_event_log (
     tenant_id,
     correlation_id,
     event_timestamp,
@@ -307,7 +319,7 @@ create unique index if not exists idx_audit_event_dedup
 -- AUDIT: Audit Hash Anchor (daily tamper-evidence checkpoints)
 -- Source: 150_workflow_audit.sql
 -- ============================================================================
-create table if not exists audit.audit_hash_anchor (
+create table if not exists audit.hash_anchor (
   id            uuid primary key default gen_random_uuid(),
   tenant_id     uuid not null references core.tenant(id) on delete cascade,
 
@@ -317,21 +329,21 @@ create table if not exists audit.audit_hash_anchor (
 
   created_at    timestamptz not null default now(),
 
-  constraint audit_hash_anchor_uniq unique (tenant_id, anchor_date)
+  constraint hash_anchor_uniq unique (tenant_id, anchor_date)
 );
 
-comment on table audit.audit_hash_anchor is
+comment on table audit.hash_anchor is
   'Daily hash chain anchors for tamper-evidence verification.';
 
-create index if not exists idx_audit_hash_anchor_tenant
-  on audit.audit_hash_anchor (tenant_id, anchor_date desc);
+create index if not exists idx_hash_anchor_tenant
+  on audit.hash_anchor (tenant_id, anchor_date desc);
 
 
 -- ============================================================================
 -- AUDIT: Dead-Letter Queue
--- Source: 152_audit_dlq.sql
+-- Source: 152_dlq.sql
 -- ============================================================================
-create table if not exists audit.audit_dlq (
+create table if not exists audit.dlq (
   id               uuid primary key default gen_random_uuid(),
   tenant_id        uuid not null references core.tenant(id) on delete cascade,
 
@@ -359,26 +371,26 @@ create table if not exists audit.audit_dlq (
   created_at       timestamptz not null default now()
 );
 
-comment on table audit.audit_dlq is
+comment on table audit.dlq is
   'Dead-letter queue for audit outbox items that exceeded max retry attempts.';
 
-create index if not exists idx_audit_dlq_unreplayed
-  on audit.audit_dlq (tenant_id, dead_at desc)
+create index if not exists idx_dlq_unreplayed
+  on audit.dlq (tenant_id, dead_at desc)
   where replayed_at is null;
 
-create index if not exists idx_audit_dlq_tenant
-  on audit.audit_dlq (tenant_id, created_at desc);
+create index if not exists idx_dlq_tenant
+  on audit.dlq (tenant_id, created_at desc);
 
-create index if not exists idx_audit_dlq_correlation
-  on audit.audit_dlq (correlation_id)
+create index if not exists idx_dlq_correlation
+  on audit.dlq (correlation_id)
   where correlation_id is not null;
 
 
 -- ============================================================================
 -- AUDIT: Integrity Report (persistent verification results)
--- Source: 158_audit_integrity_report.sql
+-- Source: 158_integrity_report.sql
 -- ============================================================================
-create table if not exists audit.audit_integrity_report (
+create table if not exists audit.integrity_report (
   id                  uuid primary key default gen_random_uuid(),
   tenant_id           uuid not null,
 
@@ -410,21 +422,21 @@ create table if not exists audit.audit_integrity_report (
   constraint integrity_report_status_chk check (status in ('pending','running','passed','failed','error'))
 );
 
-comment on table audit.audit_integrity_report is
+comment on table audit.integrity_report is
   'Persistent integrity verification reports for evidence-grade audit.';
 
 create index if not exists idx_integrity_report_tenant_created
-  on audit.audit_integrity_report (tenant_id, created_at desc);
+  on audit.integrity_report (tenant_id, created_at desc);
 
 create index if not exists idx_integrity_report_tenant_status
-  on audit.audit_integrity_report (tenant_id, status, created_at desc);
+  on audit.integrity_report (tenant_id, status, created_at desc);
 
 
 -- ============================================================================
 -- AUDIT: Archive Marker (storage tiering hot/warm/cold)
--- Source: 161_audit_archive_marker.sql
+-- Source: 161_archive_marker.sql
 -- ============================================================================
-create table if not exists audit.audit_archive_marker (
+create table if not exists audit.archive_marker (
   id              uuid primary key default gen_random_uuid(),
   partition_name  text not null unique,
   partition_month date not null unique,
@@ -437,11 +449,11 @@ create table if not exists audit.audit_archive_marker (
   created_at      timestamptz not null default now()
 );
 
-comment on table audit.audit_archive_marker is
+comment on table audit.archive_marker is
   'Tracks which partitions have been archived to object storage (cold tier).';
 
 create index if not exists idx_archive_marker_month
-  on audit.audit_archive_marker (partition_month);
+  on audit.archive_marker (partition_month);
 
 
 -- ############################################################################
@@ -474,7 +486,7 @@ begin
     if tg_op = 'UPDATE' and v_is_admin then
       -- Only allow UPDATE on encryption-related columns
       -- (key_version, ip_address, user_agent, comment, attachments)
-      if tg_table_name = 'workflow_audit_event' then
+      if tg_table_name = 'workflow_event_log' then
         if old.key_version is distinct from new.key_version then
           return new;
         end if;
@@ -511,7 +523,7 @@ create or replace trigger trg_field_access_log_immutable
   for each row execute function audit.prevent_audit_mutation();
 
 create or replace trigger trg_audit_immutable_workflow_audit
-  before update or delete on audit.workflow_audit_event
+  before update or delete on audit.workflow_event_log
   for each row execute function audit.prevent_audit_mutation();
 
 create or replace trigger trg_security_event_immutable
@@ -532,10 +544,10 @@ returns void as $$
 declare
   v_next_month date := date_trunc('month', current_date + interval '1 month');
   v_end        date := v_next_month + interval '1 month';
-  v_name       text := 'workflow_audit_event_' || to_char(v_next_month, 'YYYY_MM');
+  v_name       text := 'workflow_event_log_' || to_char(v_next_month, 'YYYY_MM');
 begin
   execute format(
-    'create table if not exists audit.%I partition of audit.workflow_audit_event
+    'create table if not exists audit.%I partition of audit.workflow_event_log
        for values from (%L) to (%L)',
     v_name, v_next_month, v_end
   );
@@ -545,7 +557,7 @@ end;
 $$ language plpgsql;
 
 comment on function audit.create_next_audit_partition()
-  is 'Auto-create next month partition for workflow_audit_event. Schedule via pg_cron on the 25th.';
+  is 'Auto-create next month partition for workflow_event_log. Schedule via pg_cron on the 25th.';
 
 
 -- ============================================================================
@@ -555,7 +567,7 @@ comment on function audit.create_next_audit_partition()
 create or replace function audit.drop_audit_partition(p_year int, p_month int)
 returns void as $$
 declare
-  v_name text := 'workflow_audit_event_' || lpad(p_year::text, 4, '0') || '_' || lpad(p_month::text, 2, '0');
+  v_name text := 'workflow_event_log_' || lpad(p_year::text, 4, '0') || '_' || lpad(p_month::text, 2, '0');
 begin
   execute format('drop table if exists audit.%I', v_name);
   raise notice 'Dropped partition: audit.%', v_name;
@@ -575,10 +587,10 @@ returns text as $$
 declare
   v_start date := date_trunc('month', p_target);
   v_end   date := v_start + interval '1 month';
-  v_name  text := 'workflow_audit_event_' || to_char(v_start, 'YYYY_MM');
+  v_name  text := 'workflow_event_log_' || to_char(v_start, 'YYYY_MM');
 begin
   execute format(
-    'create table if not exists audit.%I partition of audit.workflow_audit_event
+    'create table if not exists audit.%I partition of audit.workflow_event_log
        for values from (%L) to (%L)',
     v_name, v_start, v_end
   );
@@ -588,7 +600,7 @@ end;
 $$ language plpgsql;
 
 comment on function audit.create_audit_partition_for_month(date) is
-  'Create a monthly partition for workflow_audit_event. Returns partition name.';
+  'Create a monthly partition for workflow_event_log. Returns partition name.';
 
 
 -- ============================================================================
@@ -616,13 +628,13 @@ begin
   join pg_class p on p.oid = i.inhparent
   join pg_namespace n on n.oid = p.relnamespace
   where n.nspname = 'audit'
-    and p.relname = 'workflow_audit_event'
+    and p.relname = 'workflow_event_log'
   order by c.relname;
 end;
 $$ language plpgsql;
 
 comment on function audit.list_audit_partitions() is
-  'List all partitions of workflow_audit_event with row counts and sizes.';
+  'List all partitions of workflow_event_log with row counts and sizes.';
 
 
 -- ============================================================================
@@ -705,7 +717,7 @@ $$;
 
 -- ── athyper_retention: DELETE on audit tables ────────────────────────────────
 
-grant delete on audit.workflow_audit_event to athyper_retention;
+grant delete on audit.workflow_event_log to athyper_retention;
 grant delete on audit.audit_log to athyper_retention;
 grant delete on audit.permission_decision_log to athyper_retention;
 grant delete on audit.field_access_log to athyper_retention;
@@ -714,20 +726,20 @@ grant delete on sec.security_event to athyper_retention;
 -- ── athyper_admin: UPDATE encryption-related columns ────────────────────────
 
 grant update (key_version, ip_address, user_agent, comment, attachments)
-  on audit.workflow_audit_event to athyper_admin;
+  on audit.workflow_event_log to athyper_admin;
 
 -- ── athyper_app_writer: INSERT-only for event ingestion ─────────────────────
 
-grant insert on audit.workflow_audit_event to athyper_app_writer;
-grant insert on audit.audit_hash_anchor to athyper_app_writer;
-grant insert on audit.audit_dlq to athyper_app_writer;
+grant insert on audit.workflow_event_log to athyper_app_writer;
+grant insert on audit.hash_anchor to athyper_app_writer;
+grant insert on audit.dlq to athyper_app_writer;
 grant insert on sec.security_event to athyper_app_writer;
 
 -- ── athyper_audit_reader: SELECT with RLS ───────────────────────────────────
 
-grant select on audit.workflow_audit_event to athyper_audit_reader;
-grant select on audit.audit_hash_anchor to athyper_audit_reader;
-grant select on audit.audit_dlq to athyper_audit_reader;
+grant select on audit.workflow_event_log to athyper_audit_reader;
+grant select on audit.hash_anchor to athyper_audit_reader;
+grant select on audit.dlq to athyper_audit_reader;
 grant select on sec.security_event to athyper_audit_reader;
 grant select on audit.permission_decision_log to athyper_audit_reader;
 grant select on audit.field_access_log to athyper_audit_reader;
@@ -735,9 +747,9 @@ grant select on audit.audit_log to athyper_audit_reader;
 
 -- ── athyper_audit_admin: SELECT + INSERT for integrity/export ───────────────
 
-grant select on audit.workflow_audit_event to athyper_audit_admin;
-grant select on audit.audit_hash_anchor to athyper_audit_admin;
-grant select on audit.audit_dlq to athyper_audit_admin;
+grant select on audit.workflow_event_log to athyper_audit_admin;
+grant select on audit.hash_anchor to athyper_audit_admin;
+grant select on audit.dlq to athyper_audit_admin;
 grant select on sec.security_event to athyper_audit_admin;
 grant insert on sec.security_event to athyper_audit_admin;
 grant select on audit.permission_decision_log to athyper_audit_admin;
@@ -748,33 +760,33 @@ grant select on audit.audit_log to athyper_audit_admin;
 do $$
 begin
   if exists (select 1 from pg_roles where rolname = 'athyper_audit_admin') then
-    grant select, insert, update on audit.audit_integrity_report to athyper_audit_admin;
+    grant select, insert, update on audit.integrity_report to athyper_audit_admin;
   end if;
 end $$;
 
 
 -- ============================================================================
 -- Row-Level Security: Tenant Isolation
--- Sources: 154_audit_security_hardening.sql + 158_audit_integrity_report.sql
+-- Sources: 154_audit_security_hardening.sql + 158_integrity_report.sql
 -- ============================================================================
 
 -- Enable RLS on audit tables
-alter table audit.workflow_audit_event enable row level security;
-alter table audit.audit_hash_anchor enable row level security;
-alter table audit.audit_integrity_report enable row level security;
+alter table audit.workflow_event_log enable row level security;
+alter table audit.hash_anchor enable row level security;
+alter table audit.integrity_report enable row level security;
 
 -- RLS on DLQ (if table exists — it does, created above)
-alter table audit.audit_dlq enable row level security;
+alter table audit.dlq enable row level security;
 
 -- Policies: tenant isolation based on session variable
 do $$
 begin
   if not exists (
     select 1 from pg_policies
-    where tablename = 'workflow_audit_event'
+    where tablename = 'workflow_event_log'
       and policyname = 'audit_event_tenant_isolation'
   ) then
-    create policy audit_event_tenant_isolation on audit.workflow_audit_event
+    create policy audit_event_tenant_isolation on audit.workflow_event_log
       using (tenant_id = current_setting('athyper.current_tenant', true)::uuid)
       with check (tenant_id = current_setting('athyper.current_tenant', true)::uuid);
   end if;
@@ -784,10 +796,10 @@ do $$
 begin
   if not exists (
     select 1 from pg_policies
-    where tablename = 'audit_hash_anchor'
+    where tablename = 'hash_anchor'
       and policyname = 'audit_anchor_tenant_isolation'
   ) then
-    create policy audit_anchor_tenant_isolation on audit.audit_hash_anchor
+    create policy audit_anchor_tenant_isolation on audit.hash_anchor
       using (tenant_id = current_setting('athyper.current_tenant', true)::uuid)
       with check (tenant_id = current_setting('athyper.current_tenant', true)::uuid);
   end if;
@@ -797,10 +809,10 @@ do $$
 begin
   if not exists (
     select 1 from pg_policies
-    where tablename = 'audit_dlq'
-      and policyname = 'audit_dlq_tenant_isolation'
+    where tablename = 'dlq'
+      and policyname = 'dlq_tenant_isolation'
   ) then
-    create policy audit_dlq_tenant_isolation on audit.audit_dlq
+    create policy dlq_tenant_isolation on audit.dlq
       using (tenant_id = current_setting('athyper.current_tenant', true)::uuid)
       with check (tenant_id = current_setting('athyper.current_tenant', true)::uuid);
   end if;
@@ -810,17 +822,17 @@ do $$
 begin
   if not exists (
     select 1 from pg_policies
-    where tablename = 'audit_integrity_report'
+    where tablename = 'integrity_report'
       and policyname = 'tenant_isolation_integrity_report'
   ) then
     create policy tenant_isolation_integrity_report
-      on audit.audit_integrity_report
+      on audit.integrity_report
       for all
       using (tenant_id::text = current_setting('athyper.current_tenant', true));
   end if;
 end $$;
 
-comment on policy audit_event_tenant_isolation on audit.workflow_audit_event is
+comment on policy audit_event_tenant_isolation on audit.workflow_event_log is
   'Tenant isolation: queries only return rows matching athyper.current_tenant session variable.';
 
 
@@ -851,7 +863,7 @@ as $$
 begin
   set local athyper.audit_retention_bypass = 'true';
 
-  update audit.workflow_audit_event
+  update audit.workflow_event_log
   set ip_address   = p_ip_address,
       user_agent   = p_user_agent,
       comment      = p_comment,
@@ -898,7 +910,7 @@ as $$
 declare
   v_count   bigint;
   v_allowed text[] := array[
-    'workflow_audit_event',
+    'workflow_event_log',
     'audit_log',
     'permission_decision_log',
     'field_access_log',
@@ -984,9 +996,9 @@ create index if not exists idx_audit_log_timeline
 create index if not exists idx_audit_log_entity_timeline
   on audit.audit_log (tenant_id, entity_name, entity_id, occurred_at desc);
 
--- workflow_audit_event timeline covering index
+-- workflow_event_log timeline covering index
 create index if not exists idx_wf_audit_timeline
-  on audit.workflow_audit_event (tenant_id, event_timestamp desc)
+  on audit.workflow_event_log (tenant_id, event_timestamp desc)
   include (event_type, severity, entity_type, entity_id, actor_user_id, comment, details);
 
 -- ============================================================================

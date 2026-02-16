@@ -18,7 +18,7 @@ export class ListMessagesHandler implements RouteHandler {
 
         const messages = await repo.list(tenantId, {
             status: req.query.status as MessageStatus | undefined,
-            eventType: req.query.eventType as string | undefined,
+            eventCode: req.query.eventCode as string | undefined,
             limit: Number(req.query.limit) || 50,
             offset: Number(req.query.offset) || 0,
         });

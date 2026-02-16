@@ -1,5 +1,5 @@
 /**
- * NotificationMessageRepo — Kysely repo for notify.notification_message
+ * NotificationMessageRepo — Kysely repo for notify.message
  */
 
 import type { Kysely } from "kysely";
@@ -11,7 +11,7 @@ import type {
 } from "../domain/models/NotificationMessage.js";
 import type { MessageId, MessageStatus } from "../domain/types.js";
 
-const TABLE = "notify.notification_message" as keyof DB & string;
+const TABLE = "notify.message" as keyof DB & string;
 
 export class NotificationMessageRepo {
     constructor(private readonly db: Kysely<DB>) {}
@@ -31,7 +31,7 @@ export class NotificationMessageRepo {
         tenantId: string,
         options?: {
             status?: MessageStatus | MessageStatus[];
-            eventType?: string;
+            eventCode?: string;
             entityType?: string;
             entityId?: string;
             limit?: number;
@@ -47,8 +47,8 @@ export class NotificationMessageRepo {
             const statuses = Array.isArray(options.status) ? options.status : [options.status];
             query = query.where("status", "in", statuses);
         }
-        if (options?.eventType) {
-            query = query.where("event_type", "=", options.eventType);
+        if (options?.eventCode) {
+            query = query.where("event_code", "=", options.eventCode);
         }
         if (options?.entityType) {
             query = query.where("entity_type", "=", options.entityType);
@@ -77,7 +77,7 @@ export class NotificationMessageRepo {
                 id,
                 tenant_id: input.tenantId,
                 event_id: input.eventId,
-                event_type: input.eventType,
+                event_code: input.eventCode,
                 rule_id: input.ruleId,
                 template_key: input.templateKey,
                 template_version: input.templateVersion,
@@ -101,7 +101,7 @@ export class NotificationMessageRepo {
             id: id as MessageId,
             tenantId: input.tenantId,
             eventId: input.eventId,
-            eventType: input.eventType,
+            eventCode: input.eventCode,
             ruleId: input.ruleId,
             templateKey: input.templateKey,
             templateVersion: input.templateVersion,
@@ -195,7 +195,7 @@ export class NotificationMessageRepo {
             id: row.id as MessageId,
             tenantId: row.tenant_id,
             eventId: row.event_id,
-            eventType: row.event_type,
+            eventCode: row.event_code,
             ruleId: row.rule_id,
             templateKey: row.template_key,
             templateVersion: row.template_version,

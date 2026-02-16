@@ -16,14 +16,14 @@
   SELECT tgname, tgrelid::regclass
   FROM pg_trigger
   WHERE tgfoid = (SELECT oid FROM pg_proc WHERE proname = 'prevent_audit_mutation');
-  -- Expected: 5 triggers (workflow_audit_event, audit_log, permission_decision_log, field_access_log, security_event)
+  -- Expected: 5 triggers (workflow_event_log, audit_log, permission_decision_log, field_access_log, security_event)
   ```
 
 - [ ] **RLS policies**: Verify RLS enabled and policies exist
   ```sql
   SELECT relname, relrowsecurity
   FROM pg_class
-  WHERE relname IN ('workflow_audit_event', 'audit_outbox', 'audit_hash_anchor', 'audit_dlq')
+  WHERE relname IN ('workflow_event_log', 'audit_outbox', 'hash_anchor', 'dlq')
     AND relnamespace = 'core'::regnamespace;
   -- Expected: relrowsecurity = true for all 4
   ```
@@ -69,14 +69,14 @@
 - [ ] **Drain worker**: Verify drain worker processes pending outbox items
   ```sql
   -- Wait 10 seconds, then:
-  SELECT COUNT(*) FROM core.workflow_audit_event WHERE tenant_id = '<tenant>';
+  SELECT COUNT(*) FROM core.workflow_event_log WHERE tenant_id = '<tenant>';
   -- Expected: > 0 (events persisted from outbox)
   ```
 
 - [ ] **Hash chain**: Verify first event has GENESIS hash_prev
   ```sql
   SELECT hash_prev, hash_curr
-  FROM core.workflow_audit_event
+  FROM core.workflow_event_log
   WHERE tenant_id = '<tenant>'
   ORDER BY event_timestamp ASC
   LIMIT 1;
@@ -86,7 +86,7 @@
 - [ ] **Redaction**: Verify sensitive fields are redacted
   ```sql
   SELECT id, is_redacted, redaction_version
-  FROM core.workflow_audit_event
+  FROM core.workflow_event_log
   WHERE tenant_id = '<tenant>' AND is_redacted = true
   LIMIT 5;
   ```
@@ -153,7 +153,7 @@
   2. Let drain worker exhaust retries → entry moves to DLQ
   3. Fix the entry payload
   4. Replay via admin API
-  5. Verify event persisted to workflow_audit_event
+  5. Verify event persisted to workflow_event_log
 
 ## Integrity: Hash Chain
 
@@ -169,7 +169,7 @@
 
 - [ ] **Daily anchor check**
   1. Run `AuditHashChainService.writeAnchor()` for today
-  2. Verify anchor row in `core.audit_hash_anchor`
+  2. Verify anchor row in `core.hash_anchor`
   3. Verify `last_hash` matches latest event's `hash_curr`
 
 ## Performance: Timeline
@@ -190,7 +190,7 @@
 - [ ] **Encrypt on write**: Insert event with `comment` and `ip_address`
   ```sql
   SELECT comment, ip_address, key_version
-  FROM core.workflow_audit_event
+  FROM core.workflow_event_log
   WHERE tenant_id = '<tenant>'
   ORDER BY created_at DESC LIMIT 1;
   -- Expected: comment and ip_address contain JSON-encoded encrypted payloads, key_version = 1

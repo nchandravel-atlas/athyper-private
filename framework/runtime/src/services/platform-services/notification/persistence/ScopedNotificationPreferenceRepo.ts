@@ -1,14 +1,15 @@
 /**
- * ScopedNotificationPreferenceRepo — Kysely repo for notify.notification_preference
+ * ScopedNotificationPreferenceRepo — Kysely repo for notify.preference
  *
  * Supports the scoped preference hierarchy: user > org_unit > tenant.
+ * Scope columns: user_principal_id (user), org_unit_id (org_unit), tenant_id only (tenant).
  */
 
 import type { Kysely } from "kysely";
 import type { DB } from "@athyper/adapter-db";
 import type { ChannelCode, PreferenceFrequency, PreferenceScope, QuietHours } from "../domain/types.js";
 
-const TABLE = "notify.notification_preference" as keyof DB & string;
+const TABLE = "notify.preference" as keyof DB & string;
 
 export interface ScopedPreferenceRow {
     id: string;
@@ -22,7 +23,8 @@ export interface ScopedPreferenceRow {
     quietHours: QuietHours | null;
     metadata: Record<string, unknown> | null;
     createdAt: Date;
-    createdBy: string;
+    createdByPrincipalId: string | null;
+    createdByService: string | null;
     updatedAt: Date | null;
     updatedBy: string | null;
 }
@@ -37,7 +39,8 @@ export interface UpsertScopedPreferenceInput {
     frequency?: PreferenceFrequency;
     quietHours?: QuietHours;
     metadata?: Record<string, unknown>;
-    createdBy: string;
+    createdByPrincipalId?: string;
+    createdByService?: string;
 }
 
 export class ScopedNotificationPreferenceRepo {
@@ -50,16 +53,17 @@ export class ScopedNotificationPreferenceRepo {
         eventCode: string,
         channel: ChannelCode,
     ): Promise<ScopedPreferenceRow | undefined> {
-        const row = await this.db
+        let query = this.db
             .selectFrom(TABLE as any)
             .selectAll()
             .where("tenant_id", "=", tenantId)
             .where("scope", "=", scope)
-            .where("scope_id", "=", scopeId)
             .where("event_code", "=", eventCode)
-            .where("channel", "=", channel)
-            .executeTakeFirst();
+            .where("channel", "=", channel);
 
+        query = this.addScopeFilter(query, scope, scopeId);
+
+        const row = await query.executeTakeFirst();
         return row ? this.mapRow(row) : undefined;
     }
 
@@ -68,19 +72,21 @@ export class ScopedNotificationPreferenceRepo {
         scope: PreferenceScope,
         scopeId: string,
     ): Promise<ScopedPreferenceRow[]> {
-        const rows = await this.db
+        let query = this.db
             .selectFrom(TABLE as any)
             .selectAll()
             .where("tenant_id", "=", tenantId)
-            .where("scope", "=", scope)
-            .where("scope_id", "=", scopeId)
-            .execute();
+            .where("scope", "=", scope);
 
+        query = this.addScopeFilter(query, scope, scopeId);
+
+        const rows = await query.execute();
         return rows.map((r: any) => this.mapRow(r));
     }
 
     async upsert(input: UpsertScopedPreferenceInput): Promise<void> {
         const now = new Date();
+        const scopeColumns = this.buildScopeColumns(input.scope, input.scopeId);
 
         await this.db
             .insertInto(TABLE as any)
@@ -88,7 +94,7 @@ export class ScopedNotificationPreferenceRepo {
                 id: crypto.randomUUID(),
                 tenant_id: input.tenantId,
                 scope: input.scope,
-                scope_id: input.scopeId,
+                ...scopeColumns,
                 event_code: input.eventCode,
                 channel: input.channel,
                 is_enabled: input.isEnabled,
@@ -96,16 +102,19 @@ export class ScopedNotificationPreferenceRepo {
                 quiet_hours: input.quietHours ? JSON.stringify(input.quietHours) : null,
                 metadata: input.metadata ? JSON.stringify(input.metadata) : null,
                 created_at: now,
-                created_by: input.createdBy,
+                created_by_principal_id: input.createdByPrincipalId ?? null,
+                created_by_service: input.createdByService ?? null,
             })
             .onConflict((oc: any) =>
-                oc.columns(["tenant_id", "scope", "scope_id", "event_code", "channel"]).doUpdateSet({
+                // The unique indexes are partial (per-scope), so we use a broad conflict target
+                // and rely on the partial unique indexes to prevent duplicates per scope
+                oc.columns(["id"]).doUpdateSet({
                     is_enabled: input.isEnabled,
                     frequency: input.frequency ?? "immediate",
                     quiet_hours: input.quietHours ? JSON.stringify(input.quietHours) : null,
                     metadata: input.metadata ? JSON.stringify(input.metadata) : null,
                     updated_at: now,
-                    updated_by: input.createdBy,
+                    updated_by: input.createdByPrincipalId ?? input.createdByService ?? null,
                 }),
             )
             .execute();
@@ -121,8 +130,9 @@ export class ScopedNotificationPreferenceRepo {
         let query = this.db
             .deleteFrom(TABLE as any)
             .where("tenant_id", "=", tenantId)
-            .where("scope", "=", scope)
-            .where("scope_id", "=", scopeId);
+            .where("scope", "=", scope);
+
+        query = this.addScopeFilter(query, scope, scopeId);
 
         if (eventCode) {
             query = query.where("event_code", "=", eventCode);
@@ -134,12 +144,54 @@ export class ScopedNotificationPreferenceRepo {
         await query.execute();
     }
 
+    /**
+     * Add scope-specific WHERE filter based on scope type.
+     */
+    private addScopeFilter(query: any, scope: PreferenceScope, scopeId: string): any {
+        switch (scope) {
+            case "user":
+                return query.where("user_principal_id", "=", scopeId);
+            case "org_unit":
+                return query.where("org_unit_id", "=", scopeId);
+            case "tenant":
+                // For tenant scope, tenant_id is the scope — no additional filter needed
+                return query;
+            default:
+                return query;
+        }
+    }
+
+    /**
+     * Build scope-specific column values for INSERT.
+     */
+    private buildScopeColumns(scope: PreferenceScope, scopeId: string): Record<string, string | null> {
+        switch (scope) {
+            case "user":
+                return { user_principal_id: scopeId, org_unit_id: null };
+            case "org_unit":
+                return { user_principal_id: null, org_unit_id: scopeId };
+            case "tenant":
+                return { user_principal_id: null, org_unit_id: null };
+            default:
+                return { user_principal_id: null, org_unit_id: null };
+        }
+    }
+
+    /**
+     * Extract the scope ID from the appropriate typed column.
+     */
+    private extractScopeId(row: any): string {
+        if (row.user_principal_id) return row.user_principal_id;
+        if (row.org_unit_id) return row.org_unit_id;
+        return row.tenant_id; // tenant scope uses tenant_id
+    }
+
     private mapRow(row: any): ScopedPreferenceRow {
         return {
             id: row.id,
             tenantId: row.tenant_id,
             scope: row.scope,
-            scopeId: row.scope_id,
+            scopeId: this.extractScopeId(row),
             eventCode: row.event_code,
             channel: row.channel,
             isEnabled: row.is_enabled,
@@ -147,7 +199,8 @@ export class ScopedNotificationPreferenceRepo {
             quietHours: this.parseJson(row.quiet_hours),
             metadata: this.parseJson(row.metadata),
             createdAt: new Date(row.created_at),
-            createdBy: row.created_by,
+            createdByPrincipalId: row.created_by_principal_id ?? null,
+            createdByService: row.created_by_service ?? null,
             updatedAt: row.updated_at ? new Date(row.updated_at) : null,
             updatedBy: row.updated_by,
         };

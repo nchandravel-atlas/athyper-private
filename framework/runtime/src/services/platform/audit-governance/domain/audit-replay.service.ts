@@ -210,7 +210,7 @@ export class AuditReplayService {
       const correlationId = event.correlation_id ?? event.correlationId ?? event.id ?? crypto.randomUUID();
 
       const result = await sql`
-        INSERT INTO core.workflow_audit_event (
+        INSERT INTO core.workflow_event_log (
           id, tenant_id, instance_id, step_id, event_type, event_timestamp,
           actor_user_id, severity, entity_type, entity_id, correlation_id,
           comment, hash_prev, hash_curr, created_at

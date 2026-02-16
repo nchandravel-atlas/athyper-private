@@ -25,7 +25,7 @@
   ],
   "scripts": {
     "clean": "rimraf dist",
-    "build": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --external kysely --external pg --external @athyper/core",
+    "build": "prisma generate && tsup src/index.ts --format esm --dts --sourcemap --outDir dist --external kysely --external pg --external @athyper/core",
     "dev": "tsup src/index.ts --format esm --dts --sourcemap --outDir dist --watch --external kysely --external pg --external @athyper/core",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest",

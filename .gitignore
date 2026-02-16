@@ -145,7 +145,7 @@ nul
 
 # Generated (output dirs only — do NOT ignore source packages)
 **/generated/
-!framework/adapters/db/generated/
+!framework/adapters/db/src/generated/
 **/codegen/
 !tools/codegen/
 **/.prisma/

@@ -316,76 +316,84 @@ export class DatabaseMetaSchemaLoader implements IMetaSchemaLoader {
     private logger: Logger
   ) {}
 
+  /**
+   * Map relation_kind from DB to Cardinality type used by join planner
+   */
+  private mapRelationKindToCardinality(relationKind: string): Cardinality {
+    switch (relationKind) {
+      case "belongs_to": return "many-to-one";
+      case "has_many": return "one-to-many";
+      case "m2m": return "many-to-many";
+      default: return "many-to-one";
+    }
+  }
+
   async loadEntity(entityKey: string, tenantId: string): Promise<MetaEntitySchema | null> {
     try {
-      // Load entity
+      // Load entity + latest published version
       const entity = await this.db
-        .selectFrom("meta.meta_entity as e")
-        .innerJoin("meta.meta_entity_version as v", "v.entity_id", "e.id")
+        .selectFrom("meta.entity as e")
+        .innerJoin("meta.entity_version as v", "v.entity_id", "e.id")
         .select([
           "e.id",
-          "e.entity_key",
-          "v.table_name",
+          "e.name",
+          "e.table_name",
           "v.id as version_id",
         ])
-        .where("e.entity_key", "=", entityKey)
+        .where("e.name", "=", entityKey)
         .where("e.tenant_id", "=", tenantId)
         .where("v.status", "=", "published")
-        .orderBy("v.version", "desc")
+        .orderBy("v.version_no", "desc")
         .limit(1)
         .executeTakeFirst();
 
       if (!entity) return null;
 
-      // Load fields
+      // Load fields from meta.field
       const fields = await this.db
-        .selectFrom("meta.meta_entity_field")
+        .selectFrom("meta.field")
         .select([
-          "field_key",
+          "name",
           "column_name",
           "data_type",
-          "is_primary_key",
-          "is_foreign_key",
-          "references_entity",
-          "references_field",
         ])
         .where("entity_version_id", "=", entity.version_id)
+        .where("is_active", "=", true)
         .execute();
 
-      // Load relations
+      // Load relations from meta.relation
       const relations = await this.db
-        .selectFrom("meta.meta_entity_relation")
+        .selectFrom("meta.relation")
         .select([
-          "relation_key",
-          "source_field",
+          "name",
+          "relation_kind",
           "target_entity",
-          "target_field",
-          "cardinality",
-          "is_virtual",
+          "fk_field",
+          "target_key",
         ])
         .where("entity_version_id", "=", entity.version_id)
         .execute();
 
       return {
         id: entity.id,
-        entityKey: entity.entity_key,
+        entityKey: entity.name,
         tableName: entity.table_name,
         fields: fields.map((f: any) => ({
-          fieldKey: f.field_key,
-          columnName: f.column_name,
+          fieldKey: f.name,
+          columnName: f.column_name ?? f.name,
           dataType: f.data_type,
-          isPrimaryKey: f.is_primary_key,
-          isForeignKey: f.is_foreign_key,
-          referencesEntity: f.references_entity,
-          referencesField: f.references_field,
+          isPrimaryKey: f.name === "id",
+          isForeignKey: f.data_type === "reference",
+          referencesEntity: undefined, // Resolved via relations
+          referencesField: undefined,
         })),
         relations: relations.map((r: any) => ({
-          relationKey: r.relation_key,
-          sourceField: r.source_field,
+          relationKey: r.name,
+          sourceField: r.fk_field ?? r.name,
           targetEntity: r.target_entity,
-          targetField: r.target_field,
-          cardinality: r.cardinality as Cardinality,
-          isVirtual: r.is_virtual,
+          targetField: r.target_key ?? "id",
+          cardinality: this.mapRelationKindToCardinality(r.relation_kind),
+          isVirtual: false,
         })),
       };
     } catch (error) {
@@ -396,10 +404,10 @@ export class DatabaseMetaSchemaLoader implements IMetaSchemaLoader {
 
   async loadAllEntities(tenantId: string): Promise<MetaEntitySchema[]> {
     try {
-      // Get all entity keys
+      // Get all active entity names
       const entities = await this.db
-        .selectFrom("meta.meta_entity")
-        .select("entity_key")
+        .selectFrom("meta.entity")
+        .select("name")
         .where("tenant_id", "=", tenantId)
         .where("is_active", "=", true)
         .execute();
@@ -407,7 +415,7 @@ export class DatabaseMetaSchemaLoader implements IMetaSchemaLoader {
       const schemas: MetaEntitySchema[] = [];
 
       for (const entity of entities) {
-        const schema = await this.loadEntity(entity.entity_key, tenantId);
+        const schema = await this.loadEntity(entity.name, tenantId);
         if (schema) {
           schemas.push(schema);
         }

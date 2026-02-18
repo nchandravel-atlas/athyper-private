@@ -36,6 +36,12 @@ export interface Session {
     persona?: string;
     /** Epoch seconds when the access token expires. Used by useSessionRefresh to schedule refresh. */
     accessExpiresAt?: number;
+    /** Whether MFA verification is required before granting access. */
+    mfaRequired?: boolean;
+    /** Whether MFA has been verified for this session. */
+    mfaVerified?: boolean;
+    /** Epoch seconds when MFA was last verified. */
+    mfaVerifiedAt?: number;
 }
 
 /**

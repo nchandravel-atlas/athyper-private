@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDeleteDialog } from "@/components/mesh/shared/ConfirmDeleteDialog";
 import { EmptyState } from "@/components/mesh/shared/EmptyState";
 import { ConflictDialog } from "@/components/mesh/schemas/ConflictDialog";
 import { useEntityFields } from "@/lib/schema-manager/use-entity-fields";
@@ -76,6 +77,8 @@ export function FieldEditor({ entityName, readonly = false }: FieldEditorProps) 
     const [localFields, setLocalFields] = useState<FieldDefinition[] | null>(null);
     const [conflictOpen, setConflictOpen] = useState(false);
     const [conflictData, setConflictData] = useState<ConflictError | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<FieldDefinition | null>(null);
+    const [deleteOpen, setDeleteOpen] = useState(false);
 
     // Use local state for reordering, fallback to fetched fields
     const displayFields = localFields ?? fields;
@@ -105,6 +108,38 @@ export function FieldEditor({ entityName, readonly = false }: FieldEditorProps) 
         etag,
         onSuccess: () => {
             setLocalFields(null);
+            refresh();
+        },
+        onConflict: (conflict) => {
+            setConflictData(conflict);
+            setConflictOpen(true);
+        },
+    });
+
+    // Mutation hook for creating/updating a field
+    const { mutate: saveField, loading: savingField } = useMutation<FieldDefinition>({
+        url: `/api/admin/mesh/meta-studio/${encodeURIComponent(entityName)}/fields`,
+        method: "POST",
+        etag,
+        onSuccess: () => {
+            setDialogOpen(false);
+            setEditingField(null);
+            refresh();
+        },
+        onConflict: (conflict) => {
+            setConflictData(conflict);
+            setConflictOpen(true);
+        },
+    });
+
+    // Mutation hook for deleting a field
+    const { mutate: deleteField, loading: deletingField } = useMutation<void>({
+        url: `/api/admin/mesh/meta-studio/${encodeURIComponent(entityName)}/fields`,
+        method: "DELETE",
+        etag,
+        onSuccess: () => {
+            setDeleteOpen(false);
+            setDeleteTarget(null);
             refresh();
         },
         onConflict: (conflict) => {
@@ -167,19 +202,29 @@ export function FieldEditor({ entityName, readonly = false }: FieldEditorProps) 
         setDialogOpen(true);
     }, [readonly]);
 
-    const handleDelete = useCallback((_field: FieldDefinition) => {
-        // TODO: Implement delete with confirmation dialog
+    const handleDelete = useCallback((field: FieldDefinition) => {
+        setDeleteTarget(field);
+        setDeleteOpen(true);
     }, []);
+
+    const handleConfirmDelete = useCallback(async () => {
+        if (!deleteTarget) return;
+        await deleteField({ fieldId: deleteTarget.id });
+    }, [deleteTarget, deleteField]);
 
     const handleAddNew = useCallback(() => {
         setEditingField(null);
         setDialogOpen(true);
     }, []);
 
-    const handleFormSubmit = useCallback((_values: unknown) => {
-        // TODO: Call API to create/update field, then refresh
-        refresh();
-    }, [refresh]);
+    const handleFormSubmit = useCallback(async (values: Record<string, unknown>) => {
+        // If editing an existing field, include fieldId to trigger update path
+        if (editingField) {
+            await saveField({ ...values, fieldId: editingField.id });
+        } else {
+            await saveField(values);
+        }
+    }, [editingField, saveField]);
 
     // Keyboard reorder: Alt+Up / Alt+Down moves focused field
     const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null);
@@ -326,6 +371,15 @@ export function FieldEditor({ entityName, readonly = false }: FieldEditorProps) 
                     onSubmit={handleFormSubmit}
                 />
             )}
+
+            <ConfirmDeleteDialog
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                title="Delete Field"
+                description={`Are you sure you want to delete the field "${deleteTarget?.name ?? ""}"? This action cannot be undone.`}
+                onConfirm={handleConfirmDelete}
+                loading={deletingField}
+            />
 
             <ConflictDialog
                 open={conflictOpen}

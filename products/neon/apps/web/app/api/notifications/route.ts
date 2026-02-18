@@ -11,6 +11,10 @@ import { InAppNotificationRepo } from "@athyper/runtime/services/platform-servic
 
 import { getApiContext, unauthorizedResponse, successResponse, errorResponse } from "@/lib/api-context";
 
+function isStubMode(): boolean {
+    return !process.env.DATABASE_URL && process.env.ENABLE_DEV_STUBS === "true";
+}
+
 async function getDbClient(): Promise<Kysely<DB>> {
     const { Pool } = await import("pg");
     const { Kysely, PostgresDialect } = await import("kysely");
@@ -25,6 +29,10 @@ async function getDbClient(): Promise<Kysely<DB>> {
 }
 
 export async function GET(req: Request) {
+    if (isStubMode()) {
+        return successResponse({ items: [], pagination: { limit: 50, offset: 0, count: 0 } });
+    }
+
     const { context, redis } = await getApiContext();
 
     try {

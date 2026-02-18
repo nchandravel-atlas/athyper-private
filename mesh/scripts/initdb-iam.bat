@@ -82,7 +82,7 @@ echo Press Ctrl+C to cancel, or wait 5 seconds...
 timeout /t 5 >nul
 
 docker run --rm ^
-  --network athyper-mesh-edge ^
+  --network athyper-mesh-internal ^
   -v "%TEMP_IMPORT_DIR%:/opt/keycloak/data/import" ^
   -e KC_DB=postgres ^
   -e KC_DB_URL=%IAM_DB_URL% ^

@@ -84,7 +84,9 @@ export async function registerAdapters(container: Container, config: RuntimeConf
                 { type: "database", required: true }
             );
 
-            return protectedAdapter;
+            // Return the Kysely instance directly — all consumers expect Kysely<DB>.
+            // Health checks and pool stats use closure refs to protectedAdapter above.
+            return protectedAdapter.kysely;
         },
         "singleton"
     );

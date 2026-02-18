@@ -16,20 +16,19 @@ services:
     mem_limit: "${IAM_MEMORY_LIMIT}"
     command: ["start-dev"]
     environment:
-      KEYCLOAK_ADMIN: ${IAM_ADMIN}
-      KEYCLOAK_ADMIN_PASSWORD: ${IAM_ADMIN_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${IAM_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${IAM_ADMIN_PASSWORD}
       KC_PROXY_HEADERS: xforwarded
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME: ${IAM_HOST}
-      KC_HOSTNAME_STRICT: "false"
-      KC_HOSTNAME_STRICT_HTTPS: "true"
       KC_DB: postgres
       KC_DB_URL: ${IAM_DB_URL}
       KC_DB_USERNAME: ${IAM_DB_USERNAME}
       KC_DB_PASSWORD: ${IAM_DB_PASSWORD}
-      KC_DB_POOL_INITIAL_SIZE: 5
+      KC_DB_POOL_INITIAL_SIZE: 1
+      KC_DB_POOL_MIN_SIZE: 5
       KC_DB_POOL_MAX_SIZE: 20
-    networks: [edge]
+    networks: [edge, internal]
     depends_on:
       gateway:
         condition: service_healthy
@@ -46,7 +45,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 20
-      start_period: 20s
+      start_period: 60s
     stop_grace_period: 10s
     restart: unless-stopped
     security_opt:

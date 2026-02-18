@@ -15,6 +15,7 @@ import { NotificationTemplateRepo } from "./persistence/NotificationTemplateRepo
 import { NotificationPreferenceRepo } from "./persistence/NotificationPreferenceRepo.js";
 import { NotificationSuppressionRepo } from "./persistence/NotificationSuppressionRepo.js";
 import { InAppNotificationRepo } from "./persistence/InAppNotificationRepo.js";
+import { PushSubscriptionRepo } from "./persistence/PushSubscriptionRepo.js";
 // Phase 2 persistence
 import { NotificationDlqRepo } from "./persistence/NotificationDlqRepo.js";
 import { ScopedNotificationPreferenceRepo } from "./persistence/ScopedNotificationPreferenceRepo.js";
@@ -41,6 +42,9 @@ import { TeamsAdapter } from "./adapters/teams/TeamsAdapter.js";
 import { InAppAdapter } from "./adapters/inapp/InAppAdapter.js";
 import { WhatsAppAdapter } from "./adapters/whatsapp/WhatsAppAdapter.js";
 import { WhatsAppTemplateSync } from "./adapters/whatsapp/WhatsAppTemplateSync.js";
+import { TwilioSmsAdapter } from "./adapters/sms/TwilioSmsAdapter.js";
+import { WebPushAdapter } from "./adapters/push/WebPushAdapter.js";
+import type { IPushSubscriptionRepo } from "./adapters/push/WebPushAdapter.js";
 
 // Observability
 import { NotificationMetrics } from "./observability/metrics.js";
@@ -127,6 +131,7 @@ const REPO_TOKENS = {
     preference: "notify.repo.preference",
     suppression: "notify.repo.suppression",
     inapp: "notify.repo.inapp",
+    pushSubscription: "notify.repo.pushSubscription",
     // Phase 2
     dlq: "notify.repo.dlq",
     scopedPreference: "notify.repo.scopedPreference",
@@ -196,6 +201,7 @@ export const module: RuntimeModule = {
         c.register(REPO_TOKENS.preference, async () => new NotificationPreferenceRepo(db), "singleton");
         c.register(REPO_TOKENS.suppression, async () => new NotificationSuppressionRepo(db), "singleton");
         c.register(REPO_TOKENS.inapp, async () => new InAppNotificationRepo(db), "singleton");
+        c.register(REPO_TOKENS.pushSubscription, async () => new PushSubscriptionRepo(db), "singleton");
         // Phase 2 repos
         c.register(REPO_TOKENS.dlq, async () => new NotificationDlqRepo(db), "singleton");
         c.register(REPO_TOKENS.scopedPreference, async () => new ScopedNotificationPreferenceRepo(db), "singleton");
@@ -239,6 +245,27 @@ export const module: RuntimeModule = {
                     accessTokenRef: waConfig.accessTokenRef,
                     businessAccountId: waConfig.businessAccountId,
                 }, adapterLogger, consentRepo));
+            }
+
+            // Twilio SMS adapter (if configured)
+            const smsConfig = config.notification?.providers?.sms?.twilio;
+            if (smsConfig?.enabled && smsConfig.accountSidRef && smsConfig.authTokenRef && smsConfig.fromNumber) {
+                registry.register(new TwilioSmsAdapter({
+                    accountSidRef: smsConfig.accountSidRef,
+                    authTokenRef: smsConfig.authTokenRef,
+                    fromNumber: smsConfig.fromNumber,
+                }, adapterLogger));
+            }
+
+            // Web Push adapter (if configured)
+            const pushConfig = config.notification?.providers?.push;
+            if (pushConfig?.enabled && pushConfig.vapidPublicKey && pushConfig.vapidPrivateKeyRef && pushConfig.vapidSubject) {
+                const pushSubRepo = await c.resolve<IPushSubscriptionRepo>(REPO_TOKENS.pushSubscription);
+                registry.register(new WebPushAdapter({
+                    vapidPublicKey: pushConfig.vapidPublicKey,
+                    vapidPrivateKeyRef: pushConfig.vapidPrivateKeyRef,
+                    vapidSubject: pushConfig.vapidSubject,
+                }, pushSubRepo, adapterLogger));
             }
 
             return registry;

@@ -581,3 +581,28 @@ create unique index if not exists suppression_tenant_channel_address_uniq
 
 create index if not exists idx_suppression_lookup
     on notify.suppression (channel, address);
+
+-- ============================================================================
+-- Push Subscription — Web Push subscription storage
+-- ============================================================================
+
+create table if not exists notify.push_subscription (
+    id              uuid        default gen_random_uuid() primary key,
+    tenant_id       uuid        not null,
+    principal_id    text        not null,
+    endpoint        text        not null,
+    p256dh          text        not null,
+    auth            text        not null,
+    is_active       boolean     not null default true,
+    created_at      timestamptz not null default now(),
+    updated_at      timestamptz not null default now()
+);
+
+comment on table notify.push_subscription
+    is 'Web Push subscription registrations per user device.';
+
+create unique index if not exists push_sub_tenant_endpoint_uniq
+    on notify.push_subscription (tenant_id, endpoint);
+
+create index if not exists idx_push_sub_principal
+    on notify.push_subscription (tenant_id, principal_id, is_active);

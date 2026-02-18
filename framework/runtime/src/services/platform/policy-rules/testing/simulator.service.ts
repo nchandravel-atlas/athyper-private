@@ -29,6 +29,7 @@ import type {
 import type { IFactsProvider } from "../evaluation/facts-provider.js";
 import type {
   IPolicyEvaluator,
+  PolicyAction,
   PolicyDecision,
   PolicyEvaluationOptions,
   PolicyInput,
@@ -461,17 +462,164 @@ export class PolicySimulatorService implements IPolicySimulator {
   }
 
   private async resolveAuditReplayInput(
-    _tenantId: string,
-    _input: AuditReplayInput,
-    _correlationId: string
+    tenantId: string,
+    input: AuditReplayInput,
+    correlationId: string
   ): Promise<{
     policyInput: PolicyInput;
     subjectResolution: { method: "database"; timeMs: number };
     resourceResolution: { method: "database"; timeMs: number };
   }> {
-    // Phase-2: Load audit event and reconstruct input
-    // For now, throw not implemented
-    throw new Error("Audit replay not yet implemented (phase-2 feature)");
+    const startTime = Date.now();
+
+    // 1. Load audit event from repository
+    const event = await this.loadAuditEvent(tenantId, input.auditEventId);
+    const loadTimeMs = Date.now() - startTime;
+
+    // 2. Reconstruct subject from audit event actor data
+    const subject: PolicySubject = {
+      principalId: event.actor.userId,
+      principalType: (event.actor as any).principalType ?? "user",
+      roles: (event.actor as any).roles ?? [],
+      groups: (event.actor as any).groups ?? [],
+      ouMembership: (event.actor as any).ouMembership ?? { path: "/", code: "root" },
+      attributes: (event.actor as any).attributes ?? {},
+    };
+
+    // 3. Reconstruct resource from audit event entity data
+    const resource: PolicyResource = {
+      type: event.entity?.type ?? "unknown",
+      id: event.entity?.id,
+      module: (event.entity as any)?.module ?? "",
+      ownerId: (event.entity as any)?.ownerId,
+      attributes: (event.entity as any)?.attributes ?? {},
+    };
+
+    // 4. Reconstruct action from event action or operation code
+    const action = this.resolveActionFromAuditEvent(event);
+
+    // 5. Build policy input
+    const policyInput: PolicyInput = {
+      subject,
+      resource,
+      action,
+      context: {
+        tenantId,
+        timestamp: input.useCurrentPolicies ? new Date() : event.timestamp,
+        correlationId,
+        attributes: {},
+      },
+    };
+
+    // 6. If replaying with historical policies, set version override
+    if (!input.useCurrentPolicies && event.timestamp) {
+      // The evaluator's policyVersionOverride will be passed via SimulatorOptions
+      // The caller (simulate()) passes opts.policyVersionOverride to the evaluator
+      // For audit replay, we record the timestamp so the caller can use it
+      (policyInput.context as any)._auditTimestamp = event.timestamp;
+    }
+
+    return {
+      policyInput,
+      subjectResolution: { method: "database", timeMs: loadTimeMs },
+      resourceResolution: { method: "database", timeMs: 0 },
+    };
+  }
+
+  /**
+   * Load an audit event by ID with tenant isolation.
+   * Queries the audit.workflow_event_log table directly.
+   */
+  private async loadAuditEvent(
+    tenantId: string,
+    eventId: string
+  ): Promise<{
+    actor: { userId: string; [key: string]: unknown };
+    entity: { type: string; id: string; [key: string]: unknown } | null;
+    action: string | undefined;
+    timestamp: Date;
+    details: Record<string, unknown> | undefined;
+    workflow: { templateCode: string; [key: string]: unknown } | null;
+  }> {
+    const row = await this.db
+      .selectFrom("audit.workflow_event_log" as any)
+      .selectAll()
+      .where("tenant_id", "=", tenantId)
+      .where("id", "=", eventId)
+      .executeTakeFirst() as any;
+
+    if (!row) {
+      throw new Error(
+        `Audit event '${eventId}' not found for tenant '${tenantId}'. ` +
+        `The event may have been purged or the ID is incorrect.`
+      );
+    }
+
+    const parseJson = (v: unknown) => {
+      if (!v) return null;
+      if (typeof v === "object") return v;
+      if (typeof v === "string") { try { return JSON.parse(v); } catch { return null; } }
+      return null;
+    };
+
+    return {
+      actor: parseJson(row.actor) ?? { userId: row.actor_user_id ?? "unknown" },
+      entity: parseJson(row.entity),
+      action: row.action ?? undefined,
+      timestamp: row.event_timestamp instanceof Date ? row.event_timestamp : new Date(row.event_timestamp),
+      details: parseJson(row.details) ?? undefined,
+      workflow: parseJson(row.workflow),
+    };
+  }
+
+  /**
+   * Map audit event action/operation code to PolicyAction.
+   */
+  private resolveActionFromAuditEvent(event: {
+    action: string | undefined;
+    details: Record<string, unknown> | undefined;
+  }): PolicyAction {
+    // Try direct action field first (e.g., "ENTITY.CREATE")
+    if (event.action && event.action.includes(".")) {
+      const [namespace, code] = event.action.split(".", 2);
+      return {
+        namespace: namespace as PolicyAction["namespace"],
+        code,
+        fullCode: event.action,
+      };
+    }
+
+    // Try operation_code from details
+    const opCode = event.details?.operationCode as string | undefined;
+    if (opCode && opCode.includes(".")) {
+      const [namespace, code] = opCode.split(".", 2);
+      return {
+        namespace: namespace as PolicyAction["namespace"],
+        code,
+        fullCode: opCode,
+      };
+    }
+
+    // Map known event types to actions
+    const AUDIT_EVENT_TO_ACTION: Record<string, PolicyAction> = {
+      "workflow.submitted": { namespace: "WORKFLOW", code: "SUBMIT", fullCode: "WORKFLOW.SUBMIT" },
+      "action.approve": { namespace: "WORKFLOW", code: "APPROVE", fullCode: "WORKFLOW.APPROVE" },
+      "action.reject": { namespace: "WORKFLOW", code: "REJECT", fullCode: "WORKFLOW.REJECT" },
+      "action.delegate": { namespace: "DELEGATION", code: "DELEGATE", fullCode: "DELEGATION.DELEGATE" },
+      "workflow.cancelled": { namespace: "WORKFLOW", code: "CANCEL", fullCode: "WORKFLOW.CANCEL" },
+      "step.escalated": { namespace: "WORKFLOW", code: "ESCALATE", fullCode: "WORKFLOW.ESCALATE" },
+    };
+
+    const eventAction = event.action ?? "";
+    const mapped = AUDIT_EVENT_TO_ACTION[eventAction];
+    if (mapped) return mapped;
+
+    // Fallback: use the raw action string
+    throw new Error(
+      `Cannot resolve PolicyAction from audit event action '${eventAction}'. ` +
+      `Known mappings: ${Object.keys(AUDIT_EVENT_TO_ACTION).join(", ")}. ` +
+      `Ensure the audit event has a valid action field (e.g., "ENTITY.CREATE") or is a known event type.`
+    );
   }
 
   // ============================================================================

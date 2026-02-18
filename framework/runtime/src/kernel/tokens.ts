@@ -154,6 +154,27 @@ export const TOKENS = {
     collabEventsService: "collab.eventsService",
     collabDraftService: "collab.draftService",
     collabDraftRepo: "collab.draftRepo",
+
+    // Sharing & Delegation
+    shareTaskDelegationService: "share.taskDelegation",
+    shareAdminReassignmentService: "share.adminReassignment",
+    shareEnforcementService: "share.enforcement",
+    sharePolicyResolver: "share.policyResolver",
+    shareRecordShareService: "share.recordShare",
+    shareTemporaryAccessService: "share.temporaryAccess",
+    shareAuditService: "share.audit",
+    shareCrossTenantService: "share.crossTenant",
+    shareDelegationGrantRepo: "share.delegationGrantRepo",
+    shareRecordShareRepo: "share.recordShareRepo",
+
+    // Integration Hub
+    integrationHttpClient: "int.httpClient",
+    integrationRateLimiter: "int.rateLimiter",
+    integrationMetrics: "int.metrics",
+    integrationDeliveryScheduler: "int.deliveryScheduler",
+    integrationOrchestrator: "int.orchestrator",
+    integrationWebhookService: "int.webhookService",
+    integrationEventGateway: "int.eventGateway",
 } as const;
 
 export type TokenName = (typeof TOKENS)[keyof typeof TOKENS]; // "kernel.config" | ...

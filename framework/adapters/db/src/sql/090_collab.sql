@@ -789,3 +789,171 @@ create trigger message_body_tsv_update
   on collab.message
   for each row
   execute function collab.message_body_tsv_trigger();
+
+
+-- ============================================================================
+-- COLLAB: Delegation Grants
+-- ============================================================================
+create table if not exists collab.delegation_grant (
+  id              uuid primary key default gen_random_uuid(),
+  tenant_id       uuid not null,
+  delegator_id    text not null,
+  delegate_id     text not null,
+  scope_type      text not null check (scope_type in ('task','entity','workflow','module')),
+  scope_ref       text,
+  permissions     text[] not null default '{}',
+  reason          text,
+  expires_at      timestamptz,
+  is_revoked      boolean not null default false,
+  revoked_at      timestamptz,
+  revoked_by      text,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+
+comment on table collab.delegation_grant is 'Active task/scope delegations between principals';
+
+create index if not exists idx_delegation_grant_tenant_delegator
+  on collab.delegation_grant(tenant_id, delegator_id)
+  where is_revoked = false;
+
+create index if not exists idx_delegation_grant_tenant_delegate
+  on collab.delegation_grant(tenant_id, delegate_id)
+  where is_revoked = false;
+
+create index if not exists idx_delegation_grant_expires
+  on collab.delegation_grant(expires_at)
+  where is_revoked = false and expires_at is not null;
+
+
+-- ============================================================================
+-- COLLAB: Delegation Requests (pending approval)
+-- ============================================================================
+create table if not exists collab.delegation_request (
+  id              uuid primary key default gen_random_uuid(),
+  tenant_id       uuid not null,
+  requester_id    text not null,
+  target_id       text not null,
+  scope_type      text not null,
+  scope_ref       text,
+  permissions     text[] not null default '{}',
+  reason          text,
+  status          text not null default 'pending' check (status in ('pending','approved','rejected','cancelled')),
+  decided_by      text,
+  decided_at      timestamptz,
+  created_at      timestamptz not null default now()
+);
+
+comment on table collab.delegation_request is 'Delegation requests awaiting approval';
+
+create index if not exists idx_delegation_request_tenant_status
+  on collab.delegation_request(tenant_id, status)
+  where status = 'pending';
+
+
+-- ============================================================================
+-- COLLAB: Record-Level Sharing
+-- ============================================================================
+create table if not exists collab.record_share (
+  id              uuid primary key default gen_random_uuid(),
+  tenant_id       uuid not null,
+  entity_type     text not null,
+  entity_id       text not null,
+  shared_with_id  text not null,
+  shared_with_type text not null default 'user' check (shared_with_type in ('user','group','ou')),
+  permission_level text not null default 'view' check (permission_level in ('view','edit','admin')),
+  shared_by       text not null,
+  reason          text,
+  expires_at      timestamptz,
+  is_revoked      boolean not null default false,
+  revoked_at      timestamptz,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+
+comment on table collab.record_share is 'Record-level sharing grants (user/group/OU)';
+
+create index if not exists idx_record_share_entity
+  on collab.record_share(tenant_id, entity_type, entity_id)
+  where is_revoked = false;
+
+create index if not exists idx_record_share_recipient
+  on collab.record_share(tenant_id, shared_with_id)
+  where is_revoked = false;
+
+create index if not exists idx_record_share_expires
+  on collab.record_share(expires_at)
+  where is_revoked = false and expires_at is not null;
+
+create unique index if not exists record_share_unique_active
+  on collab.record_share(tenant_id, entity_type, entity_id, shared_with_id, shared_with_type)
+  where is_revoked = false;
+
+
+-- ============================================================================
+-- COLLAB: Share Audit Trail
+-- ============================================================================
+create table if not exists collab.share_audit (
+  id              uuid primary key default gen_random_uuid(),
+  tenant_id       uuid not null,
+  grant_id        uuid,
+  grant_type      text not null check (grant_type in ('delegation','record_share','external_share')),
+  action          text not null check (action in ('grant_created','grant_revoked','grant_expired','access_via_share','share_modified','delegation_created','delegation_revoked')),
+  actor_id        text not null,
+  target_id       text,
+  entity_type     text,
+  entity_id       text,
+  details         jsonb,
+  created_at      timestamptz not null default now()
+);
+
+comment on table collab.share_audit is 'Sharing-specific audit trail for compliance';
+
+create index if not exists idx_share_audit_tenant_time
+  on collab.share_audit(tenant_id, created_at desc);
+
+create index if not exists idx_share_audit_actor
+  on collab.share_audit(tenant_id, actor_id, created_at desc);
+
+create index if not exists idx_share_audit_entity
+  on collab.share_audit(tenant_id, entity_type, entity_id, created_at desc);
+
+create index if not exists idx_share_audit_grant
+  on collab.share_audit(grant_id)
+  where grant_id is not null;
+
+
+-- ============================================================================
+-- COLLAB: External Share Tokens (Cross-Tenant)
+-- ============================================================================
+create table if not exists collab.external_share_token (
+  id                uuid primary key default gen_random_uuid(),
+  tenant_id         uuid not null,
+  token_hash        text not null unique,
+  issuer_tenant_id  uuid not null,
+  issued_by         text not null,
+  target_email      text not null,
+  entity_type       text not null,
+  entity_id         text not null,
+  permission_level  text not null default 'view' check (permission_level in ('view','edit')),
+  expires_at        timestamptz not null,
+  is_revoked        boolean not null default false,
+  revoked_at        timestamptz,
+  last_accessed_at  timestamptz,
+  access_count      integer not null default 0,
+  created_at        timestamptz not null default now()
+);
+
+comment on table collab.external_share_token is 'Cross-tenant share tokens (JWT-based scoped access)';
+
+create index if not exists idx_external_share_token_hash
+  on collab.external_share_token(token_hash)
+  where is_revoked = false;
+
+create index if not exists idx_external_share_token_entity
+  on collab.external_share_token(tenant_id, entity_type, entity_id)
+  where is_revoked = false;
+
+create index if not exists idx_external_share_token_expires
+  on collab.external_share_token(expires_at)
+  where is_revoked = false;

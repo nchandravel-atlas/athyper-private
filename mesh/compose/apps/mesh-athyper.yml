@@ -55,22 +55,71 @@ services:
   # -------------------------------------------------------------------------
   # Runtime API - Backend services
   # Host: api.athyper.local
+  # Build: framework/runtime/Dockerfile.dev (context = monorepo root)
+  # Rebuild: docker compose --project-directory mesh/compose build athyper-api
   # -------------------------------------------------------------------------
   athyper-api:
-    image: traefik/whoami:v1.10
+    build:
+      context: ../..
+      dockerfile: framework/runtime/Dockerfile.dev
     profiles: ["mesh", "gateway", "apps"]
     mem_limit: "${APPS_ATHYPER_MEMORY_LIMIT}"
-    networks: [edge]
-    # Healthcheck: traefik/whoami is FROM scratch (no shell) — disable for stub
-    # Real app containers will have proper healthchecks with curl/wget
+    networks: [edge, internal]
+    depends_on:
+      dbpool-apps:
+        condition: service_healthy
+      memorycache:
+        condition: service_healthy
+    environment:
+      # Runtime identity
+      MODE: "${MODE}"
+      PORT: "${PORT}"
+      ENVIRONMENT: "${ENVIRONMENT}"
+      SERVICE_NAME: "${SERVICE_NAME}"
+      SERVICE_VERSION: "${SERVICE_VERSION}"
+      LOG_LEVEL: "${LOG_LEVEL}"
+      SHUTDOWN_TIMEOUT_MS: "${SHUTDOWN_TIMEOUT_MS}"
+      MULTITENANT: "${MULTITENANT}"
+      PUBLIC_BASE_URL: "${PUBLIC_BASE_URL}"
+      # Config
+      MESH_CONFIG: /config
+      ATHYPER_KERNEL_CONFIG_PATH: "${ATHYPER_KERNEL_CONFIG_PATH}"
+      # Database
+      DATABASE_URL: "${DATABASE_URL}"
+      DATABASE_ADMIN_URL: "${DATABASE_ADMIN_URL}"
+      DB_POOL_MAX: "${DB_POOL_MAX}"
+      # Cache
+      REDIS_URL: "${REDIS_URL}"
+      # Object Storage
+      S3_ENDPOINT: "${S3_ENDPOINT}"
+      S3_ACCESS_KEY: "${S3_ACCESS_KEY}"
+      S3_SECRET_KEY: "${S3_SECRET_KEY}"
+      S3_REGION: "${S3_REGION}"
+      S3_BUCKET: "${S3_BUCKET}"
+      S3_USE_SSL: "${S3_USE_SSL}"
+      # IAM
+      IAM_ISSUER_URL: "${IAM_ISSUER_URL}"
+      IAM_CLIENT_ID: "${IAM_CLIENT_ID}"
+      IAM_CLIENT_SECRET: "${IAM_CLIENT_SECRET}"
+      IAM_DEFAULT_REALM: "${IAM_DEFAULT_REALM}"
+      ATHYPER_SUPER__IAM_SECRET__IAM_ATHYPER_CLIENT_SECRET: "${ATHYPER_SUPER__IAM_SECRET__IAM_ATHYPER_CLIENT_SECRET}"
+      # Telemetry
+      OTLP_ENDPOINT: "${OTLP_ENDPOINT}"
+      # Node.js
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      NODE_ENV: development
+    volumes:
+      - "${MESH_CONFIG}:/config:ro"
     healthcheck:
-      disable: true
+      test: ["CMD-SHELL", "wget --no-check-certificate -qO- http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
     stop_grace_period: 20s
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
     init: true
     logging:
       driver: json-file
@@ -82,4 +131,4 @@ services:
       - traefik.http.routers.athyper-api.rule=Host(`${APPS_ATHYPER_API_HOST}`)
       - traefik.http.routers.athyper-api.tls.options=${GATEWAY_TLS_OPTIONS}
       - traefik.http.routers.athyper-api.tls=true
-      - traefik.http.services.athyper-api.loadbalancer.server.port=80
+      - traefik.http.services.athyper-api.loadbalancer.server.port=3000

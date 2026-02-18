@@ -47,9 +47,27 @@ export type MigrationRunnerOptions = {
 export type MigrationPlanEntry = {
   entityName: string;
   tableName: string;
-  action: "create" | "skip";
+  action: "create" | "alter" | "skip";
   reason: string;
   ddl?: string;
+};
+
+/**
+ * Existing column metadata from information_schema
+ */
+type ExistingColumn = {
+  columnName: string;
+  dataType: string;
+  isNullable: boolean;
+};
+
+/**
+ * Schema diff between compiled model and existing table
+ */
+type SchemaDiff = {
+  addColumns: Array<{ columnName: string; dataType: string; nullable: boolean }>;
+  dropColumns: Array<{ columnName: string }>;
+  alterColumns: Array<{ columnName: string; fromType: string; toType: string }>;
 };
 
 /**
@@ -121,12 +139,27 @@ export class MigrationRunnerService {
           const tableExists = await this.checkTableExists(compiled.tableName);
 
           if (tableExists) {
-            plan.push({
-              entityName: entity.name,
-              tableName: compiled.tableName,
-              action: "skip",
-              reason: "Table already exists",
-            });
+            // Check for ALTER migrations (new/changed columns)
+            const existingColumns = await this.getExistingColumns(compiled.tableName);
+            const diff = this.computeSchemaDiff(compiled, existingColumns);
+
+            if (diff.addColumns.length > 0 || diff.dropColumns.length > 0 || diff.alterColumns.length > 0) {
+              const alterDdl = this.generateAlterDdl(compiled.tableName, diff);
+              plan.push({
+                entityName: entity.name,
+                tableName: compiled.tableName,
+                action: "alter",
+                reason: `Schema changes: +${diff.addColumns.length} columns, -${diff.dropColumns.length} columns, ~${diff.alterColumns.length} type changes`,
+                ddl: alterDdl,
+              });
+            } else {
+              plan.push({
+                entityName: entity.name,
+                tableName: compiled.tableName,
+                action: "skip",
+                reason: "Table up to date",
+              });
+            }
           } else {
             // Generate DDL
             const ddlResult = this.options.ddlGenerator.generateDdl(compiled, {
@@ -218,7 +251,7 @@ export class MigrationRunnerService {
       errors.push(`Schema creation failed: ${String(error)}`);
     }
 
-    // Apply migrations in transaction
+    // Apply migrations
     for (const entry of plan) {
       if (entry.action === "skip") {
         skippedCount++;
@@ -236,37 +269,48 @@ export class MigrationRunnerService {
         continue;
       }
 
+      const ddlHash = this.hashDdl(entry.ddl);
+
       try {
         console.log(
           JSON.stringify({
             msg: "migration_apply_entry",
             entityName: entry.entityName,
             tableName: entry.tableName,
+            action: entry.action,
           })
         );
 
-        // Execute DDL directly (CREATE TABLE + indexes)
+        // Execute DDL (CREATE TABLE, ALTER TABLE, or indexes)
         await sql.raw(entry.ddl).execute(this.options.db);
 
         appliedCount++;
+
+        // Record success in migration history
+        await this.recordMigrationHistory(entry, ddlHash, "applied");
 
         console.log(
           JSON.stringify({
             msg: "migration_entry_applied",
             entityName: entry.entityName,
             tableName: entry.tableName,
+            action: entry.action,
           })
         );
       } catch (error) {
-        const errorMsg = `Failed to apply migration for ${entry.entityName}: ${String(error)}`;
+        const errorMsg = `Failed to apply ${entry.action} migration for ${entry.entityName}: ${String(error)}`;
         console.error(
           JSON.stringify({
             msg: "migration_entry_error",
             entityName: entry.entityName,
+            action: entry.action,
             error: String(error),
           })
         );
         errors.push(errorMsg);
+
+        // Record failure in migration history
+        await this.recordMigrationHistory(entry, ddlHash, "failed", String(error));
       }
     }
 
@@ -362,10 +406,12 @@ export class MigrationRunnerService {
     lines.push("");
 
     const createEntries = plan.filter((p) => p.action === "create");
+    const alterEntries = plan.filter((p) => p.action === "alter");
     const skipEntries = plan.filter((p) => p.action === "skip");
 
     lines.push(`Total: ${plan.length} entities`);
     lines.push(`  To Create: ${createEntries.length}`);
+    lines.push(`  To Alter: ${alterEntries.length}`);
     lines.push(`  To Skip: ${skipEntries.length}`);
     lines.push("");
 
@@ -408,8 +454,8 @@ export class MigrationRunnerService {
     lines.push("CREATE SCHEMA IF NOT EXISTS ent;");
     lines.push("");
 
-    // Add DDL for each table to create
-    const createEntries = plan.filter((p) => p.action === "create" && p.ddl);
+    // Add DDL for each table to create or alter
+    const createEntries = plan.filter((p) => (p.action === "create" || p.action === "alter") && p.ddl);
 
     for (const entry of createEntries) {
       lines.push(`-- Table: ${entry.tableName} (entity: ${entry.entityName})`);
@@ -418,5 +464,197 @@ export class MigrationRunnerService {
     }
 
     return lines.join("\n");
+  }
+
+  // ============================================================================
+  // Column Introspection & ALTER Support
+  // ============================================================================
+
+  /**
+   * Get existing columns for a table from information_schema
+   */
+  private async getExistingColumns(tableName: string): Promise<Map<string, ExistingColumn>> {
+    const columns = new Map<string, ExistingColumn>();
+
+    try {
+      const result = await sql<{
+        column_name: string;
+        data_type: string;
+        is_nullable: string;
+      }>`
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_schema = 'ent'
+        AND table_name = ${tableName}
+        ORDER BY ordinal_position
+      `.execute(this.options.db);
+
+      for (const row of result.rows) {
+        columns.set(row.column_name, {
+          columnName: row.column_name,
+          dataType: row.data_type,
+          isNullable: row.is_nullable === "YES",
+        });
+      }
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          msg: "get_existing_columns_error",
+          tableName,
+          error: String(error),
+        })
+      );
+    }
+
+    return columns;
+  }
+
+  /**
+   * Compute schema diff between compiled model and existing table columns
+   */
+  private computeSchemaDiff(
+    compiled: { fields: Array<{ columnName: string; type: string; required?: boolean }> },
+    existingColumns: Map<string, ExistingColumn>
+  ): SchemaDiff {
+    const diff: SchemaDiff = {
+      addColumns: [],
+      dropColumns: [],
+      alterColumns: [],
+    };
+
+    // System columns that should never be altered by the migration runner
+    const systemColumns = new Set([
+      "id", "tenant_id", "realm_id", "created_at", "created_by",
+      "updated_at", "updated_by", "deleted_at", "deleted_by", "version",
+      "entity_type_code", "status", "source_system", "metadata",
+      "document_number", "posting_date", "effective_from", "effective_to",
+    ]);
+
+    // Check for new fields that need columns
+    for (const field of compiled.fields) {
+      if (systemColumns.has(field.columnName)) continue;
+
+      if (!existingColumns.has(field.columnName)) {
+        diff.addColumns.push({
+          columnName: field.columnName,
+          dataType: this.mapFieldTypeToPostgres(field.type),
+          nullable: !field.required,
+        });
+      }
+    }
+
+    // Check for columns that exist in DB but not in compiled model (candidate for drop)
+    const compiledColumnNames = new Set(compiled.fields.map((f) => f.columnName));
+    for (const [colName] of existingColumns) {
+      if (systemColumns.has(colName)) continue;
+      if (!compiledColumnNames.has(colName)) {
+        diff.dropColumns.push({ columnName: colName });
+      }
+    }
+
+    return diff;
+  }
+
+  /**
+   * Map field type to PostgreSQL type (simplified, mirrors DDL generator)
+   */
+  private mapFieldTypeToPostgres(fieldType: string): string {
+    switch (fieldType) {
+      case "string": return "TEXT";
+      case "number": case "decimal": return "NUMERIC";
+      case "boolean": return "BOOLEAN";
+      case "date": case "datetime": return "TIMESTAMPTZ";
+      case "reference": case "uuid": return "UUID";
+      case "enum": return "TEXT";
+      case "json": return "JSONB";
+      case "rich_text": return "TEXT";
+      default: return "JSONB";
+    }
+  }
+
+  /**
+   * Generate ALTER TABLE DDL from a schema diff
+   */
+  private generateAlterDdl(tableName: string, diff: SchemaDiff): string {
+    const qualifiedTable = `ent.${tableName}`;
+    const statements: string[] = [];
+
+    statements.push(`-- ALTER TABLE migration for ${qualifiedTable}`);
+    statements.push(`-- Generated at: ${new Date().toISOString()}`);
+    statements.push("");
+
+    // ADD COLUMN statements
+    for (const col of diff.addColumns) {
+      const nullable = col.nullable ? "" : " NOT NULL";
+      statements.push(
+        `ALTER TABLE ${qualifiedTable} ADD COLUMN IF NOT EXISTS ${col.columnName} ${col.dataType}${nullable};`
+      );
+    }
+
+    // DROP COLUMN — rename to _deprecated_ for safety
+    for (const col of diff.dropColumns) {
+      statements.push(
+        `ALTER TABLE ${qualifiedTable} RENAME COLUMN ${col.columnName} TO _deprecated_${col.columnName};`
+      );
+    }
+
+    // ALTER COLUMN TYPE statements
+    for (const col of diff.alterColumns) {
+      statements.push(
+        `ALTER TABLE ${qualifiedTable} ALTER COLUMN ${col.columnName} TYPE ${col.toType} USING ${col.columnName}::${col.toType};`
+      );
+    }
+
+    return statements.join("\n");
+  }
+
+  /**
+   * Hash DDL string for migration history tracking
+   */
+  private hashDdl(ddl: string): string {
+    // Simple hash using built-in crypto (import at top if not available)
+    let hash = 0;
+    for (let i = 0; i < ddl.length; i++) {
+      const char = ddl.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash |= 0; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(16).padStart(8, "0");
+  }
+
+  /**
+   * Record migration in meta.migration_history table
+   */
+  private async recordMigrationHistory(
+    entry: MigrationPlanEntry,
+    ddlHash: string,
+    status: "applied" | "failed" | "rolled_back",
+    errorMessage?: string
+  ): Promise<void> {
+    try {
+      await sql`
+        INSERT INTO meta.migration_history (tenant_id, entity_name, version, action, ddl_sql, ddl_hash, status, error_message, applied_by)
+        VALUES (
+          ${"default"},
+          ${entry.entityName},
+          ${"latest"},
+          ${entry.action},
+          ${entry.ddl ?? ""},
+          ${ddlHash},
+          ${status},
+          ${errorMessage ?? null},
+          ${"system"}
+        )
+      `.execute(this.options.db);
+    } catch (error) {
+      // Non-fatal: history recording should not block migrations
+      console.error(
+        JSON.stringify({
+          msg: "migration_history_record_error",
+          entityName: entry.entityName,
+          error: String(error),
+        })
+      );
+    }
   }
 }

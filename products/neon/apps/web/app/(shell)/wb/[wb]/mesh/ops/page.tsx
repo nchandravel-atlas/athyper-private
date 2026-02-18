@@ -1,7 +1,7 @@
 "use client";
 
 import {
-    Database, Globe, HardDrive, KeyRound,
+    Database, Globe, HardDrive, KeyRound, ListTodo,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -42,6 +42,12 @@ const OPS_SECTIONS: OpsCard[] = [
         description: "Manage MinIO buckets, object lifecycle policies, storage quotas, and access configurations.",
         icon: HardDrive,
         href: "/storage",
+    },
+    {
+        title: "Job Queues",
+        description: "Monitor background job queues, inspect job status, retry failed jobs, and pause/resume processing.",
+        icon: ListTodo,
+        href: "/jobs",
     },
 ];
 

@@ -581,10 +581,35 @@ export class PublishService {
       tenantId: ctx.tenantId,
     };
 
-    // TODO: Persist to meta_publish_artifact table
-    // For now, we'll just return the artifact
-    // In production, this should:
-    // await this.db.insertInto('meta.meta_publish_artifact').values({...}).execute()
+    // Persist to meta.publish_artifact table
+    try {
+      await (this.db as Kysely<Record<string, Record<string, unknown>>>)
+        .insertInto("meta.publish_artifact" as never)
+        .values({
+          id: artifactId,
+          tenant_id: ctx.tenantId,
+          entity_name: entityName,
+          version,
+          compiled_hash: compiledHash,
+          diagnostics_summary: JSON.stringify(diagnostics),
+          applied_overlay_set: JSON.stringify(overlaySet),
+          migration_plan_hash: migrationPlanHash ?? null,
+          migration_plan_sql: migrationPlanSql ?? null,
+          published_by: ctx.userId,
+        } as never)
+        .execute();
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          msg: "publish_artifact_persist_error",
+          artifactId,
+          entityName,
+          version,
+          error: String(error),
+        })
+      );
+      // Non-fatal: artifact is still returned in-memory even if DB write fails
+    }
 
     console.log(
       JSON.stringify({
@@ -603,13 +628,50 @@ export class PublishService {
    * Get existing publish artifact
    */
   private async getPublishArtifact(
-    _entityName: string,
-    _version: string,
-    _tenantId: string
+    entityName: string,
+    version: string,
+    tenantId: string
   ): Promise<PublishArtifact | undefined> {
-    // TODO: Query meta_publish_artifact table
-    // For now, return undefined (allow republish during development)
-    return undefined;
+    try {
+      const row = await (this.db as Kysely<Record<string, Record<string, unknown>>>)
+        .selectFrom("meta.publish_artifact" as never)
+        .selectAll()
+        .where("tenant_id" as never, "=", tenantId)
+        .where("entity_name" as never, "=", entityName)
+        .where("version" as never, "=", version)
+        .executeTakeFirst() as Record<string, unknown> | undefined;
+
+      if (!row) return undefined;
+
+      return {
+        id: row.id as string,
+        entityName: row.entity_name as string,
+        version: row.version as string,
+        compiledHash: row.compiled_hash as string,
+        diagnosticsSummary: (typeof row.diagnostics_summary === "string"
+          ? JSON.parse(row.diagnostics_summary)
+          : row.diagnostics_summary) as DiagnosticsSummary,
+        appliedOverlaySet: (typeof row.applied_overlay_set === "string"
+          ? JSON.parse(row.applied_overlay_set)
+          : row.applied_overlay_set ?? []) as string[],
+        migrationPlanHash: (row.migration_plan_hash as string) ?? undefined,
+        migrationPlanSql: (row.migration_plan_sql as string) ?? undefined,
+        publishedAt: new Date(row.published_at as string),
+        publishedBy: row.published_by as string,
+        tenantId: row.tenant_id as string,
+      };
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          msg: "get_publish_artifact_error",
+          entityName,
+          version,
+          tenantId,
+          error: String(error),
+        })
+      );
+      return undefined;
+    }
   }
 
   /**
@@ -658,11 +720,45 @@ export class PublishService {
    * Get publish history for entity
    */
   async getPublishHistory(
-    _entityName: string,
-    _tenantId: string
+    entityName: string,
+    tenantId: string
   ): Promise<PublishArtifact[]> {
-    // TODO: Query meta_publish_artifact table
-    // ORDER BY published_at DESC
-    return [];
+    try {
+      const rows = await (this.db as Kysely<Record<string, Record<string, unknown>>>)
+        .selectFrom("meta.publish_artifact" as never)
+        .selectAll()
+        .where("tenant_id" as never, "=", tenantId)
+        .where("entity_name" as never, "=", entityName)
+        .orderBy("published_at" as never, "desc")
+        .execute() as Record<string, unknown>[];
+
+      return rows.map((row) => ({
+        id: row.id as string,
+        entityName: row.entity_name as string,
+        version: row.version as string,
+        compiledHash: row.compiled_hash as string,
+        diagnosticsSummary: (typeof row.diagnostics_summary === "string"
+          ? JSON.parse(row.diagnostics_summary)
+          : row.diagnostics_summary) as DiagnosticsSummary,
+        appliedOverlaySet: (typeof row.applied_overlay_set === "string"
+          ? JSON.parse(row.applied_overlay_set)
+          : row.applied_overlay_set ?? []) as string[],
+        migrationPlanHash: (row.migration_plan_hash as string) ?? undefined,
+        migrationPlanSql: (row.migration_plan_sql as string) ?? undefined,
+        publishedAt: new Date(row.published_at as string),
+        publishedBy: row.published_by as string,
+        tenantId: row.tenant_id as string,
+      }));
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          msg: "get_publish_history_error",
+          entityName,
+          tenantId,
+          error: String(error),
+        })
+      );
+      return [];
+    }
   }
 }

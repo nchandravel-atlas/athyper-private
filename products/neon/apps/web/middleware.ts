@@ -27,6 +27,9 @@ const PUBLIC_PATHS = new Set([
     "/wb/forbidden",
 ]);
 
+// Routes that are allowed while MFA is pending (not yet verified).
+const MFA_EXEMPT_PREFIXES = ["/mfa/", "/api/auth/mfa/", "/api/auth/logout", "/api/auth/session"];
+
 // Prefix-based public paths
 const PUBLIC_PREFIXES = ["/public/"];
 
@@ -74,6 +77,20 @@ export function middleware(req: NextRequest) {
         url.pathname = "/api/auth/login";
         url.searchParams.set("returnUrl", pathname);
         return NextResponse.redirect(url);
+    }
+
+    // ─── MFA gate for protected routes ────────────────────────────
+    // If the session requires MFA and it hasn't been verified yet,
+    // redirect to /mfa/challenge. The neon_mfa cookie is set by the
+    // MFA verify BFF route after successful TOTP verification. This
+    // is a lightweight Edge-compatible check — the server-side session
+    // in Redis is the authoritative source (checked by BFF routes).
+    const mfaPending = req.cookies.get("neon_mfa_pending")?.value;
+    if (mfaPending === "1" && !MFA_EXEMPT_PREFIXES.some((p) => pathname.startsWith(p))) {
+        const mfaUrl = req.nextUrl.clone();
+        mfaUrl.pathname = "/mfa/challenge";
+        mfaUrl.searchParams.set("returnUrl", pathname);
+        return NextResponse.redirect(mfaUrl);
     }
 
     // ─── Locale detection ─────────────────────────────────────────

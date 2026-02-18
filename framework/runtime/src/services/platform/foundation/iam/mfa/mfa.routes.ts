@@ -540,5 +540,160 @@ export function createMfaRoutes(
     }
   );
 
+  // ==========================================================================
+  // WebAuthn Endpoints
+  // ==========================================================================
+
+  /**
+   * POST /mfa/webauthn/register-options
+   * Get registration options for a new passkey
+   */
+  router.post(
+    "/mfa/webauthn/register-options",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const tenantId = getTenantId(req);
+        const principalId = getPrincipalId(req);
+
+        const webauthnService = (req as any).webauthnService;
+        if (!webauthnService) {
+          return res.status(501).json({ error: "WebAuthn not configured" });
+        }
+
+        const userName = (req as any).auth?.email ?? principalId;
+        const displayName = (req as any).auth?.displayName ?? userName;
+
+        const options = await webauthnService.startRegistration(
+          principalId,
+          tenantId,
+          userName,
+          displayName,
+        );
+
+        return res.json(options);
+      } catch (error) {
+        logger.error("Failed to start WebAuthn registration", { error });
+        return next(error);
+      }
+    }
+  );
+
+  /**
+   * POST /mfa/webauthn/register-verify
+   * Verify registration response and store the credential
+   */
+  router.post(
+    "/mfa/webauthn/register-verify",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const body = z.object({
+          challenge: z.string().min(1),
+          response: z.object({
+            id: z.string(),
+            rawId: z.string(),
+            type: z.literal("public-key"),
+            response: z.object({
+              clientDataJSON: z.string(),
+              attestationObject: z.string(),
+            }),
+          }),
+        }).parse(req.body);
+
+        const webauthnService = (req as any).webauthnService;
+        if (!webauthnService) {
+          return res.status(501).json({ error: "WebAuthn not configured" });
+        }
+
+        const result = await webauthnService.verifyRegistration(
+          body.challenge,
+          body.response,
+        );
+
+        if (!result.verified) {
+          return res.status(400).json({ verified: false, error: result.error });
+        }
+
+        return res.json({ verified: true, credentialId: result.credentialId });
+      } catch (error) {
+        logger.error("Failed to verify WebAuthn registration", { error });
+        return next(error);
+      }
+    }
+  );
+
+  /**
+   * POST /mfa/webauthn/auth-options
+   * Get authentication options for an existing passkey
+   */
+  router.post(
+    "/mfa/webauthn/auth-options",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const tenantId = getTenantId(req);
+        const principalId = getPrincipalId(req);
+
+        const webauthnService = (req as any).webauthnService;
+        if (!webauthnService) {
+          return res.status(501).json({ error: "WebAuthn not configured" });
+        }
+
+        const options = await webauthnService.startAuthentication(
+          principalId,
+          tenantId,
+        );
+
+        return res.json(options);
+      } catch (error) {
+        logger.error("Failed to start WebAuthn authentication", { error });
+        return next(error);
+      }
+    }
+  );
+
+  /**
+   * POST /mfa/webauthn/auth-verify
+   * Verify authentication response
+   */
+  router.post(
+    "/mfa/webauthn/auth-verify",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const body = z.object({
+          challenge: z.string().min(1),
+          response: z.object({
+            id: z.string(),
+            rawId: z.string(),
+            type: z.literal("public-key"),
+            response: z.object({
+              clientDataJSON: z.string(),
+              authenticatorData: z.string(),
+              signature: z.string(),
+              userHandle: z.string().optional(),
+            }),
+          }),
+        }).parse(req.body);
+
+        const webauthnService = (req as any).webauthnService;
+        if (!webauthnService) {
+          return res.status(501).json({ error: "WebAuthn not configured" });
+        }
+
+        const result = await webauthnService.verifyAuthentication(
+          body.challenge,
+          body.response,
+        );
+
+        if (!result.verified) {
+          return res.status(403).json({ verified: false, error: result.error });
+        }
+
+        return res.json({ verified: true, credentialId: result.credentialId });
+      } catch (error) {
+        logger.error("Failed to verify WebAuthn authentication", { error });
+        return next(error);
+      }
+    }
+  );
+
   return router;
 }

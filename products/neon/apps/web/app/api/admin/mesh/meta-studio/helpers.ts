@@ -3,6 +3,7 @@ import "server-only";
 import { getSessionId } from "@neon/auth/session";
 import { NextResponse } from "next/server";
 import { checkRateLimit } from "./rate-limit";
+import { isStubEnabled, resolveStub } from "./stubs";
 
 import type { NextRequest } from "next/server";
 import type { ZodSchema, ZodError } from "zod";
@@ -12,7 +13,7 @@ import type { ZodSchema, ZodError } from "zod";
 // Prevents arbitrary upstream requests if a route handler has a bug.
 
 const ALLOWED_PATH_PATTERN =
-    /^\/api\/meta\/entities(\/[a-zA-Z0-9_-]+(\/(?:fields|relations|indexes|policies|overlays|lifecycle|compiled|compile|versions|validation|validation\/test))?)?\/?$/;
+    /^\/api\/meta\/entities(\/[a-zA-Z0-9_-]+(\/(?:fields|relations|indexes|policies|overlays|lifecycle|compiled|compile|versions|validation|validation\/test|diff))?)?\/?$/;
 
 // ─── Body Size Limit ──────────────────────────────────────────
 
@@ -219,6 +220,14 @@ export async function assertDraftVersion(
     return null;
 }
 
+// ─── Connection Error Detection ──────────────────────────────
+
+function isConnectionError(err: unknown): boolean {
+    if (err instanceof TypeError && err.message === "fetch failed") return true;
+    const msg = String(err).toLowerCase();
+    return msg.includes("econnrefused") || msg.includes("enotfound") || msg.includes("fetch failed");
+}
+
 // ─── Observability ────────────────────────────────────────────
 
 function emitProxyMetric(entry: {
@@ -297,9 +306,32 @@ export async function proxyGet(
         return NextResponse.json({ success: true, data }, { headers: responseHeaders });
     } catch (err) {
         const durationMs = Math.round(performance.now() - startTime);
+
+        // Stub fallback for connection errors in development
+        if (isConnectionError(err) && isStubEnabled()) {
+            const stubData = resolveStub(path);
+            if (stubData !== null) {
+                emitProxyMetric({ correlationId: auth.correlationId, endpoint: path, method: "GET", durationMs, status: 200, error: "stub_fallback" });
+                return NextResponse.json(
+                    { success: true, data: stubData },
+                    {
+                        headers: {
+                            "X-Correlation-Id": auth.correlationId,
+                            "X-Stub-Response": "true",
+                            "X-Stub-Reason": "connection_error",
+                            "X-Response-Time": `${durationMs}ms`,
+                        },
+                    },
+                );
+            }
+        }
+
+        const errorMessage = isConnectionError(err)
+            ? `Unable to connect to the platform API at ${auth.runtimeApiUrl}. Ensure backend services are running.`
+            : String(err);
         emitProxyMetric({ correlationId: auth.correlationId, endpoint: path, method: "GET", durationMs, status: 502, error: String(err) });
         return NextResponse.json(
-            { success: false, error: { code: "PROXY_ERROR", message: String(err) } },
+            { success: false, error: { code: "PROXY_ERROR", message: errorMessage } },
             { status: 502 },
         );
     }
@@ -398,9 +430,16 @@ export async function proxyMutate(
         return NextResponse.json({ success: true, data }, { status: statusForResponse, headers: responseHeaders });
     } catch (err) {
         const durationMs = Math.round(performance.now() - startTime);
+        const isConnErr = isConnectionError(err);
+        const stubHint = isConnErr && isStubEnabled()
+            ? " Dev stubs are active for reads, but mutations require a running backend."
+            : "";
+        const errorMessage = isConnErr
+            ? `Unable to connect to the platform API at ${auth.runtimeApiUrl}. Ensure backend services are running.${stubHint}`
+            : String(err);
         emitProxyMetric({ correlationId: auth.correlationId, endpoint: path, method, durationMs, status: 502, error: String(err) });
         return NextResponse.json(
-            { success: false, error: { code: "PROXY_ERROR", message: String(err) } },
+            { success: false, error: { code: "PROXY_ERROR", message: errorMessage } },
             { status: 502 },
         );
     }

@@ -53,23 +53,17 @@ export function VersionTimeline({ entityName, readonly }: VersionTimelineProps) 
         if (!compareVersions[0] || !compareVersions[1]) return;
         setDiffLoading(true);
         try {
-            const [baseRes, targetRes] = await Promise.all([
-                fetch(`/api/admin/mesh/meta-studio/${encodeURIComponent(entityName)}/versions?versionId=${compareVersions[0]}`),
-                fetch(`/api/admin/mesh/meta-studio/${encodeURIComponent(entityName)}/versions?versionId=${compareVersions[1]}`),
-            ]);
-            if (baseRes.ok && targetRes.ok) {
-                const baseData = (await baseRes.json()) as { data?: { diff?: SchemaDiff } };
-                // For now show a placeholder diff — the real diff endpoint would return structured data
-                setDiffResult(baseData.data?.diff ?? {
-                    fields: [],
-                    relations: [],
-                    indexes: [],
-                    breaking: false,
-                    summary: "Diff data unavailable — compare endpoint not yet wired",
-                });
+            const res = await fetch(
+                `/api/admin/mesh/meta-studio/${encodeURIComponent(entityName)}/diff?base=${compareVersions[0]}&target=${compareVersions[1]}`
+            );
+            if (res.ok) {
+                const body = (await res.json()) as { success: boolean; data?: SchemaDiff };
+                if (body.success && body.data) {
+                    setDiffResult(body.data);
+                }
             }
         } catch {
-            // Silently fail for now
+            // Silently fail — diff is non-critical UI
         } finally {
             setDiffLoading(false);
         }

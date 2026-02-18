@@ -335,6 +335,105 @@ class MfaDevicesHandler implements RouteHandler {
     }
 }
 
+class MfaCancelEnrollHandler implements RouteHandler {
+    async handle(_req: Request, res: Response, ctx: HttpHandlerContext): Promise<void> {
+        const mfaService = await ctx.container.resolve<MfaService>(TOKENS.iamMfaService);
+        const principalId = ctx.auth.userId ?? ctx.auth.subject ?? "";
+        const tenantId = ctx.tenant.tenantKey ?? "default";
+        await mfaService.cancelEnrollment(principalId, tenantId);
+        res.status(200).json({ success: true, data: { cancelled: true } });
+    }
+}
+
+class MfaChallengeHandler implements RouteHandler {
+    async handle(req: Request, res: Response, ctx: HttpHandlerContext): Promise<void> {
+        const mfaService = await ctx.container.resolve<MfaService>(TOKENS.iamMfaService);
+        const principalId = ctx.auth.userId ?? ctx.auth.subject ?? "";
+        const tenantId = ctx.tenant.tenantKey ?? "default";
+        const result = await mfaService.createChallenge({
+            principalId,
+            tenantId,
+            method: req.body?.method ?? "totp",
+        });
+        res.status(200).json({ success: true, data: result });
+    }
+}
+
+class MfaVerifyHandler implements RouteHandler {
+    async handle(req: Request, res: Response, ctx: HttpHandlerContext): Promise<void> {
+        const mfaService = await ctx.container.resolve<MfaService>(TOKENS.iamMfaService);
+        const principalId = ctx.auth.userId ?? ctx.auth.subject ?? "";
+        const tenantId = ctx.tenant.tenantKey ?? "default";
+        const result = await mfaService.verifyChallenge(
+            {
+                principalId,
+                tenantId,
+                code: req.body?.code ?? "",
+                challengeToken: req.body?.challengeToken,
+                trustDevice: req.body?.trustDevice ?? false,
+                deviceName: req.body?.deviceName,
+            },
+            {
+                ipAddress: ctx.request.ip,
+                userAgent: ctx.request.userAgent,
+            }
+        );
+        res.status(200).json({ success: true, data: result });
+    }
+}
+
+class MfaDisableHandler implements RouteHandler {
+    async handle(req: Request, res: Response, ctx: HttpHandlerContext): Promise<void> {
+        const mfaService = await ctx.container.resolve<MfaService>(TOKENS.iamMfaService);
+        const principalId = ctx.auth.userId ?? ctx.auth.subject ?? "";
+        const tenantId = ctx.tenant.tenantKey ?? "default";
+        const result = await mfaService.disable(principalId, tenantId, req.body?.code ?? "");
+        res.status(200).json({ success: true, data: result });
+    }
+}
+
+class MfaBackupCodesRegenerateHandler implements RouteHandler {
+    async handle(_req: Request, res: Response, ctx: HttpHandlerContext): Promise<void> {
+        const mfaService = await ctx.container.resolve<MfaService>(TOKENS.iamMfaService);
+        const principalId = ctx.auth.userId ?? ctx.auth.subject ?? "";
+        const tenantId = ctx.tenant.tenantKey ?? "default";
+        const result = await mfaService.regenerateBackupCodes(principalId, tenantId);
+        res.status(200).json({ success: true, data: result });
+    }
+}
+
+class MfaRevokeDeviceHandler implements RouteHandler {
+    async handle(req: Request, res: Response, ctx: HttpHandlerContext): Promise<void> {
+        const mfaService = await ctx.container.resolve<MfaService>(TOKENS.iamMfaService);
+        const principalId = ctx.auth.userId ?? ctx.auth.subject ?? "";
+        const tenantId = ctx.tenant.tenantKey ?? "default";
+        const deviceId = req.params?.deviceId ?? "";
+        await mfaService.revokeDevice(principalId, tenantId, deviceId);
+        res.status(200).json({ success: true, data: { revoked: true, deviceId } });
+    }
+}
+
+class MfaRevokeAllDevicesHandler implements RouteHandler {
+    async handle(_req: Request, res: Response, ctx: HttpHandlerContext): Promise<void> {
+        const mfaService = await ctx.container.resolve<MfaService>(TOKENS.iamMfaService);
+        const principalId = ctx.auth.userId ?? ctx.auth.subject ?? "";
+        const tenantId = ctx.tenant.tenantKey ?? "default";
+        await mfaService.revokeAllDevices(principalId, tenantId);
+        res.status(200).json({ success: true, data: { revokedAll: true } });
+    }
+}
+
+class MfaCheckDeviceHandler implements RouteHandler {
+    async handle(req: Request, res: Response, ctx: HttpHandlerContext): Promise<void> {
+        const mfaService = await ctx.container.resolve<MfaService>(TOKENS.iamMfaService);
+        const principalId = ctx.auth.userId ?? ctx.auth.subject ?? "";
+        const tenantId = ctx.tenant.tenantKey ?? "default";
+        const trustToken = req.body?.trustToken ?? "";
+        const trusted = await mfaService.isTrustedDevice(principalId, tenantId, trustToken);
+        res.status(200).json({ success: true, data: { trusted } });
+    }
+}
+
 // ── Group Handlers ────────────────────────────────────────────────────
 
 class ListGroupsHandler implements RouteHandler {
@@ -1193,14 +1292,14 @@ export const module: RuntimeModule = {
         c.register(IAM_HANDLER_TOKENS.getFieldPolicy, async () => new GetFieldPolicyHandler(), "singleton");
         c.register(IAM_HANDLER_TOKENS.updateFieldPolicy, async () => new UpdateFieldPolicyHandler(), "singleton");
         c.register(IAM_HANDLER_TOKENS.deleteFieldPolicy, async () => new DeleteFieldPolicyHandler(), "singleton");
-        c.register(IAM_HANDLER_TOKENS.mfaCancelEnroll, async () => new StubHandler("cancel MFA enrollment"), "singleton");
-        c.register(IAM_HANDLER_TOKENS.mfaChallenge, async () => new StubHandler("create MFA challenge"), "singleton");
-        c.register(IAM_HANDLER_TOKENS.mfaVerify, async () => new StubHandler("verify MFA challenge"), "singleton");
-        c.register(IAM_HANDLER_TOKENS.mfaDisable, async () => new StubHandler("disable MFA"), "singleton");
-        c.register(IAM_HANDLER_TOKENS.mfaBackupCodes, async () => new StubHandler("regenerate backup codes"), "singleton");
-        c.register(IAM_HANDLER_TOKENS.mfaRevokeDevice, async () => new StubHandler("revoke device"), "singleton");
-        c.register(IAM_HANDLER_TOKENS.mfaRevokeAllDevices, async () => new StubHandler("revoke all devices"), "singleton");
-        c.register(IAM_HANDLER_TOKENS.mfaCheckDevice, async () => new StubHandler("check device"), "singleton");
+        c.register(IAM_HANDLER_TOKENS.mfaCancelEnroll, async () => new MfaCancelEnrollHandler(), "singleton");
+        c.register(IAM_HANDLER_TOKENS.mfaChallenge, async () => new MfaChallengeHandler(), "singleton");
+        c.register(IAM_HANDLER_TOKENS.mfaVerify, async () => new MfaVerifyHandler(), "singleton");
+        c.register(IAM_HANDLER_TOKENS.mfaDisable, async () => new MfaDisableHandler(), "singleton");
+        c.register(IAM_HANDLER_TOKENS.mfaBackupCodes, async () => new MfaBackupCodesRegenerateHandler(), "singleton");
+        c.register(IAM_HANDLER_TOKENS.mfaRevokeDevice, async () => new MfaRevokeDeviceHandler(), "singleton");
+        c.register(IAM_HANDLER_TOKENS.mfaRevokeAllDevices, async () => new MfaRevokeAllDevicesHandler(), "singleton");
+        c.register(IAM_HANDLER_TOKENS.mfaCheckDevice, async () => new MfaCheckDeviceHandler(), "singleton");
 
         logger.info("[iam] IAM module registered");
     },

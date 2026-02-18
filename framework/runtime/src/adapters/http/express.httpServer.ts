@@ -33,6 +33,11 @@ export function createExpressHttpServer(root: Container): HttpServer {
     let server: Server | undefined;
 
     function mountRoutes(routes: readonly RouteDef[]) {
+        // Health probe (no auth, no tenant context — for Docker healthcheck / LB probes)
+        app.get("/health", (_req, res) => {
+            res.json({ status: "ok", ts: new Date().toISOString() });
+        });
+
         for (const r of routes) {
             app[r.method.toLowerCase() as "get" | "post" | "put" | "patch" | "delete"](r.path, makeRouteMiddleware(root, r));
         }

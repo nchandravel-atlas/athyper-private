@@ -102,6 +102,8 @@ export async function GET(req: Request) {
             roles: session.roles ?? [],
             persona: session.persona,
             accessExpiresAt: session.accessExpiresAt,
+            mfaRequired: session.mfaRequired ?? false,
+            mfaVerified: session.mfaVerified ?? false,
         });
     } finally {
         await redis.quit();

@@ -11,6 +11,9 @@ import { module as notificationModule } from "./platform-services/notification/i
 import { module as auditGovernanceModule } from "./platform/audit-governance/index";
 import { module as iamModule } from "./platform/foundation/iam/iam.module";
 import { module as collaborationModule } from "./enterprise-services/collaboration/index";
+import { module as integrationHubModule } from "./platform-services/integration-hub/index";
+import { module as messagingModule } from "./enterprise-services/in-app-messaging/index";
+import { module as sharingDelegationModule } from "./enterprise-services/sharing-delegation/index";
 
 import type { AuditEvent, AuditWriter } from "../kernel/audit";
 import type { Container } from "../kernel/container";
@@ -29,6 +32,9 @@ const modules: RuntimeModule[] = [
     notificationModule,
     auditGovernanceModule,
     collaborationModule,
+    integrationHubModule,
+    messagingModule,
+    sharingDelegationModule,
 ];
 
 export async function loadServices(container: Container) {

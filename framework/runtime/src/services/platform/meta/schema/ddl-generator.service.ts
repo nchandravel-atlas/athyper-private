@@ -212,6 +212,15 @@ export class DdlGeneratorService implements DdlGenerator {
       case "json":
         return "JSONB";
 
+      case "uuid":
+        return "UUID";
+
+      case "decimal":
+        return "NUMERIC";
+
+      case "rich_text":
+        return "TEXT";
+
       default:
         console.warn(
           JSON.stringify({

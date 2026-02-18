@@ -165,6 +165,26 @@ export class WorkflowAuditRepository implements IAuditRepository {
   }
 
   // --------------------------------------------------------------------------
+  // Read — getEventById (single event lookup with tenant isolation)
+  // --------------------------------------------------------------------------
+
+  async getEventById(tenantId: string, eventId: string): Promise<AuditEvent | undefined> {
+    const row = await this.db
+      .selectFrom(TABLE as any)
+      .selectAll()
+      .where("tenant_id", "=", tenantId)
+      .where("id", "=", eventId)
+      .executeTakeFirst();
+
+    if (!row) return undefined;
+
+    if (this.encryption) {
+      return this.mapRowDecrypted(row as any, tenantId);
+    }
+    return this.mapRow(row as any);
+  }
+
+  // --------------------------------------------------------------------------
   // Read — getEvents with full filter support
   // --------------------------------------------------------------------------
 

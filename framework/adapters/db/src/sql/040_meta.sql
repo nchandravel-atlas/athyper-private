@@ -912,3 +912,64 @@ comment on table meta.notification_rule is
 
 create index if not exists idx_notification_rule_event
   on meta.notification_rule (event_type, is_enabled);
+
+-- ============================================================================
+-- META: Migration History
+-- ============================================================================
+create table if not exists meta.migration_history (
+  id            uuid primary key default gen_random_uuid(),
+  tenant_id     uuid not null references core.tenant(id) on delete cascade,
+
+  entity_name   text not null,
+  version       text not null,
+  action        text not null,
+  ddl_sql       text not null,
+  ddl_hash      text not null,
+  status        text not null default 'applied',
+  error_message text,
+
+  applied_at    timestamptz not null default now(),
+  applied_by    text not null,
+
+  constraint migration_history_action_chk check (action in ('create','alter')),
+  constraint migration_history_status_chk check (status in ('applied','failed','rolled_back'))
+);
+
+comment on table meta.migration_history is
+'Tracks DDL migrations applied to entity tables in the ent schema.';
+
+create index if not exists idx_migration_history_entity
+  on meta.migration_history (tenant_id, entity_name);
+
+create index if not exists idx_migration_history_applied
+  on meta.migration_history (applied_at);
+
+-- ============================================================================
+-- META: Publish Artifact
+-- ============================================================================
+create table if not exists meta.publish_artifact (
+  id                   uuid primary key default gen_random_uuid(),
+  tenant_id            uuid not null references core.tenant(id) on delete cascade,
+
+  entity_name          text not null,
+  version              text not null,
+  compiled_hash        text not null,
+  diagnostics_summary  jsonb,
+  applied_overlay_set  jsonb,
+  migration_plan_hash  text,
+  migration_plan_sql   text,
+
+  published_at         timestamptz not null default now(),
+  published_by         text not null,
+
+  constraint publish_artifact_version_uniq unique (tenant_id, entity_name, version)
+);
+
+comment on table meta.publish_artifact is
+'Immutable publish artifacts: one per entity+version, tracks compiled hash, DDL, and diagnostics.';
+
+create index if not exists idx_publish_artifact_entity
+  on meta.publish_artifact (tenant_id, entity_name);
+
+create index if not exists idx_publish_artifact_published
+  on meta.publish_artifact (published_at);

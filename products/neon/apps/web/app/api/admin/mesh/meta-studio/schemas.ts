@@ -69,6 +69,25 @@ export const createFieldSchema = z.object({
     lookupConfig: z.record(z.unknown()).nullish(),
 });
 
+export const updateFieldSchema = z.object({
+    fieldId: z.string().uuid(),
+    name: nonReservedName.optional(),
+    columnName: nonReservedName.optional(),
+    dataType: z.enum(DATA_TYPES).optional(),
+    uiType: z.enum(UI_TYPES).nullish(),
+    isRequired: z.boolean().optional(),
+    isUnique: z.boolean().optional(),
+    isSearchable: z.boolean().optional(),
+    isFilterable: z.boolean().optional(),
+    defaultValue: z.unknown().optional(),
+    validation: z.record(z.unknown()).nullish(),
+    lookupConfig: z.record(z.unknown()).nullish(),
+});
+
+export const deleteFieldSchema = z.object({
+    fieldId: z.string().uuid(),
+});
+
 export const reorderFieldsSchema = z.object({
     fieldIds: z.array(z.string().uuid()).min(1, "At least one field ID required"),
     revisionId: z.string().optional(),

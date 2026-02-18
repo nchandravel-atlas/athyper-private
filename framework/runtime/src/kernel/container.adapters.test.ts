@@ -83,13 +83,9 @@ describe("Adapter Registration Smoke Tests", () => {
 
         const db = await container.resolve(TOKENS.db);
         expect(db).toBeDefined();
-        expect(db.kysely).toBeDefined();
-        expect(db.withTx).toBeTypeOf("function");
-        expect(db.close).toBeTypeOf("function");
-        expect(db.health).toBeTypeOf("function");
-
-        // Cleanup
-        await db.close();
+        // TOKENS.db resolves to Kysely<DB> directly (not DbAdapter wrapper)
+        expect(db.selectFrom).toBeTypeOf("function");
+        expect(db.insertInto).toBeTypeOf("function");
     });
 
     it("should register cache adapter (skip instantiation)", async () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,6 +37,11 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
+import { ReferenceFieldConfig } from "./ReferenceFieldConfig";
+import { EnumValuesEditor } from "./EnumValuesEditor";
+import { JsonSchemaHelper } from "./JsonSchemaHelper";
+
+import type { LookupConfig } from "./ReferenceFieldConfig";
 import type { FieldDefinition } from "@/lib/schema-manager/types";
 
 // ─── Reserved Names ──────────────────────────────────────────
@@ -130,6 +135,17 @@ interface FieldFormDialogProps {
 export function FieldFormDialog({ open, onOpenChange, field, existingFields = [], onSubmit }: FieldFormDialogProps) {
     const isEditing = field !== null;
 
+    // Type-specific state
+    const existingLookup = field?.validation as Record<string, unknown> | undefined;
+    const [lookupConfig, setLookupConfig] = useState<LookupConfig>({
+        targetEntity: (existingLookup?.targetEntity as string) ?? "",
+        targetKey: (existingLookup?.targetKey as string) ?? "id",
+        onDelete: (existingLookup?.onDelete as LookupConfig["onDelete"]) ?? "restrict",
+    });
+    const [enumValues, setEnumValues] = useState<string[]>(
+        () => (field?.validation as Record<string, unknown>)?.allowedValues as string[] ?? [],
+    );
+
     const schema = useMemo(
         () => buildFieldSchema(existingFields, field?.id),
         [existingFields, field?.id],
@@ -152,7 +168,16 @@ export function FieldFormDialog({ open, onOpenChange, field, existingFields = []
     });
 
     const handleSubmit = (values: FieldFormValues) => {
-        onSubmit(values);
+        const dt = values.dataType;
+        let finalValues = { ...values };
+
+        if (dt === "reference" && lookupConfig.targetEntity) {
+            finalValues.validationJson = JSON.stringify(lookupConfig);
+        } else if (dt === "enum" && enumValues.length > 0) {
+            finalValues.validationJson = JSON.stringify({ allowedValues: enumValues });
+        }
+
+        onSubmit(finalValues);
         onOpenChange(false);
     };
 
@@ -274,6 +299,23 @@ export function FieldFormDialog({ open, onOpenChange, field, existingFields = []
                                     )}
                                 </div>
                             </div>
+                        )}
+
+                        {/* Type-specific sub-forms */}
+                        {watchDataType === "reference" && (
+                            <ReferenceFieldConfig value={lookupConfig} onChange={setLookupConfig} />
+                        )}
+                        {watchDataType === "enum" && (
+                            <EnumValuesEditor values={enumValues} onChange={setEnumValues} />
+                        )}
+                        {watchDataType === "json" && (
+                            <FormField
+                                control={form.control}
+                                name="validationJson"
+                                render={({ field: f }) => (
+                                    <JsonSchemaHelper value={f.value} onChange={f.onChange} />
+                                )}
+                            />
                         )}
 
                         <Separator />

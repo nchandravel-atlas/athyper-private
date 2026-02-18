@@ -226,6 +226,20 @@ export const RuntimeConfigSchema = z.object({
                 webhookVerifyToken: z.string().optional(),
                 enabled: Bool.default(false),
             }).default({}),
+            sms: z.object({
+                twilio: z.object({
+                    accountSidRef: z.string().optional(),
+                    authTokenRef: z.string().optional(),
+                    fromNumber: z.string().optional(),
+                    enabled: Bool.default(false),
+                }).default({}),
+            }).default({}),
+            push: z.object({
+                vapidPublicKey: z.string().optional(),
+                vapidPrivateKeyRef: z.string().optional(),
+                vapidSubject: z.string().optional(),
+                enabled: Bool.default(false),
+            }).default({}),
         }).default({}),
         delivery: z.object({
             maxRetries: z.coerce.number().int().min(0).default(3),
@@ -257,6 +271,33 @@ export const RuntimeConfigSchema = z.object({
         rateLimits: z.object({
             commentsPerMinute: z.coerce.number().int().positive().default(10),
             mentionsPerComment: z.coerce.number().int().positive().default(20),
+        }).default({}),
+    }).default({}),
+
+    voice: z.object({
+        enabled: Bool.default(false),
+        providers: z.object({
+            twilio: z.object({
+                accountSidRef: z.string().optional(),
+                authTokenRef: z.string().optional(),
+                fromNumber: z.string().optional(),
+                webhookSigningSecretRef: z.string().optional(),
+                enabled: Bool.default(false),
+            }).default({}),
+            webrtc: z.object({
+                enabled: Bool.default(false),
+                stunServers: z.array(z.string()).default([]),
+                turnServerUrl: z.string().optional(),
+                turnCredentialRef: z.string().optional(),
+            }).default({}),
+        }).default({}),
+        recording: z.object({
+            autoStore: Bool.default(false),
+            storagePrefix: z.string().default("recordings"),
+            retentionDays: z.coerce.number().int().positive().default(365),
+        }).default({}),
+        analytics: z.object({
+            aggregationCron: z.string().default("0 2 * * *"),
         }).default({}),
     }).default({}),
 });

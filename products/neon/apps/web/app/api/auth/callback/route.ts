@@ -182,6 +182,37 @@ export async function GET(req: Request) {
             lastSeenAt: now,
         };
 
+        // ─── Step 5b: MFA policy check ──────────────────────────
+        // Check if MFA is required for this user via the runtime IAM API.
+        // If the runtime is unreachable, we default to mfaRequired=false
+        // (graceful degradation — MFA enforcement is additive, not blocking).
+        let mfaRequired = false;
+        const runtimeApiUrl = process.env.RUNTIME_API_URL ?? "http://localhost:4000";
+        try {
+            const mfaRes = await fetch(`${runtimeApiUrl}/api/iam/mfa/status`, {
+                headers: {
+                    "X-Tenant-Id": tokenTenantId,
+                    "X-Principal-Id": sub,
+                    "Authorization": `Bearer ${tokens.access_token}`,
+                },
+                signal: AbortSignal.timeout(3_000),
+            });
+            if (mfaRes.ok) {
+                const mfaData = (await mfaRes.json()) as { data?: { isEnabled?: boolean; requiresSetup?: boolean } };
+                if (mfaData.data?.isEnabled) {
+                    mfaRequired = true;
+                }
+            }
+        } catch {
+            // Runtime unreachable — skip MFA requirement (graceful degradation)
+        }
+
+        Object.assign(session, {
+            mfaRequired,
+            mfaVerified: false,
+            mfaVerifiedAt: undefined,
+        });
+
         // EX: 28800 = 8 hours (absolute session lifetime at Redis level)
         await redis.set(`sess:${tenantId}:${sid}`, JSON.stringify(session), { EX: 28800 });
 
@@ -212,6 +243,22 @@ export async function GET(req: Request) {
         });
 
         // ─── Step 9: Redirect ───────────────────────────────────────
+        // If MFA is required and not yet verified, redirect to MFA challenge
+        // instead of the intended destination. The returnUrl is preserved so
+        // after MFA verification the user reaches their original destination.
+        if (mfaRequired) {
+            const mfaUrl = new URL("/mfa/challenge", url.origin);
+            if (returnUrl) mfaUrl.searchParams.set("returnUrl", returnUrl);
+            const mfaResponse = NextResponse.redirect(mfaUrl);
+            // Set MFA pending cookie for Edge Middleware gate
+            mfaResponse.cookies.set("neon_mfa_pending", "1", {
+                httpOnly: true,
+                secure: env !== "local",
+                sameSite: "lax",
+                path: "/",
+            });
+            return mfaResponse;
+        }
         const target = new URL(returnUrl || "/", url.origin);
         return NextResponse.redirect(target);
     } catch (e: unknown) {

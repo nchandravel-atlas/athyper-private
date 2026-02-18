@@ -95,7 +95,7 @@ sleep 5
 
 # Mount the import file directly into the container — no temp directory needed
 docker run --rm \
-  --network athyper-mesh-edge \
+  --network athyper-mesh-internal \
   -v "${IMPORT_FILE}:/opt/keycloak/data/import/athyper-realm.json:ro" \
   -e KC_DB=postgres \
   -e KC_DB_URL="${DB_URL}" \

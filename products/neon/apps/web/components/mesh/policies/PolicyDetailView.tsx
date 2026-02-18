@@ -2,9 +2,10 @@
 
 import {
     Archive, ChevronRight, Cog, Copy, Eye, MoreVertical,
-    Play, Plus, Shield, ShieldCheck, ShieldX, Trash2,
+    Pencil, Play, Plus, Shield, ShieldCheck, ShieldX, Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,10 +20,20 @@ import {
     TableHeader, TableRow,
 } from "@/components/ui/table";
 import { BackLink } from "@/components/mesh/shared/BackLink";
+import { ConfirmDeleteDialog } from "@/components/mesh/shared/ConfirmDeleteDialog";
 import { StatusDot } from "@/components/mesh/shared/StatusDot";
 import { VersionBadge } from "@/components/mesh/shared/VersionBadge";
+import { RuleFormDialog } from "@/components/mesh/policies/RuleFormDialog";
+import type { RuleFormData } from "@/components/mesh/policies/RuleFormDialog";
+import { ConditionSummary } from "@/components/mesh/policies/PolicyConditionBuilder";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { buildHeaders } from "@/lib/schema-manager/use-csrf";
+import { usePolicyMutations } from "@/lib/schema-manager/use-policy-mutations";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -133,7 +144,16 @@ const TABS: { id: TabId; label: string }[] = [
 
 // ─── Rules Tab ───────────────────────────────────────────────
 
-function RulesTab({ rules, isDraft }: { rules: PermissionRule[]; isDraft: boolean }) {
+interface RulesTabProps {
+    rules: PermissionRule[];
+    isDraft: boolean;
+    onAddRule: () => void;
+    onEditRule: (rule: PermissionRule) => void;
+    onDuplicateRule: (rule: PermissionRule) => void;
+    onDeleteRule: (rule: PermissionRule) => void;
+}
+
+function RulesTab({ rules, isDraft, onAddRule, onEditRule, onDuplicateRule, onDeleteRule }: RulesTabProps) {
     if (rules.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -145,7 +165,7 @@ function RulesTab({ rules, isDraft }: { rules: PermissionRule[]; isDraft: boolea
                     Add permission rules to define who can perform which operations on which resources.
                 </p>
                 {isDraft && (
-                    <Button size="sm" className="mt-4">
+                    <Button size="sm" className="mt-4" onClick={onAddRule}>
                         <Plus className="mr-1.5 size-3.5" />
                         Add Rule
                     </Button>
@@ -158,7 +178,7 @@ function RulesTab({ rules, isDraft }: { rules: PermissionRule[]; isDraft: boolea
         <div className="space-y-3">
             {isDraft && (
                 <div className="flex justify-end">
-                    <Button size="sm">
+                    <Button size="sm" onClick={onAddRule}>
                         <Plus className="mr-1.5 size-3.5" />
                         Add Rule
                     </Button>
@@ -217,10 +237,19 @@ function RulesTab({ rules, isDraft }: { rules: PermissionRule[]; isDraft: boolea
                             </TableCell>
                             <TableCell className="text-center text-xs text-muted-foreground">
                                 {rule.conditions ? (
-                                    <Badge variant="secondary" className="text-xs">
-                                        <Eye className="mr-1 size-3" />
-                                        ABAC
-                                    </Badge>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <button type="button" title="View conditions" className="cursor-pointer hover:opacity-80">
+                                                <ConditionSummary conditions={rule.conditions as any} />
+                                            </button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[400px] p-3" align="center">
+                                            <p className="text-xs font-medium mb-2">ABAC Conditions</p>
+                                            <pre className="text-xs font-mono bg-muted rounded-md p-2 max-h-[200px] overflow-auto">
+                                                {JSON.stringify(rule.conditions, null, 2)}
+                                            </pre>
+                                        </PopoverContent>
+                                    </Popover>
                                 ) : (
                                     "—"
                                 )}
@@ -234,12 +263,16 @@ function RulesTab({ rules, isDraft }: { rules: PermissionRule[]; isDraft: boolea
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => onEditRule(rule)}>
+                                                <Pencil className="mr-2 size-3.5" />
+                                                Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => onDuplicateRule(rule)}>
                                                 <Copy className="mr-2 size-3.5" />
                                                 Duplicate
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem className="text-destructive">
+                                            <DropdownMenuItem className="text-destructive" onClick={() => onDeleteRule(rule)}>
                                                 <Trash2 className="mr-2 size-3.5" />
                                                 Delete
                                             </DropdownMenuItem>
@@ -257,7 +290,7 @@ function RulesTab({ rules, isDraft }: { rules: PermissionRule[]; isDraft: boolea
 
 // ─── Versions Tab ────────────────────────────────────────────
 
-function VersionsTab({ versions }: { versions: PolicyVersion[] }) {
+function VersionsTab({ versions, onNewVersion }: { versions: PolicyVersion[]; onNewVersion: () => void }) {
     if (versions.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -269,7 +302,7 @@ function VersionsTab({ versions }: { versions: PolicyVersion[] }) {
     return (
         <div className="space-y-3">
             <div className="flex justify-end">
-                <Button size="sm">
+                <Button size="sm" onClick={onNewVersion}>
                     <Plus className="mr-1.5 size-3.5" />
                     New Version
                 </Button>
@@ -437,8 +470,92 @@ interface PolicyDetailViewProps {
 }
 
 export function PolicyDetailView({ policyId, backHref }: PolicyDetailViewProps) {
+    const router = useRouter();
     const { policy, loading, error, refresh } = usePolicyDetail(policyId);
     const [activeTab, setActiveTab] = useState<TabId>("rules");
+
+    // Dialog state
+    const [ruleFormOpen, setRuleFormOpen] = useState(false);
+    const [editingRule, setEditingRule] = useState<PermissionRule | null>(null);
+    const [deleteRuleTarget, setDeleteRuleTarget] = useState<PermissionRule | null>(null);
+    const [deleteRuleOpen, setDeleteRuleOpen] = useState(false);
+    const [deletePolicyOpen, setDeletePolicyOpen] = useState(false);
+
+    // Mutations
+    const mutations = usePolicyMutations({
+        policyId,
+        onSuccess: refresh,
+    });
+
+    // ─── Rule Actions ─────────────────────────────────────────
+    const handleAddRule = useCallback(() => {
+        setEditingRule(null);
+        setRuleFormOpen(true);
+    }, []);
+
+    const handleEditRule = useCallback((rule: PermissionRule) => {
+        setEditingRule(rule);
+        setRuleFormOpen(true);
+    }, []);
+
+    const handleRuleFormSubmit = useCallback(async (data: RuleFormData) => {
+        const payload = data as unknown as Record<string, unknown>;
+        const success = editingRule
+            ? await mutations.updateRule(editingRule.id, payload)
+            : await mutations.addRule(payload);
+        if (success) {
+            setRuleFormOpen(false);
+            setEditingRule(null);
+        }
+    }, [mutations, editingRule]);
+
+    const handleDuplicateRule = useCallback(async (rule: PermissionRule) => {
+        await mutations.duplicateRule(rule as unknown as Record<string, unknown>);
+    }, [mutations]);
+
+    const handleDeleteRuleClick = useCallback((rule: PermissionRule) => {
+        setDeleteRuleTarget(rule);
+        setDeleteRuleOpen(true);
+    }, []);
+
+    const handleConfirmDeleteRule = useCallback(async () => {
+        if (!deleteRuleTarget) return;
+        const success = await mutations.deleteRule(deleteRuleTarget.id);
+        if (success) {
+            setDeleteRuleOpen(false);
+            setDeleteRuleTarget(null);
+        }
+    }, [deleteRuleTarget, mutations]);
+
+    // ─── Header Actions ───────────────────────────────────────
+    const handleNewVersion = useCallback(async () => {
+        await mutations.newVersion();
+    }, [mutations]);
+
+    const handlePublishVersion = useCallback(async () => {
+        if (!policy?.currentVersion) return;
+        await mutations.publishVersion(policy.currentVersion.id);
+    }, [mutations, policy]);
+
+    const handleArchiveVersion = useCallback(async () => {
+        if (!policy?.currentVersion) return;
+        await mutations.archiveVersion(policy.currentVersion.id);
+    }, [mutations, policy]);
+
+    const handleRecompile = useCallback(async () => {
+        await mutations.recompile();
+    }, [mutations]);
+
+    const handleDeletePolicyClick = useCallback(() => {
+        setDeletePolicyOpen(true);
+    }, []);
+
+    const handleConfirmDeletePolicy = useCallback(async () => {
+        const success = await mutations.deletePolicy();
+        if (success) {
+            router.push(backHref);
+        }
+    }, [mutations, router, backHref]);
 
     if (loading) {
         return (
@@ -489,33 +606,33 @@ export function PolicyDetailView({ policyId, backHref }: PolicyDetailViewProps) 
                 <div className="flex items-center gap-2">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" disabled={mutations.loading}>
                                 <MoreVertical className="size-4" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleNewVersion}>
                                 <Plus className="mr-2 size-4" />
                                 New Version
                             </DropdownMenuItem>
                             {isDraft && (
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={handlePublishVersion}>
                                     <Play className="mr-2 size-4" />
                                     Publish Version
                                 </DropdownMenuItem>
                             )}
                             {status === "published" && (
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleArchiveVersion}>
                                     <Archive className="mr-2 size-4" />
                                     Archive
                                 </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleRecompile}>
                                 <Cog className="mr-2 size-4" />
                                 Recompile
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
+                            <DropdownMenuItem className="text-destructive" onClick={handleDeletePolicyClick}>
                                 <Trash2 className="mr-2 size-4" />
                                 Delete Policy
                             </DropdownMenuItem>
@@ -535,6 +652,13 @@ export function PolicyDetailView({ policyId, backHref }: PolicyDetailViewProps) 
                     <code className="rounded bg-muted px-1.5 py-0.5 font-mono">
                         {policy.scopeKey}
                     </code>
+                </div>
+            )}
+
+            {/* Mutation error */}
+            {mutations.error && (
+                <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive">
+                    {mutations.error}
                 </div>
             )}
 
@@ -604,7 +728,7 @@ export function PolicyDetailView({ policyId, backHref }: PolicyDetailViewProps) 
                     <button
                         key={tab.id}
                         role="tab"
-                        aria-selected={activeTab === tab.id}
+                        aria-selected={activeTab === tab.id ? "true" : "false"}
                         onClick={() => setActiveTab(tab.id)}
                         className={cn(
                             "relative inline-flex items-center px-3 py-2 text-sm font-medium transition-colors",
@@ -629,15 +753,54 @@ export function PolicyDetailView({ policyId, backHref }: PolicyDetailViewProps) 
             {/* Tab Content */}
             <div className="min-h-[200px]">
                 {activeTab === "rules" && (
-                    <RulesTab rules={policy.rules} isDraft={isDraft} />
+                    <RulesTab
+                        rules={policy.rules}
+                        isDraft={isDraft}
+                        onAddRule={handleAddRule}
+                        onEditRule={handleEditRule}
+                        onDuplicateRule={handleDuplicateRule}
+                        onDeleteRule={handleDeleteRuleClick}
+                    />
                 )}
                 {activeTab === "versions" && (
-                    <VersionsTab versions={policy.versions} />
+                    <VersionsTab versions={policy.versions} onNewVersion={handleNewVersion} />
                 )}
                 {activeTab === "compiled" && (
                     <CompiledTab compiled={policy.compiled} />
                 )}
             </div>
+
+            {/* Rule Form Dialog */}
+            <RuleFormDialog
+                open={ruleFormOpen}
+                onOpenChange={(open) => {
+                    setRuleFormOpen(open);
+                    if (!open) setEditingRule(null);
+                }}
+                rule={editingRule ? { ...editingRule, scopeKey: editingRule.scopeKey ?? undefined, conditions: editingRule.conditions as RuleFormData["conditions"] } : null}
+                onSubmit={handleRuleFormSubmit}
+                loading={mutations.loading}
+            />
+
+            {/* Delete Rule Confirmation */}
+            <ConfirmDeleteDialog
+                open={deleteRuleOpen}
+                onOpenChange={setDeleteRuleOpen}
+                title="Delete Rule"
+                description={`Are you sure you want to delete this ${deleteRuleTarget?.effect ?? ""} rule for "${deleteRuleTarget?.subjectKey ?? ""}"?`}
+                onConfirm={handleConfirmDeleteRule}
+                loading={mutations.loading}
+            />
+
+            {/* Delete Policy Confirmation */}
+            <ConfirmDeleteDialog
+                open={deletePolicyOpen}
+                onOpenChange={setDeletePolicyOpen}
+                title="Delete Policy"
+                description={`Are you sure you want to delete "${policy.name}"? This will remove all versions, rules, and compiled data. This action cannot be undone.`}
+                onConfirm={handleConfirmDeletePolicy}
+                loading={mutations.loading}
+            />
         </div>
     );
 }

@@ -3,10 +3,10 @@
 // Converts parsed Keycloak token claims into a normalized authorization context.
 // This is the bridge between raw JWT claims and the application's role model.
 //
-// Role syntax (Neon v2):
-//   neon:WORKBENCH:<workbench>  → workbench access
-//   neon:MODULES:<module>       → module access
-//   neon:PERSONAS:<persona>     → persona assignment
+// Role syntax (Neon v2 — singular namespaces):
+//   neon:WORKBENCH:<workbench>  → workbench access  (e.g., neon:WORKBENCH:ADMIN)
+//   neon:MODULE:<module>        → module access      (e.g., neon:MODULE:ACC)
+//   neon:PERSONA:<persona>      → persona assignment  (e.g., neon:PERSONA:tenant_admin)
 //
 // Backward compatibility:
 //   If no neon:* client roles are present (Keycloak not configured yet),
@@ -43,7 +43,7 @@ export interface NormalizedAuth {
  * Normalize parsed Keycloak claims into an authorization context.
  *
  * Extracts workbench access from `neon:WORKBENCH:*` client roles,
- * module access from `neon:MODULES:*`, and personas from `neon:PERSONAS:*`.
+ * module access from `neon:MODULE:*`, and personas from `neon:PERSONA:*`.
  * Falls back to realm roles if no client roles are present.
  */
 export function normalizeClaims(parsed: ParsedTokenClaims): NormalizedAuth {
@@ -62,12 +62,12 @@ export function normalizeClaims(parsed: ParsedTokenClaims): NormalizedAuth {
                     allowedWorkbenches.push(parsed_role.value);
                 }
                 break;
-            case "MODULES":
+            case "MODULE":
                 if (!modules.includes(parsed_role.value)) {
                     modules.push(parsed_role.value);
                 }
                 break;
-            case "PERSONAS":
+            case "PERSONA":
                 if (!personas.includes(parsed_role.value)) {
                     personas.push(parsed_role.value);
                 }

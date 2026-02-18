@@ -11,7 +11,7 @@ interface GateModuleProps {
 }
 
 /**
- * Conditionally renders children based on module access (neon:MODULES:*).
+ * Conditionally renders children based on module access (neon:MODULE:*).
  * Renders nothing (or fallback) until auth context is hydrated.
  */
 export function GateModule({ module, fallback = null, children }: GateModuleProps) {

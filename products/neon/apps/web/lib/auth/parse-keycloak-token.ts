@@ -6,7 +6,7 @@
 //
 // Keycloak token claim paths:
 //   realm_access.roles          → realm-level roles (e.g., ["admin", "user"])
-//   resource_access[client].roles → client-level roles (e.g., ["neon:WORKBENCH:admin", "neon:MODULES:supplier"])
+//   resource_access[client].roles → client-level roles (e.g., ["neon:WORKBENCH:ADMIN", "neon:MODULE:ACC"])
 //   groups                      → group membership paths (e.g., ["/branches/HQ"])
 //   tenant_id                   → custom claim from token mapper
 

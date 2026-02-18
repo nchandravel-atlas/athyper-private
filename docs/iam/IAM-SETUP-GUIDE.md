@@ -1,18 +1,19 @@
 # Athyper IAM Setup Guide
 
-**Last Updated**: 2026-02-16
-**Status**: Implementation Ready
-**Estimated Time**: 2-4 hours
+**Last Updated**: 2026-02-18
+**Status**: Steps 1–4 Complete, Security Hardening Applied
+**Estimated Time**: 2-4 hours (initial setup)
 
 ## Table of Contents
 
 1. [Overview](#overview)
 2. [Naming Conventions](#naming-conventions)
 3. [Client Architecture](#client-architecture)
-4. [Implementation Steps](#implementation-steps)
-5. [Code Integration](#code-integration)
-6. [Testing](#testing)
-7. [Rollback Plan](#rollback-plan)
+4. [RBAC Matrix](#rbac-matrix)
+5. [Implementation Steps](#implementation-steps)
+6. [Code Integration](#code-integration)
+7. [Testing](#testing)
+8. [Rollback Plan](#rollback-plan)
 
 ---
 
@@ -36,8 +37,8 @@ This guide consolidates all IAM setup for the Athyper platform, migrating from a
 | `svc-neon-server` | `neon-svc-bff` | 🔄 Rename service account |
 | `svc-runtime-worker` | `athyper-svc-runtime-worker` | 🔄 Rename service account |
 | `runtime-api` | `athyper-api-runtime` | 🔄 Rename bearer-only API |
-| `neon:PERSONAS:*` | `neon:PERSONA:*` | 🔄 Singular namespace |
-| `neon:MODULES:*` | `neon:MODULE:*` | 🔄 Singular namespace |
+| `neon:PERSONAS:*` | `neon:PERSONA:*` | ✅ Done (singular namespace) |
+| `neon:MODULES:*` | `neon:MODULE:*` | ✅ Done (singular namespace) |
 
 ---
 
@@ -136,7 +137,156 @@ outbox:process
 
 ### Client Roles
 
-**athyper-api-runtime** (21 roles):
+#### 📦 athyper-api-runtime (Bearer-only Resource Server)
+
+**Purpose**: Resource server roles used by Runtime APIs.
+
+**Assigned to**:
+- User tokens (via neon-web)
+- Service accounts (neon-svc-bff, athyper-svc-runtime-worker, etc.)
+
+---
+
+#### 🧠 1. Core Runtime Roles
+
+**runtime:read**
+- **Description**: Read-only access to core runtime entities (metadata, state, configurations, execution logs)
+- **Use cases**:
+  - View entity details
+  - Fetch lifecycle state
+  - Query runtime status dashboards
+
+**runtime:write**
+- **Description**: Mutation of runtime-managed entities and state transitions (excluding administrative operations)
+- **Use cases**:
+  - Submit entity updates
+  - Trigger lifecycle transitions
+  - Modify runtime-managed records
+
+**runtime:admin**
+- **Description**: Full administrative control over runtime configuration and execution, including override capabilities
+- **Use cases**:
+  - Force transition override
+  - Rebuild projections
+  - Clear stuck workflows
+  - System repair actions
+- **⚠ Security**: Should be restricted to platform administrators only
+
+**runtime:invoke**
+- **Description**: Invoke internal runtime services (commands, handlers, orchestrations) without broad write privileges
+- **Use cases**:
+  - Service-to-service calls
+  - Internal command execution
+  - Controlled orchestration triggers
+- **Ideal for**: BFF service accounts (neon-svc-bff)
+
+---
+
+#### 🔄 2. Workflow (wf) Roles
+
+**wf:read**
+- **Description**: Read access to workflow definitions, instances, tasks, and history
+- **Use cases**:
+  - View approval status
+  - View workflow timeline
+  - Inspect workflow audit trail
+
+**wf:execute**
+- **Description**: Execute workflow actions such as completing tasks or triggering transitions
+- **Use cases**:
+  - Approve/reject actions
+  - Complete workflow step
+  - Trigger next stage
+- **Assigned to**: Business users via neon-web
+
+**wf:timer:run**
+- **Description**: Permission for automated timer workers to execute scheduled workflow events
+- **Use cases**:
+  - SLA escalation
+  - Auto-approval timeout
+  - Scheduled state transitions
+- **⚠ Security**: Should ONLY be assigned to athyper-svc-runtime-worker
+
+**wf:approval:execute**
+- **Description**: Execute approval engine decisions including rule evaluation and multi-level approvals
+- **Use cases**:
+  - Auto-approval rules
+  - Policy-driven approval routing
+
+---
+
+#### 📄 3. Document (doc) Roles
+
+**doc:read**
+- **Description**: Read access to documents and metadata
+
+**doc:write**
+- **Description**: Create, update, or modify document records and attachments
+
+**doc:sign:url**
+- **Description**: Generate secure signed URLs for document access (temporary download/upload links)
+- **Use cases**:
+  - Presigned S3/MinIO download
+  - Controlled upload sessions
+- **Note**: Typically granted to BFF service account, not users directly
+
+---
+
+#### 📁 4. Content Roles
+
+**content:read**
+- **Description**: Read access to stored content objects
+
+**content:write**
+- **Description**: Upload, update, or modify content records
+
+**content:overlay:apply**
+- **Description**: Apply metadata overlays or schema-driven modifications to content entities
+- **Use cases**:
+  - Meta-driven schema patching
+  - Dynamic policy overlays
+- **⚠ Security**: High privilege — usually admin/service role only
+
+**content:sign:url**
+- **Description**: Generate secure signed URLs for content access
+
+---
+
+#### 🧾 5. Audit Roles
+
+**audit:read**
+- **Description**: Read audit logs, permission decisions, integrity reports
+- **⚠ Security**: Restricted to compliance/admin roles
+
+**audit:write**
+- **Description**: Write audit entries (used internally by runtime)
+- **⚠ Security**: Usually assigned only to service accounts
+
+---
+
+#### 📡 6. Event Roles
+
+**event:read**
+- **Description**: Consume published platform events
+
+**event:publish**
+- **Description**: Publish domain events into the platform event bus
+- **Used by**: Services emitting domain events
+
+---
+
+#### 📤 7. Outbox Roles
+
+**outbox:read**
+- **Description**: Read pending outbox entries
+
+**outbox:process**
+- **Description**: Process and mark outbox events as dispatched
+- **⚠ Security**: Should ONLY be granted to background worker service account (athyper-svc-runtime-worker)
+
+---
+
+#### Role Summary (21 total)
 ```
 runtime:read, runtime:write, runtime:admin, runtime:invoke
 wf:read, wf:execute, wf:timer:run, wf:approval:execute
@@ -160,6 +310,475 @@ wf:timer:run, wf:approval:execute
 event:publish
 audit:write
 outbox:process
+```
+
+---
+
+## RBAC Matrix
+
+### Principles (Athyper-Friendly)
+
+**Core Tenets**:
+
+1. **UI roles ≠ API roles**
+   - UI (neon-web) decides what menus/actions show
+   - Runtime (athyper-api-runtime) decides what is authorized
+
+2. **Grant runtime roles via Groups, not per-user assignments**
+   - Users join groups like `/org/demo_in/persona/manager`
+   - Groups carry the runtime role mappings
+
+3. **Use composites at Runtime to bundle permissions**
+   - Don't assign 10 primitive roles to each user
+   - Create composites like `base:operator`, `mod:ACC:admin`
+
+4. **Separate human roles vs service roles**
+   - Humans: personas + modules
+   - Workers/BFF: automation-only roles (timers, outbox, etc.)
+
+5. **Anti–role explosion strategy**
+   - Keep primitive roles stable (~21 total)
+   - Use composites for human-facing bundles
+   - Fine-grained actions → Runtime policy engine (not Keycloak roles)
+
+---
+
+### Current Realm State
+
+**neon-web client roles (UI)**:
+
+| Category | Roles | Count |
+|----------|-------|-------|
+| **Personas** | `tenant_admin`, `module_admin`, `manager`, `requester`, `viewer`, `reporter`, `agent` | 7 |
+| **Workbenches** | `ADMIN`, `USER`, `OPS`, `PARTNER` | 4 |
+| **Modules** | `ACC`, `PAY` | 2 |
+
+**athyper-api-runtime client roles (API)**: 21 primitive roles (documented above)
+
+**Groups**: Currently empty - **this is what we need to build**
+
+---
+
+### Persona → Runtime Roles Matrix
+
+#### Base Access (Recommended Defaults)
+
+| Persona | Base Runtime Roles | Notes |
+|---------|-------------------|-------|
+| **tenant_admin** | `base:editor` composite | Plus module-admin roles via module groups |
+| **module_admin** | `base:editor` composite | Scoped by module groups |
+| **manager** | `base:operator` composite | Approve/execute workflows |
+| **requester** | `base:operator` composite | Submit and track requests |
+| **viewer** | `base:viewer` composite | Read-only access |
+| **reporter** | `base:auditor` composite | Read + audit access for reporting |
+| **agent** | `base:operator` + `audit:read` | Support/ops hybrid |
+
+#### High-Privilege Roles (Restricted)
+
+| Persona | Additional Role | When to Grant |
+|---------|----------------|---------------|
+| **tenant_admin** | `runtime:admin` | ⚠ Platform administrators only |
+| **module_admin** | `content:overlay:apply` | ⚠ Meta/policy admin only |
+
+#### ❌ Never Grant to Humans
+
+These are **automation-only roles** (service accounts only):
+
+- `wf:timer:run`
+- `outbox:process`
+- `audit:write`
+- `event:publish`
+
+---
+
+### Composite Role Definitions
+
+#### Base Composites (Foundation)
+
+**base:viewer** (read-only)
+```yaml
+Includes:
+  - runtime:read
+  - wf:read
+  - doc:read
+  - content:read
+
+Use cases:
+  - View entities
+  - View workflow status
+  - Read documents
+  - Dashboard access
+```
+
+**base:operator** (execute + read)
+```yaml
+Includes:
+  - All roles from base:viewer
+  - wf:execute
+
+Use cases:
+  - Approve/reject workflows
+  - Complete tasks
+  - Submit requests
+```
+
+**base:editor** (write + execute)
+```yaml
+Includes:
+  - All roles from base:operator
+  - runtime:write
+  - doc:write
+  - content:write
+
+Use cases:
+  - Create/modify documents
+  - Update runtime entities
+  - Full CRUD operations
+```
+
+**base:auditor** (read + audit)
+```yaml
+Includes:
+  - runtime:read
+  - audit:read
+
+Use cases:
+  - Compliance reporting
+  - Audit log review
+  - Security monitoring
+```
+
+---
+
+#### Module Composites (Business Capabilities)
+
+**mod:ACC:user** (Accounting User)
+```yaml
+Includes:
+  - base:operator (or base:viewer depending on business rules)
+
+Use cases:
+  - View accounting entries
+  - Submit GL journals for approval
+  - Approve within authority limits
+```
+
+**mod:ACC:admin** (Accounting Admin)
+```yaml
+Includes:
+  - base:editor
+
+Use cases:
+  - Configure chart of accounts
+  - Force-post corrections
+  - Manage accounting policies
+```
+
+**mod:PAY:user** (Payments User)
+```yaml
+Includes:
+  - base:operator
+
+Use cases:
+  - Submit payment requests
+  - View payment status
+  - Approve within limits
+```
+
+**mod:PAY:admin** (Payments Admin)
+```yaml
+Includes:
+  - base:editor
+
+Optional (high privilege):
+  - audit:read (for payment audit trails)
+
+Use cases:
+  - Configure payment methods
+  - Override payment limits
+  - Investigate payment issues
+```
+
+---
+
+#### Service Composites (Automation)
+
+**svc:bff** (Backend-for-Frontend)
+```yaml
+Assigned to: neon-svc-bff
+Includes:
+  - runtime:invoke
+  - doc:read
+  - doc:write
+  - doc:sign:url
+  - content:read
+  - content:sign:url
+
+Use cases:
+  - Generate presigned URLs
+  - Server-side orchestration
+  - BFF system operations
+```
+
+**svc:worker** (Background Workers)
+```yaml
+Assigned to: athyper-svc-runtime-worker
+Includes:
+  - wf:timer:run
+  - wf:approval:execute
+  - event:publish
+  - audit:write
+  - outbox:process
+
+Use cases:
+  - SLA timers
+  - Auto-approval rules
+  - Event publishing
+  - Outbox processing
+```
+
+---
+
+### Group Structure & Naming
+
+#### Pattern: `/org/<orgAlias>/persona/<persona>`
+
+**Purpose**: Assign base persona capabilities
+
+**Examples**:
+```
+/org/demo_in/persona/tenant_admin   → base:editor composite
+/org/demo_in/persona/module_admin   → base:editor composite
+/org/demo_in/persona/manager        → base:operator composite
+/org/demo_in/persona/requester      → base:operator composite
+/org/demo_in/persona/viewer         → base:viewer composite
+/org/demo_in/persona/reporter       → base:auditor composite
+/org/demo_in/persona/agent          → base:operator + audit:read
+```
+
+#### Pattern: `/org/<orgAlias>/module/<MOD>/<tier>`
+
+**Purpose**: Grant module-specific capabilities
+
+**Examples**:
+```
+/org/demo_in/module/ACC/user        → mod:ACC:user composite
+/org/demo_in/module/ACC/admin       → mod:ACC:admin composite
+/org/demo_in/module/PAY/user        → mod:PAY:user composite
+/org/demo_in/module/PAY/admin       → mod:PAY:admin composite
+```
+
+#### Pattern: `/svc/<product>/<component>`
+
+**Purpose**: Service account role isolation
+
+**Examples**:
+```
+/svc/neon/bff                       → svc:bff composite
+/svc/athyper/runtime-worker         → svc:worker composite
+```
+
+---
+
+### User Assignment Example
+
+**Scenario**: Accounting manager in India org
+
+**User**: `chandravel.n@demo.in`
+
+**Groups assigned**:
+1. `/org/demo_in/persona/manager` → gets `base:operator` composite
+2. `/org/demo_in/module/ACC/admin` → gets `mod:ACC:admin` composite (includes `base:editor`)
+
+**Effective roles** (via composite inheritance):
+- `runtime:read`, `runtime:write`
+- `wf:read`, `wf:execute`
+- `doc:read`, `doc:write`
+- `content:read`, `content:write`
+
+**Token audience**: `["neon-web", "athyper-api-runtime"]`
+
+**Token resource_access**:
+```json
+{
+  "neon-web": {
+    "roles": ["neon:PERSONA:manager", "neon:MODULE:ACC"]
+  },
+  "athyper-api-runtime": {
+    "roles": [
+      "runtime:read", "runtime:write",
+      "wf:read", "wf:execute",
+      "doc:read", "doc:write",
+      "content:read", "content:write"
+    ]
+  }
+}
+```
+
+---
+
+### Anti–Role Explosion Strategy
+
+#### ✅ What Goes in Keycloak
+
+**Primitive roles** (stable, ~21 total):
+- Core runtime capabilities
+- Infrastructure operations
+- High-level domain actions
+
+**Composite roles** (bundles, ~10-15 total):
+- Base access tiers (viewer, operator, editor, auditor)
+- Module bundles (mod:ACC:user, mod:ACC:admin, etc.)
+- Service bundles (svc:bff, svc:worker)
+
+#### ❌ What DOES NOT Go in Keycloak
+
+**Fine-grained actions** (handled by Runtime policy engine):
+- `invoice:approve` (use wf:execute + policy)
+- `invoice:post` (use runtime:write + entity-level rules)
+- `po:release` (use wf:execute + state machine)
+- `gl:journal:create` (use doc:write + module check)
+
+**Entity-level permissions** (handled by Runtime ABAC):
+- Ownership checks
+- Org/tenant isolation
+- Lifecycle state validation
+- Attribute-based rules
+
+**UI visibility** (handled by neon-web roles):
+- Menu toggles
+- Button visibility
+- Tab access
+- Feature flags
+
+---
+
+### Implementation Blueprint
+
+#### Phase 1: Create Composite Roles (Keycloak Admin Console)
+
+**Clients → athyper-api-runtime → Roles tab**
+
+Create composite roles:
+
+1. `base:viewer` → Add roles: `runtime:read`, `wf:read`, `doc:read`, `content:read`
+2. `base:operator` → Add composite: `base:viewer`, Add role: `wf:execute`
+3. `base:editor` → Add composite: `base:operator`, Add roles: `runtime:write`, `doc:write`, `content:write`
+4. `base:auditor` → Add roles: `runtime:read`, `audit:read`
+5. `mod:ACC:user` → Add composite: `base:operator`
+6. `mod:ACC:admin` → Add composite: `base:editor`
+7. `mod:PAY:user` → Add composite: `base:operator`
+8. `mod:PAY:admin` → Add composite: `base:editor`
+9. `svc:bff` → Add roles: `runtime:invoke`, `doc:read`, `doc:write`, `doc:sign:url`, `content:read`, `content:sign:url`
+10. `svc:worker` → Add roles: `wf:timer:run`, `wf:approval:execute`, `event:publish`, `audit:write`, `outbox:process`
+
+#### Phase 2: Create Groups (Keycloak Admin Console)
+
+**Groups → New**
+
+Create group hierarchy:
+
+```
+/org
+  /demo_in
+    /persona
+      /tenant_admin
+      /module_admin
+      /manager
+      /requester
+      /viewer
+      /reporter
+      /agent
+    /module
+      /ACC
+        /user
+        /admin
+      /PAY
+        /user
+        /admin
+  /demo_us
+    /persona
+      /manager
+      /requester
+      /viewer
+    /module
+      /ACC
+        /user
+      /PAY
+        /user
+/svc
+  /neon
+    /bff
+  /athyper
+    /runtime-worker
+```
+
+#### Phase 3: Assign Roles to Groups
+
+**Groups → [group] → Role mapping tab**
+
+**Client Roles → athyper-api-runtime**
+
+| Group | Assigned Composite Role |
+|-------|------------------------|
+| `/org/demo_in/persona/manager` | `base:operator` |
+| `/org/demo_in/persona/viewer` | `base:viewer` |
+| `/org/demo_in/module/ACC/admin` | `mod:ACC:admin` |
+| `/org/demo_in/module/PAY/user` | `mod:PAY:user` |
+| `/svc/neon/bff` | `svc:bff` |
+| `/svc/athyper/runtime-worker` | `svc:worker` |
+
+#### Phase 4: Assign Users to Groups
+
+**Users → [user] → Groups tab**
+
+**Join groups**:
+- Select groups from available list
+- Click "Join"
+
+**Example**: Accounting manager gets:
+- `/org/demo_in/persona/manager`
+- `/org/demo_in/module/ACC/admin`
+
+#### Phase 5: Assign Service Accounts to Groups
+
+**Users → service-account-neon-svc-bff → Groups tab**
+- Join: `/svc/neon/bff`
+
+**Users → service-account-athyper-svc-runtime-worker → Groups tab**
+- Join: `/svc/athyper/runtime-worker`
+
+---
+
+### Validation
+
+#### Test Group → Role Inheritance
+
+**Keycloak Admin Console → Users → [test user] → Role mapping → Effective Roles**
+
+Should show:
+- Composite roles from all groups
+- Inherited primitive roles
+
+#### Test Token Claims
+
+```bash
+# Get user token
+TOKEN=$(curl -X POST \
+  http://localhost/auth/realms/athyper/protocol/openid-connect/token \
+  -d "grant_type=password" \
+  -d "client_id=neon-web" \
+  -d "username=test.user@demo.in" \
+  -d "password=password" \
+  | jq -r .access_token)
+
+# Decode token
+echo $TOKEN | jwt decode -
+
+# Verify:
+# 1. aud includes "athyper-api-runtime"
+# 2. resource_access.athyper-api-runtime.roles contains expected roles
+# 3. groups claim includes group paths
 ```
 
 ---
@@ -278,26 +897,30 @@ Add to introspection token claim: ON
 Save
 ```
 
-#### 4.3 Rename Roles (Optional but Recommended)
+#### 4.3 Rename Roles ✅ DONE
 
-**Option A**: Rename existing roles
+Roles have been renamed to singular namespaces in both Keycloak and application code:
+
 ```
-Clients → neon-web → Roles tab
-For each role, click → Edit → Change name:
-  neon:PERSONAS:tenant_admin → neon:PERSONA:tenant_admin
-  neon:PERSONAS:module_admin → neon:PERSONA:module_admin
-  ... (all PERSONAS → PERSONA)
+neon:PERSONAS:tenant_admin → neon:PERSONA:tenant_admin   ✅
+neon:PERSONAS:module_admin → neon:PERSONA:module_admin   ✅
+neon:PERSONAS:manager      → neon:PERSONA:manager        ✅
+neon:PERSONAS:requester    → neon:PERSONA:requester      ✅
+neon:PERSONAS:viewer       → neon:PERSONA:viewer         ✅
+neon:PERSONAS:reporter     → neon:PERSONA:reporter       ✅
+neon:PERSONAS:agent        → neon:PERSONA:agent          ✅
 
-  neon:MODULES:ACC → neon:MODULE:ACC
-  neon:MODULES:PAY → neon:MODULE:PAY
-  ... (all MODULES → MODULE)
+neon:MODULES:ACC           → neon:MODULE:ACC             ✅
+neon:MODULES:PAY           → neon:MODULE:PAY             ✅
 ```
 
-**Option B**: Keep old roles temporarily, add new ones
-- Create new roles with singular names
-- Assign both old and new roles during transition
-- Update code to check new role names
-- Remove old roles after migration complete
+Application code updated in:
+
+- `lib/auth/types.ts` — role domains, `parseNeonRole()` with workbench case normalization
+- `lib/auth/claims-normalizer.ts` — switch cases
+- `lib/auth/auth-context.tsx` — `can()` method
+- `app/api/nav/modules/route.ts` — `requiredRole` strings
+- `app/api/auth/callback/route.ts` — comments
 
 ### Step 5: Update Environment Variables
 
@@ -320,7 +943,7 @@ ATHYPER_SVC_RUNTIME_WORKER_CLIENT_SECRET=<from-keycloak-credentials>
 
 ### Step 6: Update Code References
 
-#### 6.1 Update Client IDs
+#### 6.1 Update Client IDs ✅ DONE
 
 **BFF Service Account**:
 ```typescript
@@ -340,47 +963,51 @@ const clientId = process.env.SVC_RUNTIME_WORKER_CLIENT_ID;
 const clientId = process.env.ATHYPER_SVC_RUNTIME_WORKER_CLIENT_ID;
 ```
 
-#### 6.2 Update Audience Checks
+#### 6.2 Update Audience Checks ✅ DONE
 
-**Runtime API Token Validation**:
+Kernel config `clientId` updated from `athyper-api` to `athyper-api-runtime` in all 4 environment files:
+
+- `kernel.config.local.parameter.json`
+- `kernel.config.parameter.json`
+- `kernel.config.staging.parameter.json`
+- `kernel.config.production.parameter.json`
+
+#### 6.3 Role Checks ✅ DONE
+
+All role checks use singular namespaces. The `parseNeonRole()` function in `lib/auth/types.ts`
+handles parsing and normalizes workbench values to lowercase (Keycloak `ADMIN` → app `admin`).
+
 ```typescript
-// Before
-if (!aud.includes('runtime-api')) {
-  throw new Error('Invalid audience');
+// lib/auth/types.ts — parseNeonRole() handles all three domains:
+//   "neon:WORKBENCH:ADMIN"      → { domain: "WORKBENCH", value: "admin" }
+//   "neon:MODULE:ACC"           → { domain: "MODULE",    value: "ACC" }
+//   "neon:PERSONA:tenant_admin" → { domain: "PERSONA",  value: "tenant_admin" }
+
+// claims-normalizer.ts uses parseNeonRole() to populate:
+//   allowedWorkbenches, modules, personas
+
+// Nav module gating uses singular roles:
+//   requiredRole: "neon:MODULE:procurement"
+```
+
+#### 6.4 Authorized Party (azp) Validation ✅ DONE
+
+The runtime API validates `azp` against a configurable allowlist instead of a single client ID.
+Configuration lives in each realm's `iam.allowedAzp` array in kernel config files.
+
+```typescript
+// framework/runtime/src/adapters/http/express.httpServer.ts
+// azp is checked against the allowedAzp config array:
+const allowedAzp = realmConfig?.iam?.allowedAzp;
+if (allowedAzp && allowedAzp.length > 0 && !allowedAzp.includes(azp)) {
+    throw new Error(`JWT azp "${azp}" is not in allowedAzp [${allowedAzp.join(", ")}]`);
 }
 
-// After
-if (!aud.includes('athyper-api-runtime')) {
-  throw new Error('Invalid audience');
-}
+// kernel config (all environments):
+// "allowedAzp": ["neon-web", "neon-svc-bff", "athyper-svc-runtime-worker"]
 ```
 
-#### 6.3 Update Role Checks (If Renamed)
-
-```typescript
-// Before
-const hasAccess = user.roles.includes('neon:PERSONAS:manager');
-const hasModule = user.roles.includes('neon:MODULES:ACC');
-
-// After
-const hasAccess = user.roles.includes('neon:PERSONA:manager');
-const hasModule = user.roles.includes('neon:MODULE:ACC');
-
-// Or (if keeping both temporarily)
-const hasAccess =
-  user.roles.includes('neon:PERSONA:manager') ||
-  user.roles.includes('neon:PERSONAS:manager'); // fallback
-```
-
-#### 6.4 Update Authorized Party Checks
-
-```typescript
-// Before
-const allowedClients = ['neon-web', 'svc-neon-server', 'svc-runtime-worker'];
-
-// After
-const allowedClients = ['neon-web', 'neon-svc-bff', 'athyper-svc-runtime-worker'];
-```
+Config schema (`config.schema.ts`) includes `allowedAzp` as `z.array(z.string().min(1)).optional()`.
 
 ### Step 7: Deploy and Restart Services
 
@@ -571,6 +1198,46 @@ export async function validateToken(req: Request) {
 
 ---
 
+## Security Hardening ✅ DONE
+
+Applied 2026-02-18 to both `realm-demosetup.json` and live Keycloak (47/47 sync checks passed).
+
+### P0 — Remove Wildcard Redirect URIs from Service Clients
+
+Service-account clients should never have browser redirect URIs. Wildcard `/*` was removed:
+
+| Client | `redirectUris` | `webOrigins` |
+| ------ | -------------- | ------------ |
+| `neon-svc-bff` | `[]` | `[]` |
+| `athyper-svc-runtime-worker` | `[]` | `[]` |
+
+### P1 — Fix Bearer-Only Contradictions
+
+Bearer-only clients had `standardFlowEnabled: true`, which is contradictory. Fixed:
+
+| Client | `bearerOnly` | `standardFlowEnabled` |
+| ------ | ------------ | --------------------- |
+| `broker` | `true` | `false` |
+| `realm-management` | `true` | `false` |
+
+### P2 — Least-Privilege Token Scope (neon-web)
+
+Set `fullScopeAllowed: false` on `neon-web` with explicit scope mappings for all 13 `neon:*` roles.
+This ensures tokens only contain roles that are explicitly mapped, not all realm/client roles.
+
+**Scope-mapped roles** (in `clientScopeMappings.neon-web`):
+
+- 4 workbench: `neon:WORKBENCH:ADMIN`, `USER`, `OPS`, `PARTNER`
+- 7 persona: `neon:PERSONA:tenant_admin`, `module_admin`, `manager`, `requester`, `viewer`, `reporter`, `agent`
+- 2 module: `neon:MODULE:ACC`, `neon:MODULE:PAY`
+
+### P3 — Refresh Token Revocation
+
+Enabled `revokeRefreshToken: true` at realm level. Each use of a refresh token now invalidates
+the previous token, preventing replay of stolen refresh tokens.
+
+---
+
 ## Testing
 
 ### Test 1: User Login Flow (neon-web)
@@ -741,34 +1408,39 @@ See [refactored-clients-config.json](./refactored-clients-config.json) for compl
 ## Checklist
 
 ### Pre-Migration
-- [ ] Backup current realm export
-- [ ] Document all service account secrets
-- [ ] Verify tests pass with current config
-- [ ] Schedule maintenance window (if needed)
 
-### During Migration
-- [ ] Create athyper-api-runtime client with 21 roles
-- [ ] Create neon-svc-bff client
-- [ ] Create athyper-svc-runtime-worker client
-- [ ] Update neon-web (remove empty URI, add audience mapper)
-- [ ] Optionally rename roles (PERSONAS → PERSONA, MODULES → MODULE)
-- [ ] Update environment variables
-- [ ] Update code references (client IDs, audience, roles, azp)
-- [ ] Deploy updated code
+- [x] Backup current realm export
+- [x] Document all service account secrets
+- [x] Verify tests pass with current config
+- [x] Schedule maintenance window (if needed)
+
+### During Migration (Steps 1–4) ✅ DONE
+
+- [x] Create athyper-api-runtime client with 21 roles
+- [x] Create neon-svc-bff client
+- [x] Create athyper-svc-runtime-worker client
+- [x] Update neon-web (remove empty URI, add audience mapper)
+- [x] Rename roles (PERSONAS → PERSONA, MODULES → MODULE)
+- [x] Update environment variables
+- [x] Update code references (client IDs, audience, roles, azp)
+- [x] Apply security hardening (P0–P3)
 
 ### Post-Migration
-- [ ] Test user login flow
+
+- [x] Test user token claims (verified roles present after fullScopeAllowed:false)
+- [x] Verify realm-demosetup.json and live Keycloak in sync (47/47 checks)
+- [x] Export updated realm
+- [ ] Commit to version control
+- [ ] Test full login flow end-to-end (with running app)
 - [ ] Test BFF service account calls
 - [ ] Test worker service account calls
 - [ ] Monitor logs for authorization errors (24-48 hours)
-- [ ] Verify no references to old client IDs in logs
-- [ ] Export updated realm
-- [ ] Commit to version control
 - [ ] After 1-2 weeks: Disable old clients
 - [ ] After 4 weeks: Delete old clients
 
 ---
 
-**Estimated Time**: 2-4 hours
+**Estimated Time**: 2-4 hours (initial setup — completed)
 **Risk Level**: Medium (reversible, but requires coordination)
 **Best Practice**: Migrate in dev/staging first, then production
+**Last Hardened**: 2026-02-18 (P0–P3 applied)

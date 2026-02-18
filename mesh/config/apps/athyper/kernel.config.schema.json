@@ -656,7 +656,12 @@
             "clientId": {
               "type": "string",
               "minLength": 1,
-              "description": "OIDC client ID"
+              "description": "OIDC client ID for audience validation (bearer-only resource server)"
+            },
+            "allowedAzp": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "description": "Authorized party (azp) allowlist — tokens must originate from one of these clients"
             },
             "clientSecretRef": {
               "type": "string",

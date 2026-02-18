@@ -15,7 +15,7 @@ export interface NavEntity {
     icon: string;
     /** Sort order within the parent module. */
     sortOrder: number;
-    /** Optional required role to see this entity (e.g., "neon:MODULES:supplier"). */
+    /** Optional required role to see this entity (e.g., "neon:MODULE:ACC"). */
     requiredRole?: string;
 }
 

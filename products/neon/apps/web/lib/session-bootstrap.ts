@@ -33,9 +33,9 @@ export interface SessionBootstrap {
     allowedWorkbenches: Workbench[];
     /** Client roles from Keycloak resource_access. */
     clientRoles: string[];
-    /** Module codes the user has access to (derived from neon:MODULES:* roles). */
+    /** Module codes the user has access to (derived from neon:MODULE:* roles). */
     modules: string[];
-    /** Persona codes assigned to the user (derived from neon:PERSONAS:* roles). */
+    /** Persona codes assigned to the user (derived from neon:PERSONA:* roles). */
     personas: string[];
     /** Group membership paths for data scoping. */
     groups: string[];

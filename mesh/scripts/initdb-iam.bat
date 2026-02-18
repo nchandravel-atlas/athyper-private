@@ -68,7 +68,7 @@ mkdir "%TEMP_IMPORT_DIR%" 2>nul
 copy /y "%IMPORT_FILE%" "%TEMP_IMPORT_DIR%\athyper-realm.json" >nul
 
 echo [2/5] Checking database connection...
-docker exec athyper-mesh-dbpool-auth-1 psql -U %IAM_DB_USERNAME% -d athyperauth_dev1 -c "SELECT version();" >nul 2>&1
+docker exec athyper-mesh-db-1 psql -U %IAM_DB_USERNAME% -d athyperauth_dev1 -c "SELECT version();" >nul 2>&1
 if errorlevel 1 (
     echo Error: Cannot connect to database
     rmdir /s /q "%TEMP_IMPORT_DIR%" 2>nul

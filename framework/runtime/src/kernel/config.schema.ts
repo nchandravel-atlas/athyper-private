@@ -50,6 +50,8 @@ const RealmConfigSchema = z.object({
     iam: z.object({
         issuerUrl: z.string().url(),
         clientId: z.string().min(1),
+        /** Authorized party (azp) allowlist — tokens must come from one of these clients. */
+        allowedAzp: z.array(z.string().min(1)).optional(),
         clientSecretRef: z.string().min(1).optional(),
     }),
 

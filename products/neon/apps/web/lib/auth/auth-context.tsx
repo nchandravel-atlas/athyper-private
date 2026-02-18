@@ -85,9 +85,9 @@ export function AuthProvider({ children, activeWorkbench }: AuthProviderProps) {
             switch (parsed.domain) {
                 case "WORKBENCH":
                     return hasWorkbench(parsed.value);
-                case "MODULES":
+                case "MODULE":
                     return hasModule(parsed.value);
-                case "PERSONAS":
+                case "PERSONA":
                     return hasPersona(parsed.value);
             }
         };

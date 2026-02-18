@@ -122,7 +122,7 @@ export async function GET(req: Request) {
         }
 
         // Extract client roles from resource_access[clientId]
-        // These contain wb:* (workbench access) and module:*:* (module permissions)
+        // These contain neon:WORKBENCH:*, neon:MODULE:*, and neon:PERSONA:* roles
         const clientRoles: string[] = [];
         const resourceAccess = claims.resource_access as Record<string, { roles?: string[] }> | undefined;
         if (resourceAccess?.[clientId]?.roles && Array.isArray(resourceAccess[clientId].roles)) {

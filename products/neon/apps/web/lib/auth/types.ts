@@ -4,10 +4,10 @@
 // These define the vocabulary shared between Keycloak client roles,
 // the session bootstrap, the AuthProvider, and the nav registry.
 //
-// Role naming conventions (Neon v2):
-//   neon:WORKBENCH:<workbench>   → workbench access   (e.g., "neon:WORKBENCH:admin")
-//   neon:MODULES:<module>        → module access       (e.g., "neon:MODULES:supplier")
-//   neon:PERSONAS:<persona>      → persona assignment   (e.g., "neon:PERSONAS:admin")
+// Role naming conventions (Neon v2 — singular namespaces):
+//   neon:WORKBENCH:<workbench>   → workbench access   (e.g., "neon:WORKBENCH:ADMIN")
+//   neon:MODULE:<module>         → module access       (e.g., "neon:MODULE:ACC")
+//   neon:PERSONA:<persona>       → persona assignment   (e.g., "neon:PERSONA:tenant_admin")
 
 // ─── Workbenches ──────────────────────────────────────────────────
 export const WORKBENCHES = ["user", "partner", "admin", "ops"] as const;
@@ -19,13 +19,13 @@ export function isWorkbench(value: string): value is Workbench {
 }
 
 // ─── Role Domains ───────────────────────────────────────────────
-export const ROLE_DOMAINS = ["WORKBENCH", "MODULES", "PERSONAS"] as const;
+export const ROLE_DOMAINS = ["WORKBENCH", "MODULE", "PERSONA"] as const;
 export type RoleDomain = (typeof ROLE_DOMAINS)[number];
 
 // ─── Role types ─────────────────────────────────────────────────
 export type WorkbenchRole = `neon:WORKBENCH:${Workbench}`;
-export type ModuleRole = `neon:MODULES:${string}`;
-export type PersonaRole = `neon:PERSONAS:${string}`;
+export type ModuleRole = `neon:MODULE:${string}`;
+export type PersonaRole = `neon:PERSONA:${string}`;
 export type NeonRole = WorkbenchRole | ModuleRole | PersonaRole;
 
 /** Build a workbench role string. */
@@ -35,28 +35,30 @@ export function workbenchRole(wb: Workbench): WorkbenchRole {
 
 /** Build a module role string. */
 export function moduleRole(mod: string): ModuleRole {
-    return `neon:MODULES:${mod}`;
+    return `neon:MODULE:${mod}`;
 }
 
 /** Build a persona role string. */
 export function personaRole(persona: string): PersonaRole {
-    return `neon:PERSONAS:${persona}`;
+    return `neon:PERSONA:${persona}`;
 }
 
 /** Parsed result of a neon:* role string. */
 export type ParsedNeonRole =
     | { domain: "WORKBENCH"; value: Workbench }
-    | { domain: "MODULES"; value: string }
-    | { domain: "PERSONAS"; value: string };
+    | { domain: "MODULE"; value: string }
+    | { domain: "PERSONA"; value: string };
 
 /**
  * Parse a role string into its domain and value, or null if not a neon:* role.
  *
+ * Workbench values are normalized to lowercase (Keycloak uses ADMIN, code uses admin).
+ *
  * Examples:
- *   "neon:WORKBENCH:admin"   → { domain: "WORKBENCH", value: "admin" }
- *   "neon:MODULES:supplier"  → { domain: "MODULES",   value: "supplier" }
- *   "neon:PERSONAS:admin"    → { domain: "PERSONAS",  value: "admin" }
- *   "some-other-role"        → null
+ *   "neon:WORKBENCH:ADMIN"       → { domain: "WORKBENCH", value: "admin" }
+ *   "neon:MODULE:ACC"            → { domain: "MODULE",    value: "ACC" }
+ *   "neon:PERSONA:tenant_admin"  → { domain: "PERSONA",  value: "tenant_admin" }
+ *   "some-other-role"            → null
  */
 export function parseNeonRole(role: string): ParsedNeonRole | null {
     if (!role.startsWith("neon:")) return null;
@@ -67,14 +69,15 @@ export function parseNeonRole(role: string): ParsedNeonRole | null {
     const value = parts[2];
 
     if (domain === "WORKBENCH") {
-        if (isWorkbench(value)) return { domain: "WORKBENCH", value };
+        const lower = value.toLowerCase();
+        if (isWorkbench(lower)) return { domain: "WORKBENCH", value: lower };
         return null;
     }
-    if (domain === "MODULES") {
-        return { domain: "MODULES", value };
+    if (domain === "MODULE") {
+        return { domain: "MODULE", value };
     }
-    if (domain === "PERSONAS") {
-        return { domain: "PERSONAS", value };
+    if (domain === "PERSONA") {
+        return { domain: "PERSONA", value };
     }
 
     return null;

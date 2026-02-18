@@ -25,7 +25,7 @@ const FALLBACK_TREE: NavTree = {
                     label: "Procurement",
                     icon: "ShoppingCart",
                     sortOrder: 1,
-                    requiredRole: "neon:MODULES:procurement",
+                    requiredRole: "neon:MODULE:procurement",
                     entities: [
                         { slug: "supplier", label: "Suppliers", icon: "Building2", sortOrder: 1 },
                         { slug: "purchase-order", label: "Purchase Orders", icon: "FileText", sortOrder: 2 },
@@ -39,7 +39,7 @@ const FALLBACK_TREE: NavTree = {
                     label: "Inventory",
                     icon: "Package",
                     sortOrder: 2,
-                    requiredRole: "neon:MODULES:inventory",
+                    requiredRole: "neon:MODULE:inventory",
                     entities: [
                         { slug: "item", label: "Items", icon: "Box", sortOrder: 1 },
                         { slug: "warehouse", label: "Warehouses", icon: "Warehouse", sortOrder: 2 },
@@ -58,7 +58,7 @@ const FALLBACK_TREE: NavTree = {
                     label: "Core Accounting",
                     icon: "Landmark",
                     sortOrder: 1,
-                    requiredRole: "neon:MODULES:core-accounting",
+                    requiredRole: "neon:MODULE:core-accounting",
                     entities: [
                         { slug: "account", label: "Accounts", icon: "BookOpen", sortOrder: 1 },
                     ],
@@ -68,7 +68,7 @@ const FALLBACK_TREE: NavTree = {
                     label: "Accounting",
                     icon: "Calculator",
                     sortOrder: 2,
-                    requiredRole: "neon:MODULES:accounting",
+                    requiredRole: "neon:MODULE:accounting",
                     entities: [
                         { slug: "invoice", label: "Invoices", icon: "Receipt", sortOrder: 1 },
                         { slug: "payment", label: "Payments", icon: "CreditCard", sortOrder: 2 },
@@ -87,7 +87,7 @@ const FALLBACK_TREE: NavTree = {
                     label: "Customer Experience",
                     icon: "Handshake",
                     sortOrder: 1,
-                    requiredRole: "neon:MODULES:customer-experience",
+                    requiredRole: "neon:MODULE:customer-experience",
                     entities: [
                         { slug: "purchase-invoice", label: "Purchase Invoices", icon: "FileText", sortOrder: 1 },
                     ],
@@ -104,7 +104,7 @@ const FALLBACK_TREE: NavTree = {
                     label: "People",
                     icon: "Users",
                     sortOrder: 1,
-                    requiredRole: "neon:MODULES:people",
+                    requiredRole: "neon:MODULE:people",
                     entities: [
                         { slug: "employee", label: "Employees", icon: "UserCircle", sortOrder: 1 },
                         { slug: "department", label: "Departments", icon: "Building", sortOrder: 2 },

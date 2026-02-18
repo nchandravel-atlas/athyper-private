@@ -2,15 +2,19 @@
 # =======================================================================
 # Keycloak IAM Import/Initialize Script
 # Imports realm configuration from mesh/config/iam/realm-demosetup.json
+# Works in both Git Bash (MSYS) and WSL on Windows
 # =======================================================================
 
 set -e
+
+# Disable MSYS/Git Bash path conversion — prevents mangled paths in Docker
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL="*"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MESH_DIR="$(dirname "$SCRIPT_DIR")"
 CONFIG_DIR="${MESH_DIR}/config/iam"
 IMPORT_FILE="${CONFIG_DIR}/realm-demosetup.json"
-TEMP_IMPORT_DIR="${MESH_DIR}/temp/keycloak-import"
 
 # Colors
 GREEN='\033[0;32m'
@@ -75,31 +79,24 @@ if [ -z "$DB_PASS" ]; then
   exit 1
 fi
 
-echo -e "${GREEN}[1/5] Creating temporary import directory...${NC}"
-rm -rf "${TEMP_IMPORT_DIR}"
-mkdir -p "${TEMP_IMPORT_DIR}"
-cp "${IMPORT_FILE}" "${TEMP_IMPORT_DIR}/athyper-realm.json"
-
-echo -e "${GREEN}[2/5] Checking database connection...${NC}"
-docker exec athyper-mesh-dbpool-auth-1 \
+echo -e "${GREEN}[1/4] Checking database connection...${NC}"
+docker exec athyper-mesh-db-1 \
   psql -U "${DB_USER}" -d athyperauth_dev1 \
   -c "SELECT version();" > /dev/null 2>&1 || {
     echo -e "${RED}Error: Cannot connect to database${NC}"
-    rm -rf "${TEMP_IMPORT_DIR}"
     exit 1
   }
 echo -e "${GREEN}✓ Database connection successful${NC}"
 
-echo -e "${GREEN}[3/5] Importing realm configuration...${NC}"
+echo -e "${GREEN}[2/4] Importing realm configuration...${NC}"
 echo -e "${YELLOW}This will override existing realm data!${NC}"
 echo -e "${YELLOW}Press Ctrl+C to cancel, or wait 5 seconds...${NC}"
 sleep 5
 
-# Disable MSYS path conversion for Docker volume mounts on Git Bash/Windows
-export MSYS_NO_PATHCONV=1
+# Mount the import file directly into the container — no temp directory needed
 docker run --rm \
   --network athyper-mesh-edge \
-  -v "${TEMP_IMPORT_DIR}:/opt/keycloak/data/import" \
+  -v "${IMPORT_FILE}:/opt/keycloak/data/import/athyper-realm.json:ro" \
   -e KC_DB=postgres \
   -e KC_DB_URL="${DB_URL}" \
   -e KC_DB_USERNAME="${DB_USER}" \
@@ -108,27 +105,28 @@ docker run --rm \
   import \
   --dir /opt/keycloak/data/import \
   --override true
-unset MSYS_NO_PATHCONV
 
-echo -e "${GREEN}[4/5] Cleaning up...${NC}"
-rm -rf "${TEMP_IMPORT_DIR}"
+echo -e "${GREEN}[3/4] Import complete${NC}"
 
-echo -e "${GREEN}[5/5] Restarting Keycloak container...${NC}"
+echo -e "${GREEN}[4/4] Restarting Keycloak container...${NC}"
 if docker ps --format '{{.Names}}' | grep -q 'athyper-mesh-iam'; then
   docker restart athyper-mesh-iam-1
   echo -e "${YELLOW}Waiting for Keycloak to be ready...${NC}"
   sleep 10
 
-  # Wait for health check
+  # Wait for Docker health check to pass
   for i in {1..30}; do
-    if docker exec athyper-mesh-iam-1 wget -q --spider http://localhost:8080/health/ready 2>/dev/null; then
-      echo -e "${GREEN}✓ Keycloak is ready${NC}"
+    STATUS=$(docker inspect --format='{{.State.Health.Status}}' athyper-mesh-iam-1 2>/dev/null || echo "unknown")
+    if [ "$STATUS" = "healthy" ]; then
+      echo -e "\n${GREEN}✓ Keycloak is ready${NC}"
       break
     fi
     echo -n "."
     sleep 2
   done
-  echo ""
+  if [ "$STATUS" != "healthy" ]; then
+    echo -e "\n${YELLOW}Warning: Keycloak may still be starting (status: ${STATUS})${NC}"
+  fi
 else
   echo -e "${YELLOW}Keycloak container not running, start it to apply changes:${NC}"
   echo -e "  cd mesh && ./up.sh --profile mesh"

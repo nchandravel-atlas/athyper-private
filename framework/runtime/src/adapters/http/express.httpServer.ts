@@ -178,16 +178,18 @@ async function buildAuthContext(scope: Container, tenant: TenantContext, require
         throw e;
     }
 
-    // 2. azp (authorized party) must match expected clientId for this realm.
-    //    Prevents tokens issued to a different client from being accepted here,
-    //    even if the JWKS signature is valid (same Keycloak realm, different client).
+    // 2. azp (authorized party) must be in the allowedAzp list for this realm.
+    //    Prevents tokens issued by unknown clients from being accepted here,
+    //    even if the JWKS signature is valid (same Keycloak realm, unknown client).
+    //    allowedAzp lists the clients that legitimately send tokens to this API:
+    //    neon-web (user tokens), neon-svc-bff (BFF service), athyper-svc-runtime-worker (worker).
     const azp = typeof claims.azp === "string" ? claims.azp : undefined;
     if (azp) {
-        const config = await scope.resolve<{ iam: { realms: Record<string, { iam: { clientId: string } }> } }>(TOKENS.config);
+        const config = await scope.resolve<{ iam: { realms: Record<string, { iam: { clientId: string; allowedAzp?: string[] } }> } }>(TOKENS.config);
         const realmConfig = config.iam.realms[tenant.realmKey];
-        const expectedClientId = realmConfig?.iam?.clientId;
-        if (expectedClientId && azp !== expectedClientId) {
-            const e = new Error(`JWT azp "${azp}" does not match expected client "${expectedClientId}"`) as Error & { code?: string };
+        const allowedAzp = realmConfig?.iam?.allowedAzp;
+        if (allowedAzp && allowedAzp.length > 0 && !allowedAzp.includes(azp)) {
+            const e = new Error(`JWT azp "${azp}" is not in allowedAzp [${allowedAzp.join(", ")}]`) as Error & { code?: string };
             e.code = "JWT_AZP_MISMATCH";
             throw e;
         }

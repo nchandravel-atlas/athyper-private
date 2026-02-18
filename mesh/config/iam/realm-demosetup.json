@@ -5,11 +5,11 @@
   "displayNameHtml" : "athyper Business Operating Platform",
   "notBefore" : 0,
   "defaultSignatureAlgorithm" : "RS256",
-  "revokeRefreshToken" : false,
+  "revokeRefreshToken" : true,
   "refreshTokenMaxReuse" : 0,
   "accessTokenLifespan" : 300,
   "accessTokenLifespanForImplicitFlow" : 900,
-  "ssoSessionIdleTimeout" : 1800,
+  "ssoSessionIdleTimeout" : 900,
   "ssoSessionMaxLifespan" : 36000,
   "ssoSessionIdleTimeoutRememberMe" : 0,
   "ssoSessionMaxLifespanRememberMe" : 0,
@@ -37,16 +37,16 @@
   "duplicateEmailsAllowed" : false,
   "resetPasswordAllowed" : false,
   "editUsernameAllowed" : false,
-  "bruteForceProtected" : false,
+  "bruteForceProtected" : true,
   "permanentLockout" : false,
-  "maxTemporaryLockouts" : 0,
+  "maxTemporaryLockouts" : 3,
   "bruteForceStrategy" : "MULTIPLE",
   "maxFailureWaitSeconds" : 900,
   "minimumQuickLoginWaitSeconds" : 60,
   "waitIncrementSeconds" : 60,
   "quickLoginCheckMilliSeconds" : 1000,
   "maxDeltaTimeSeconds" : 43200,
-  "failureFactor" : 30,
+  "failureFactor" : 5,
   "roles" : {
     "realm" : [ {
       "id" : "f3db517b-8dbc-4675-8629-2fb18450637b",
@@ -80,6 +80,305 @@
       "attributes" : { }
     } ],
     "client" : {
+      "athyper-api-runtime" : [ {
+        "id" : "c39ba86f-1c31-4139-8ce1-a69c39fbd8cd",
+        "name" : "base:operator",
+        "description" : "Execute workflows + all viewer permissions",
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "athyper-api-runtime" : [ "base:viewer", "wf:execute" ]
+          }
+        },
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "7525ff8d-9c23-4a4d-83ac-74ed4fb6f69c",
+        "name" : "base:viewer",
+        "description" : "Read-only access to core entities, workflows, documents, and content",
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "athyper-api-runtime" : [ "runtime:read", "content:read", "wf:read", "doc:read" ]
+          }
+        },
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "1f1b10da-6c5c-432d-8f6d-115adc31fae3",
+        "name" : "runtime:read",
+        "description" : "Grants read-only access to core runtime entities (metadata, state, configurations, execution logs).\nUse cases:\nView entity details; Fetch lifecycle state; Query runtime status dashboards",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "01c00a89-07b0-4e14-8291-bcebe3ddb3ac",
+        "name" : "mod:PAY:user",
+        "description" : "Payments module user (operator-level)",
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        },
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "5f0dc4d1-5804-4adf-9db8-e94c958873ea",
+        "name" : "svc:bff",
+        "description" : "BFF service account composite — invoke + doc/content access",
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "athyper-api-runtime" : [ "doc:write", "doc:sign:url", "runtime:invoke", "content:read", "doc:read", "content:sign:url" ]
+          }
+        },
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "ab1dac42-e849-45ca-a1d8-6baa65696d0f",
+        "name" : "wf:approval:execute",
+        "description" : "Execute approval engine decisions including rule evaluation and multi-level approvals. Use cases: Auto-approval rules; Policy-driven approval routing.",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "aade4a24-3336-4f0b-8255-67d9bd5bc22f",
+        "name" : "content:sign:url",
+        "description" : "Generate secure signed URLs for content access.",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "4c9e38db-3262-47ee-9b2a-f301d0208d8c",
+        "name" : "runtime:admin",
+        "description" : "Full administrative control over runtime configuration and execution, including override capabilities.\nUse cases:\nForce transition override;\nRebuild projections;\nClear stuck workflows;\nSystem repair actions;",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "26885d55-0df8-4aff-ad9d-8423b8cc374d",
+        "name" : "audit:write",
+        "description" : "Write audit entries (used internally by runtime).\nUsually assigned only to service accounts.",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "6dfefd38-535a-498b-aaeb-62dca2f462f2",
+        "name" : "doc:write",
+        "description" : "Create, update, or modify document records and attachments.",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "14cdcd17-b180-4cc7-a62b-d36226b5c0f7",
+        "name" : "base:auditor",
+        "description" : "Read + audit log access for compliance/reporting",
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "athyper-api-runtime" : [ "runtime:read", "audit:read" ]
+          }
+        },
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "d01c9541-6b30-4675-b623-2f7f729fbc78",
+        "name" : "mod:ACC:admin",
+        "description" : "Accounting module admin (editor-level)",
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        },
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "e255cb94-075d-4560-9be4-abaeea4d6af2",
+        "name" : "mod:ACC:user",
+        "description" : "Accounting module user (operator-level)",
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        },
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "1e177704-9fb0-48e9-9e04-38769b6ca2c4",
+        "name" : "content:write",
+        "description" : "Upload, update, or modify content records.",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "f7c54568-fd50-498a-b9d3-dd335a5695a8",
+        "name" : "svc:worker",
+        "description" : "Background worker composite — timers, outbox, events, audit",
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "athyper-api-runtime" : [ "audit:write", "wf:timer:run", "event:publish", "outbox:process", "wf:approval:execute" ]
+          }
+        },
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "2c4d7310-9f88-4051-8bdc-0f208a71d043",
+        "name" : "wf:execute",
+        "description" : "Allows execution of workflow actions such as completing tasks or triggering transitions. Use cases: Approve/reject; Complete workflow step; Trigger next stage. Assigned to business users",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "76ebc5ac-8d05-48ea-8b94-09591c3becad",
+        "name" : "outbox:read",
+        "description" : "Read pending outbox entries.",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "a3ba3418-2390-47c2-8dfe-d05f1643bec1",
+        "name" : "wf:timer:run",
+        "description" : "Permission for automated timer workers to execute scheduled workflow events. Use cases: SLA escalation; \nAuto-approval timeout; Scheduled state transitions; Should only be assigned to athyper-svc-runtime-worker",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "5b19caae-3657-40c6-b821-c082af9a58e2",
+        "name" : "event:publish",
+        "description" : "Publish domain events into the platform event bus.\nUsed by services emitting domain events.",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "8d07e065-fb52-4d64-826f-c5e62cb9d8f7",
+        "name" : "doc:sign:url",
+        "description" : "Generate secure signed URLs for document access (temporary download/upload links).  Use cases: Presigned S3/MinIO download; Controlled upload sessions; Typically granted to BFF service account, not users directly.",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "9e093eea-fa46-4162-a6a2-808455cf2b8c",
+        "name" : "event:read",
+        "description" : "Consume published platform events.",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "135de4ff-7b7a-479a-93ef-ff6e2cbfefcf",
+        "name" : "content:read",
+        "description" : "Read access to stored content objects.",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "e4e5ee09-5b28-4b04-ac5e-4b284e9edff5",
+        "name" : "outbox:process",
+        "description" : "Process and mark outbox events as dispatched.\nShould only be granted to background worker service account",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "c667bdde-b70d-4a58-8c86-d1a60c270b5d",
+        "name" : "audit:read",
+        "description" : "Read audit logs, permission decisions, integrity reports.\nRestricted to compliance/admin roles.",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "d0c73216-037b-4b27-a893-d9495ec90e68",
+        "name" : "mod:PAY:admin",
+        "description" : "Payments module admin (editor-level)",
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        },
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "88c97500-9670-449d-8dfd-32ea504b7c7e",
+        "name" : "runtime:write",
+        "description" : "Allows mutation of runtime-managed entities and state transitions (excluding administrative operations).\nUse cases: Submit entity updates; Trigger lifecycle transitions; Modify runtime-managed records",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "8150d4c1-9c57-4d48-ba97-517ea34d5890",
+        "name" : "base:editor",
+        "description" : "Write access + all operator permissions",
+        "composite" : true,
+        "composites" : {
+          "client" : {
+            "athyper-api-runtime" : [ "runtime:write", "doc:write", "base:operator", "content:write" ]
+          }
+        },
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "be97a6aa-26c4-4de1-abed-fa9d71f6df55",
+        "name" : "content:overlay:apply",
+        "description" : "Apply metadata overlays or schema-driven modifications to content entities. Use cases: Meta-driven schema patching; Dynamic policy overlays; High privilege — usually admin/service role",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "dff73206-bd08-4978-aba1-595e458072ee",
+        "name" : "runtime:invoke",
+        "description" : "Allows invoking internal runtime services (commands, handlers, orchestrations) without broad write privileges.\nUse cases: Service-to-service calls; Internal command execution; Controlled orchestration triggers. Ideal for BFF service accounts",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "b4e243e0-7043-4a8e-93c3-00d0d3e66118",
+        "name" : "wf:read",
+        "description" : "Read access to workflow definitions, instances, tasks, and history. Use cases: View approval status; View workflow timeline; Inspect workflow audit trail",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      }, {
+        "id" : "58c7079e-4013-496d-a664-bd331d9012f7",
+        "name" : "doc:read",
+        "description" : "Read access to documents and metadata.",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+        "attributes" : { }
+      } ],
       "realm-management" : [ {
         "id" : "d3c22dc6-122e-4552-900c-66970b6dff4d",
         "name" : "manage-authorization",
@@ -225,7 +524,7 @@
         "composite" : true,
         "composites" : {
           "client" : {
-            "realm-management" : [ "manage-authorization", "create-client", "view-events", "view-realm", "manage-identity-providers", "query-users", "view-clients", "query-clients", "query-realms", "manage-events", "manage-users", "view-users", "view-identity-providers", "impersonation", "manage-clients", "view-authorization", "manage-realm", "query-groups" ]
+            "realm-management" : [ "manage-authorization", "create-client", "view-events", "view-realm", "manage-identity-providers", "query-users", "query-clients", "view-clients", "query-realms", "manage-events", "manage-users", "impersonation", "view-identity-providers", "view-users", "manage-clients", "view-authorization", "manage-realm", "query-groups" ]
           }
         },
         "clientRole" : true,
@@ -250,17 +549,18 @@
       } ],
       "security-admin-console" : [ ],
       "admin-cli" : [ ],
+      "athyper-svc-runtime-worker" : [ ],
       "neon-web" : [ {
-        "id" : "90c0c407-205b-4b9c-a9e0-305f12be18a4",
-        "name" : "neon:PERSONAS:tenant_admin",
+        "id" : "d73a7bbb-bfac-47ff-a7fb-11c78f374006",
+        "name" : "neon:PERSONA:manager",
         "description" : "",
         "composite" : false,
         "clientRole" : true,
         "containerId" : "fd2341e8-7fdc-42c3-a269-2551e82397d2",
         "attributes" : { }
       }, {
-        "id" : "d690eefc-1477-41e8-ba35-de0eddc73c27",
-        "name" : "neon:PERSONAS:module_admin",
+        "id" : "af90061e-415c-49f9-94d5-77ca9b05779e",
+        "name" : "neon:PERSONA:requester",
         "description" : "",
         "composite" : false,
         "clientRole" : true,
@@ -275,16 +575,16 @@
         "containerId" : "fd2341e8-7fdc-42c3-a269-2551e82397d2",
         "attributes" : { }
       }, {
-        "id" : "b57ca450-c8f8-4ee0-89d0-da157beb0c05",
-        "name" : "neon:MODULES:ACC",
-        "description" : "Finance (Core Accounting)\nGeneral Ledger, AP, AR, fiscal controls",
+        "id" : "841d4568-7abf-44a4-9322-cd3955733419",
+        "name" : "neon:PERSONA:module_admin",
+        "description" : "",
         "composite" : false,
         "clientRole" : true,
         "containerId" : "fd2341e8-7fdc-42c3-a269-2551e82397d2",
         "attributes" : { }
       }, {
-        "id" : "76efb915-cda3-4227-9fe5-f5f2c169f3ce",
-        "name" : "neon:PERSONAS:manager",
+        "id" : "8f384107-20eb-4896-adcc-78c8c5e49bdd",
+        "name" : "neon:PERSONA:tenant_admin",
         "description" : "",
         "composite" : false,
         "clientRole" : true,
@@ -299,24 +599,16 @@
         "containerId" : "fd2341e8-7fdc-42c3-a269-2551e82397d2",
         "attributes" : { }
       }, {
-        "id" : "24b27ead-28e9-4157-a686-a1bf6165c816",
-        "name" : "neon:PERSONAS:viewer",
+        "id" : "345b687a-57d1-4b92-b469-180a9ea1bac4",
+        "name" : "neon:PERSONA:agent",
         "description" : "",
         "composite" : false,
         "clientRole" : true,
         "containerId" : "fd2341e8-7fdc-42c3-a269-2551e82397d2",
         "attributes" : { }
       }, {
-        "id" : "143faeab-8baf-491f-a2bb-b259a710d6fb",
-        "name" : "neon:PERSONAS:reporter",
-        "description" : "",
-        "composite" : false,
-        "clientRole" : true,
-        "containerId" : "fd2341e8-7fdc-42c3-a269-2551e82397d2",
-        "attributes" : { }
-      }, {
-        "id" : "b0f71429-fddc-43d8-b07a-fe1261f84284",
-        "name" : "neon:PERSONAS:requester",
+        "id" : "ef596423-10bd-4f1c-a9c3-c1c3688377b6",
+        "name" : "neon:MODULE:ACC",
         "description" : "",
         "composite" : false,
         "clientRole" : true,
@@ -331,17 +623,25 @@
         "containerId" : "fd2341e8-7fdc-42c3-a269-2551e82397d2",
         "attributes" : { }
       }, {
-        "id" : "61995392-595e-408a-b3ad-42be38b90380",
-        "name" : "neon:PERSONAS:agent",
+        "id" : "9b7c117b-3dab-426e-b49c-39f2c5b7dbac",
+        "name" : "neon:MODULE:PAY",
         "description" : "",
         "composite" : false,
         "clientRole" : true,
         "containerId" : "fd2341e8-7fdc-42c3-a269-2551e82397d2",
         "attributes" : { }
       }, {
-        "id" : "cfab2cdf-c5ff-4d7d-8914-33593e17c1bd",
-        "name" : "neon:MODULES:PAY",
-        "description" : "Payment Processing\nCollections, disbursements, reconciliation",
+        "id" : "8396a259-7624-47d8-bcac-52414b2d75ad",
+        "name" : "neon:PERSONA:reporter",
+        "description" : "",
+        "composite" : false,
+        "clientRole" : true,
+        "containerId" : "fd2341e8-7fdc-42c3-a269-2551e82397d2",
+        "attributes" : { }
+      }, {
+        "id" : "4a9637dd-cc71-4035-8b08-08fc1842a09c",
+        "name" : "neon:PERSONA:viewer",
+        "description" : "",
         "composite" : false,
         "clientRole" : true,
         "containerId" : "fd2341e8-7fdc-42c3-a269-2551e82397d2",
@@ -356,6 +656,7 @@
         "attributes" : { }
       } ],
       "account-console" : [ ],
+      "neon-svc-bff" : [ ],
       "broker" : [ {
         "id" : "b30c1e67-7c52-4460-8df7-b66ad6c17905",
         "name" : "read-token",
@@ -442,7 +743,1557 @@
       } ]
     }
   },
-  "groups" : [ ],
+  "groups" : [ {
+    "id" : "a71e661c-45d6-46f1-aaf8-6b5be1d695ac",
+    "name" : "org",
+    "path" : "/org",
+    "subGroups" : [ {
+      "id" : "f36e0342-e9db-4bfb-96bd-4c932fb2320c",
+      "name" : "demo_ca",
+      "path" : "/org/demo_ca",
+      "parentId" : "a71e661c-45d6-46f1-aaf8-6b5be1d695ac",
+      "subGroups" : [ {
+        "id" : "d1f88030-0d76-4f78-a6b4-588da4a02545",
+        "name" : "module",
+        "path" : "/org/demo_ca/module",
+        "parentId" : "f36e0342-e9db-4bfb-96bd-4c932fb2320c",
+        "subGroups" : [ {
+          "id" : "fe18cec1-d1fe-40cf-bd48-9d6ad6bbb4ee",
+          "name" : "ACC",
+          "path" : "/org/demo_ca/module/ACC",
+          "parentId" : "d1f88030-0d76-4f78-a6b4-588da4a02545",
+          "subGroups" : [ {
+            "id" : "022ddfeb-ab2f-4e28-84bf-10cd34a92743",
+            "name" : "admin",
+            "path" : "/org/demo_ca/module/ACC/admin",
+            "parentId" : "fe18cec1-d1fe-40cf-bd48-9d6ad6bbb4ee",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:admin" ]
+            }
+          }, {
+            "id" : "5ae5d060-23c3-4b96-ae9a-44bc69f8a6c2",
+            "name" : "user",
+            "path" : "/org/demo_ca/module/ACC/user",
+            "parentId" : "fe18cec1-d1fe-40cf-bd48-9d6ad6bbb4ee",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        }, {
+          "id" : "ab6d3bd7-d28f-419f-9543-3f6d4e22683c",
+          "name" : "PAY",
+          "path" : "/org/demo_ca/module/PAY",
+          "parentId" : "d1f88030-0d76-4f78-a6b4-588da4a02545",
+          "subGroups" : [ {
+            "id" : "0cf09008-4f89-4072-bcc5-4bee1fe46d0d",
+            "name" : "admin",
+            "path" : "/org/demo_ca/module/PAY/admin",
+            "parentId" : "ab6d3bd7-d28f-419f-9543-3f6d4e22683c",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:admin" ]
+            }
+          }, {
+            "id" : "5433439c-01b7-4c47-8a7b-da9a49d5a255",
+            "name" : "user",
+            "path" : "/org/demo_ca/module/PAY/user",
+            "parentId" : "ab6d3bd7-d28f-419f-9543-3f6d4e22683c",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      }, {
+        "id" : "1fe780ef-5d75-4ca3-b15a-dd66e1c34de5",
+        "name" : "persona",
+        "path" : "/org/demo_ca/persona",
+        "parentId" : "f36e0342-e9db-4bfb-96bd-4c932fb2320c",
+        "subGroups" : [ {
+          "id" : "11dd53f9-5dd8-4785-ab43-c6fff63a60e7",
+          "name" : "agent",
+          "path" : "/org/demo_ca/persona/agent",
+          "parentId" : "1fe780ef-5d75-4ca3-b15a-dd66e1c34de5",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator", "audit:read" ]
+          }
+        }, {
+          "id" : "86b53057-be91-40ba-8482-0ec2ef503c65",
+          "name" : "manager",
+          "path" : "/org/demo_ca/persona/manager",
+          "parentId" : "1fe780ef-5d75-4ca3-b15a-dd66e1c34de5",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "e301635b-fbcc-4ab0-beca-c76fcd8213fb",
+          "name" : "module_admin",
+          "path" : "/org/demo_ca/persona/module_admin",
+          "parentId" : "1fe780ef-5d75-4ca3-b15a-dd66e1c34de5",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "46b2a060-1e97-40f6-829f-0fad71de983e",
+          "name" : "reporter",
+          "path" : "/org/demo_ca/persona/reporter",
+          "parentId" : "1fe780ef-5d75-4ca3-b15a-dd66e1c34de5",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:auditor" ]
+          }
+        }, {
+          "id" : "25831ef6-9fc5-4a5c-b9c0-8e2b02297dc6",
+          "name" : "requester",
+          "path" : "/org/demo_ca/persona/requester",
+          "parentId" : "1fe780ef-5d75-4ca3-b15a-dd66e1c34de5",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "0456814d-b1a0-4fad-a3df-f31aec846dc5",
+          "name" : "tenant_admin",
+          "path" : "/org/demo_ca/persona/tenant_admin",
+          "parentId" : "1fe780ef-5d75-4ca3-b15a-dd66e1c34de5",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "b942b073-1452-463f-bf73-a35fe2d0bc2e",
+          "name" : "viewer",
+          "path" : "/org/demo_ca/persona/viewer",
+          "parentId" : "1fe780ef-5d75-4ca3-b15a-dd66e1c34de5",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:viewer" ]
+          }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      } ],
+      "attributes" : { },
+      "realmRoles" : [ ],
+      "clientRoles" : { }
+    }, {
+      "id" : "7d06abf6-ecf8-4997-b073-b8df1363be3c",
+      "name" : "demo_ch",
+      "path" : "/org/demo_ch",
+      "parentId" : "a71e661c-45d6-46f1-aaf8-6b5be1d695ac",
+      "subGroups" : [ {
+        "id" : "94f389ab-71f4-44f6-b923-c7e72b6645df",
+        "name" : "module",
+        "path" : "/org/demo_ch/module",
+        "parentId" : "7d06abf6-ecf8-4997-b073-b8df1363be3c",
+        "subGroups" : [ {
+          "id" : "1f6dc985-db77-4164-94da-a9b6088cab82",
+          "name" : "ACC",
+          "path" : "/org/demo_ch/module/ACC",
+          "parentId" : "94f389ab-71f4-44f6-b923-c7e72b6645df",
+          "subGroups" : [ {
+            "id" : "a3d209cb-c52d-4d1c-be3d-7217f9c7b049",
+            "name" : "admin",
+            "path" : "/org/demo_ch/module/ACC/admin",
+            "parentId" : "1f6dc985-db77-4164-94da-a9b6088cab82",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:admin" ]
+            }
+          }, {
+            "id" : "09d4675e-6ab4-48fe-a044-f933b4714113",
+            "name" : "user",
+            "path" : "/org/demo_ch/module/ACC/user",
+            "parentId" : "1f6dc985-db77-4164-94da-a9b6088cab82",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        }, {
+          "id" : "84bbb9c5-383a-4c8a-9d3e-3666bdfa2c49",
+          "name" : "PAY",
+          "path" : "/org/demo_ch/module/PAY",
+          "parentId" : "94f389ab-71f4-44f6-b923-c7e72b6645df",
+          "subGroups" : [ {
+            "id" : "0c7defdc-25c4-41fc-89b5-5253a50037a5",
+            "name" : "admin",
+            "path" : "/org/demo_ch/module/PAY/admin",
+            "parentId" : "84bbb9c5-383a-4c8a-9d3e-3666bdfa2c49",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:admin" ]
+            }
+          }, {
+            "id" : "b10387d2-eb3c-4725-8520-ba5288b962e0",
+            "name" : "user",
+            "path" : "/org/demo_ch/module/PAY/user",
+            "parentId" : "84bbb9c5-383a-4c8a-9d3e-3666bdfa2c49",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      }, {
+        "id" : "7140ac77-1fc5-432f-a0b8-9fb20a46f600",
+        "name" : "persona",
+        "path" : "/org/demo_ch/persona",
+        "parentId" : "7d06abf6-ecf8-4997-b073-b8df1363be3c",
+        "subGroups" : [ {
+          "id" : "2fa078ad-c12a-4bd3-ba55-23496865266b",
+          "name" : "agent",
+          "path" : "/org/demo_ch/persona/agent",
+          "parentId" : "7140ac77-1fc5-432f-a0b8-9fb20a46f600",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator", "audit:read" ]
+          }
+        }, {
+          "id" : "1ca685f1-55df-439d-879c-b4b247ba3088",
+          "name" : "manager",
+          "path" : "/org/demo_ch/persona/manager",
+          "parentId" : "7140ac77-1fc5-432f-a0b8-9fb20a46f600",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "360c1040-c7a0-4b3c-bea2-d01f3762bcb3",
+          "name" : "module_admin",
+          "path" : "/org/demo_ch/persona/module_admin",
+          "parentId" : "7140ac77-1fc5-432f-a0b8-9fb20a46f600",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "3950eede-0409-4f56-b910-6e5880cfe9e6",
+          "name" : "reporter",
+          "path" : "/org/demo_ch/persona/reporter",
+          "parentId" : "7140ac77-1fc5-432f-a0b8-9fb20a46f600",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:auditor" ]
+          }
+        }, {
+          "id" : "7143e422-703c-4f51-9884-7464a5369f0c",
+          "name" : "requester",
+          "path" : "/org/demo_ch/persona/requester",
+          "parentId" : "7140ac77-1fc5-432f-a0b8-9fb20a46f600",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "4d6f2637-7236-42f3-ad1b-03e934f71e92",
+          "name" : "tenant_admin",
+          "path" : "/org/demo_ch/persona/tenant_admin",
+          "parentId" : "7140ac77-1fc5-432f-a0b8-9fb20a46f600",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "db2767aa-02ce-4ce4-92f0-c67cccb3fb7e",
+          "name" : "viewer",
+          "path" : "/org/demo_ch/persona/viewer",
+          "parentId" : "7140ac77-1fc5-432f-a0b8-9fb20a46f600",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:viewer" ]
+          }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      } ],
+      "attributes" : { },
+      "realmRoles" : [ ],
+      "clientRoles" : { }
+    }, {
+      "id" : "f67aba14-98a4-4555-91ae-0960c2490c4b",
+      "name" : "demo_de",
+      "path" : "/org/demo_de",
+      "parentId" : "a71e661c-45d6-46f1-aaf8-6b5be1d695ac",
+      "subGroups" : [ {
+        "id" : "543970a6-9993-4bb7-a1f9-bfaaa6147498",
+        "name" : "module",
+        "path" : "/org/demo_de/module",
+        "parentId" : "f67aba14-98a4-4555-91ae-0960c2490c4b",
+        "subGroups" : [ {
+          "id" : "7eaf4a0e-f0e7-496f-b4d0-ff6d0a7b2848",
+          "name" : "ACC",
+          "path" : "/org/demo_de/module/ACC",
+          "parentId" : "543970a6-9993-4bb7-a1f9-bfaaa6147498",
+          "subGroups" : [ {
+            "id" : "b7fd41d6-787a-4a95-a94c-29ba0badabb2",
+            "name" : "admin",
+            "path" : "/org/demo_de/module/ACC/admin",
+            "parentId" : "7eaf4a0e-f0e7-496f-b4d0-ff6d0a7b2848",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:admin" ]
+            }
+          }, {
+            "id" : "2a33089e-fd86-4db6-9f06-9280d3efe69f",
+            "name" : "user",
+            "path" : "/org/demo_de/module/ACC/user",
+            "parentId" : "7eaf4a0e-f0e7-496f-b4d0-ff6d0a7b2848",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        }, {
+          "id" : "4d66d75e-1168-46bc-b1f6-9e2351dbbcd7",
+          "name" : "PAY",
+          "path" : "/org/demo_de/module/PAY",
+          "parentId" : "543970a6-9993-4bb7-a1f9-bfaaa6147498",
+          "subGroups" : [ {
+            "id" : "17f84e23-0a6d-4ec3-815b-112270c73032",
+            "name" : "admin",
+            "path" : "/org/demo_de/module/PAY/admin",
+            "parentId" : "4d66d75e-1168-46bc-b1f6-9e2351dbbcd7",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:admin" ]
+            }
+          }, {
+            "id" : "13c5d5b9-5e31-4c82-9565-58e5435ba983",
+            "name" : "user",
+            "path" : "/org/demo_de/module/PAY/user",
+            "parentId" : "4d66d75e-1168-46bc-b1f6-9e2351dbbcd7",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      }, {
+        "id" : "5dd74a99-4728-45b8-850a-7942fcf4106c",
+        "name" : "persona",
+        "path" : "/org/demo_de/persona",
+        "parentId" : "f67aba14-98a4-4555-91ae-0960c2490c4b",
+        "subGroups" : [ {
+          "id" : "aa89daeb-eda4-48e7-96fd-ea303ef1e386",
+          "name" : "agent",
+          "path" : "/org/demo_de/persona/agent",
+          "parentId" : "5dd74a99-4728-45b8-850a-7942fcf4106c",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator", "audit:read" ]
+          }
+        }, {
+          "id" : "35c0d617-be5c-4755-8be2-1f31deed9005",
+          "name" : "manager",
+          "path" : "/org/demo_de/persona/manager",
+          "parentId" : "5dd74a99-4728-45b8-850a-7942fcf4106c",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "f81a8cf5-697b-4604-ab7c-f29571493a7d",
+          "name" : "module_admin",
+          "path" : "/org/demo_de/persona/module_admin",
+          "parentId" : "5dd74a99-4728-45b8-850a-7942fcf4106c",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "00988865-bd37-4364-9e50-7bb80f05dfe1",
+          "name" : "reporter",
+          "path" : "/org/demo_de/persona/reporter",
+          "parentId" : "5dd74a99-4728-45b8-850a-7942fcf4106c",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:auditor" ]
+          }
+        }, {
+          "id" : "9435a455-bd08-42e5-9dab-20d823069d1f",
+          "name" : "requester",
+          "path" : "/org/demo_de/persona/requester",
+          "parentId" : "5dd74a99-4728-45b8-850a-7942fcf4106c",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "f6d2ea6b-6076-406b-82ba-da1437d05324",
+          "name" : "tenant_admin",
+          "path" : "/org/demo_de/persona/tenant_admin",
+          "parentId" : "5dd74a99-4728-45b8-850a-7942fcf4106c",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "b1e4e4ef-ef7e-4cd5-9cc4-403748b8d5a4",
+          "name" : "viewer",
+          "path" : "/org/demo_de/persona/viewer",
+          "parentId" : "5dd74a99-4728-45b8-850a-7942fcf4106c",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:viewer" ]
+          }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      } ],
+      "attributes" : { },
+      "realmRoles" : [ ],
+      "clientRoles" : { }
+    }, {
+      "id" : "256f14e3-1016-4429-80aa-3bed393f9d2c",
+      "name" : "demo_fr",
+      "path" : "/org/demo_fr",
+      "parentId" : "a71e661c-45d6-46f1-aaf8-6b5be1d695ac",
+      "subGroups" : [ {
+        "id" : "7a9c5d8d-c82d-410d-803c-26affe2f5a97",
+        "name" : "module",
+        "path" : "/org/demo_fr/module",
+        "parentId" : "256f14e3-1016-4429-80aa-3bed393f9d2c",
+        "subGroups" : [ {
+          "id" : "6d8f45bd-4545-4062-8f4f-e5e5823b2e22",
+          "name" : "ACC",
+          "path" : "/org/demo_fr/module/ACC",
+          "parentId" : "7a9c5d8d-c82d-410d-803c-26affe2f5a97",
+          "subGroups" : [ {
+            "id" : "c33da622-90a6-40f9-a649-10bf302e4dee",
+            "name" : "admin",
+            "path" : "/org/demo_fr/module/ACC/admin",
+            "parentId" : "6d8f45bd-4545-4062-8f4f-e5e5823b2e22",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:admin" ]
+            }
+          }, {
+            "id" : "b0ed4723-2fdc-46a2-8e58-611a4bf66d9b",
+            "name" : "user",
+            "path" : "/org/demo_fr/module/ACC/user",
+            "parentId" : "6d8f45bd-4545-4062-8f4f-e5e5823b2e22",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        }, {
+          "id" : "8c9fdd42-d48a-450e-9f08-a17ef9fa662f",
+          "name" : "PAY",
+          "path" : "/org/demo_fr/module/PAY",
+          "parentId" : "7a9c5d8d-c82d-410d-803c-26affe2f5a97",
+          "subGroups" : [ {
+            "id" : "b42ca947-65b8-40e5-9efd-b0db4e9aed92",
+            "name" : "admin",
+            "path" : "/org/demo_fr/module/PAY/admin",
+            "parentId" : "8c9fdd42-d48a-450e-9f08-a17ef9fa662f",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:admin" ]
+            }
+          }, {
+            "id" : "90d5c5dd-54c0-4b78-9dd9-48f8db754a07",
+            "name" : "user",
+            "path" : "/org/demo_fr/module/PAY/user",
+            "parentId" : "8c9fdd42-d48a-450e-9f08-a17ef9fa662f",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      }, {
+        "id" : "76216d0b-a9aa-4dda-b2e0-8e1d01edb58a",
+        "name" : "persona",
+        "path" : "/org/demo_fr/persona",
+        "parentId" : "256f14e3-1016-4429-80aa-3bed393f9d2c",
+        "subGroups" : [ {
+          "id" : "4abe5649-fcfe-4827-a9ee-05d0379d662a",
+          "name" : "agent",
+          "path" : "/org/demo_fr/persona/agent",
+          "parentId" : "76216d0b-a9aa-4dda-b2e0-8e1d01edb58a",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator", "audit:read" ]
+          }
+        }, {
+          "id" : "b631a9d6-8732-4400-9d9b-9c9b499461de",
+          "name" : "manager",
+          "path" : "/org/demo_fr/persona/manager",
+          "parentId" : "76216d0b-a9aa-4dda-b2e0-8e1d01edb58a",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "011b748f-dcba-4141-89fd-5c3506335a0f",
+          "name" : "module_admin",
+          "path" : "/org/demo_fr/persona/module_admin",
+          "parentId" : "76216d0b-a9aa-4dda-b2e0-8e1d01edb58a",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "b9fe6a0e-56ec-4324-bf41-31e71e65a568",
+          "name" : "reporter",
+          "path" : "/org/demo_fr/persona/reporter",
+          "parentId" : "76216d0b-a9aa-4dda-b2e0-8e1d01edb58a",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:auditor" ]
+          }
+        }, {
+          "id" : "29bd26f8-1722-4d85-93b2-2bb0b7a15e89",
+          "name" : "requester",
+          "path" : "/org/demo_fr/persona/requester",
+          "parentId" : "76216d0b-a9aa-4dda-b2e0-8e1d01edb58a",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "cc2279be-5516-40a9-bf2d-34ccacdc5c56",
+          "name" : "tenant_admin",
+          "path" : "/org/demo_fr/persona/tenant_admin",
+          "parentId" : "76216d0b-a9aa-4dda-b2e0-8e1d01edb58a",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "6d4d2946-23e0-496d-af29-b687076215c1",
+          "name" : "viewer",
+          "path" : "/org/demo_fr/persona/viewer",
+          "parentId" : "76216d0b-a9aa-4dda-b2e0-8e1d01edb58a",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:viewer" ]
+          }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      } ],
+      "attributes" : { },
+      "realmRoles" : [ ],
+      "clientRoles" : { }
+    }, {
+      "id" : "226a154f-7ec8-47d2-b210-144289daf629",
+      "name" : "demo_in",
+      "path" : "/org/demo_in",
+      "parentId" : "a71e661c-45d6-46f1-aaf8-6b5be1d695ac",
+      "subGroups" : [ {
+        "id" : "3fcfb24c-e7ec-464a-89cc-4c61a778f0fe",
+        "name" : "module",
+        "path" : "/org/demo_in/module",
+        "parentId" : "226a154f-7ec8-47d2-b210-144289daf629",
+        "subGroups" : [ {
+          "id" : "8c693544-e44b-4100-ab64-04cacac18831",
+          "name" : "ACC",
+          "path" : "/org/demo_in/module/ACC",
+          "parentId" : "3fcfb24c-e7ec-464a-89cc-4c61a778f0fe",
+          "subGroups" : [ {
+            "id" : "5ba896d6-1777-4982-a29e-5d13a25a74f8",
+            "name" : "admin",
+            "path" : "/org/demo_in/module/ACC/admin",
+            "parentId" : "8c693544-e44b-4100-ab64-04cacac18831",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:admin" ]
+            }
+          }, {
+            "id" : "dabefa63-6a18-4f55-92fc-8ddc1ac2e68d",
+            "name" : "user",
+            "path" : "/org/demo_in/module/ACC/user",
+            "parentId" : "8c693544-e44b-4100-ab64-04cacac18831",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        }, {
+          "id" : "a50d261d-9e4c-4a11-bf45-dcfbf464632a",
+          "name" : "PAY",
+          "path" : "/org/demo_in/module/PAY",
+          "parentId" : "3fcfb24c-e7ec-464a-89cc-4c61a778f0fe",
+          "subGroups" : [ {
+            "id" : "d61a2c56-ef90-494e-9a10-53e226978eec",
+            "name" : "admin",
+            "path" : "/org/demo_in/module/PAY/admin",
+            "parentId" : "a50d261d-9e4c-4a11-bf45-dcfbf464632a",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:admin" ]
+            }
+          }, {
+            "id" : "ad2ae68f-eb9e-4aac-b3d2-d0db45ad3c17",
+            "name" : "user",
+            "path" : "/org/demo_in/module/PAY/user",
+            "parentId" : "a50d261d-9e4c-4a11-bf45-dcfbf464632a",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      }, {
+        "id" : "9bc0bc94-1f3d-4698-99be-3a5a85a27839",
+        "name" : "persona",
+        "path" : "/org/demo_in/persona",
+        "parentId" : "226a154f-7ec8-47d2-b210-144289daf629",
+        "subGroups" : [ {
+          "id" : "686074d3-aa23-4a28-81c4-7030f6013b89",
+          "name" : "agent",
+          "path" : "/org/demo_in/persona/agent",
+          "parentId" : "9bc0bc94-1f3d-4698-99be-3a5a85a27839",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator", "audit:read" ]
+          }
+        }, {
+          "id" : "e94af2d6-e8b1-449f-8402-36834c9d86c6",
+          "name" : "manager",
+          "path" : "/org/demo_in/persona/manager",
+          "parentId" : "9bc0bc94-1f3d-4698-99be-3a5a85a27839",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "1363f7a2-788a-407e-a12f-883627a27bc3",
+          "name" : "module_admin",
+          "path" : "/org/demo_in/persona/module_admin",
+          "parentId" : "9bc0bc94-1f3d-4698-99be-3a5a85a27839",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "a01a70ae-49d8-4c2a-87be-52fc8e73f051",
+          "name" : "reporter",
+          "path" : "/org/demo_in/persona/reporter",
+          "parentId" : "9bc0bc94-1f3d-4698-99be-3a5a85a27839",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:auditor" ]
+          }
+        }, {
+          "id" : "c8d9c349-0b47-4ecb-86a8-2d7ed5380f72",
+          "name" : "requester",
+          "path" : "/org/demo_in/persona/requester",
+          "parentId" : "9bc0bc94-1f3d-4698-99be-3a5a85a27839",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "059348f3-ce8d-41ee-a8be-84af6fd90f42",
+          "name" : "tenant_admin",
+          "path" : "/org/demo_in/persona/tenant_admin",
+          "parentId" : "9bc0bc94-1f3d-4698-99be-3a5a85a27839",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "4502e491-9c96-40b8-ac99-6586f778c506",
+          "name" : "viewer",
+          "path" : "/org/demo_in/persona/viewer",
+          "parentId" : "9bc0bc94-1f3d-4698-99be-3a5a85a27839",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:viewer" ]
+          }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      } ],
+      "attributes" : { },
+      "realmRoles" : [ ],
+      "clientRoles" : { }
+    }, {
+      "id" : "5a181ffc-26af-4898-b923-f5e77ab4df65",
+      "name" : "demo_my",
+      "path" : "/org/demo_my",
+      "parentId" : "a71e661c-45d6-46f1-aaf8-6b5be1d695ac",
+      "subGroups" : [ {
+        "id" : "3e1bbe4d-a288-4df7-9473-9ab9210bab8b",
+        "name" : "module",
+        "path" : "/org/demo_my/module",
+        "parentId" : "5a181ffc-26af-4898-b923-f5e77ab4df65",
+        "subGroups" : [ {
+          "id" : "365f6dd8-16fc-4141-9119-de8d433c9403",
+          "name" : "ACC",
+          "path" : "/org/demo_my/module/ACC",
+          "parentId" : "3e1bbe4d-a288-4df7-9473-9ab9210bab8b",
+          "subGroups" : [ {
+            "id" : "34b28de2-78c7-43fd-9ef2-f6dda0a270f8",
+            "name" : "admin",
+            "path" : "/org/demo_my/module/ACC/admin",
+            "parentId" : "365f6dd8-16fc-4141-9119-de8d433c9403",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:admin" ]
+            }
+          }, {
+            "id" : "94a85b60-3a30-4174-a7d1-8d7f2d044b36",
+            "name" : "user",
+            "path" : "/org/demo_my/module/ACC/user",
+            "parentId" : "365f6dd8-16fc-4141-9119-de8d433c9403",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        }, {
+          "id" : "3f80408a-f38a-46b1-81db-4d5986202527",
+          "name" : "PAY",
+          "path" : "/org/demo_my/module/PAY",
+          "parentId" : "3e1bbe4d-a288-4df7-9473-9ab9210bab8b",
+          "subGroups" : [ {
+            "id" : "b9ba7169-1742-4cbf-9e51-e57ba07d4e0b",
+            "name" : "admin",
+            "path" : "/org/demo_my/module/PAY/admin",
+            "parentId" : "3f80408a-f38a-46b1-81db-4d5986202527",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:admin" ]
+            }
+          }, {
+            "id" : "fa8c5ba1-f5a9-4f85-ba54-3e8e581928b4",
+            "name" : "user",
+            "path" : "/org/demo_my/module/PAY/user",
+            "parentId" : "3f80408a-f38a-46b1-81db-4d5986202527",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      }, {
+        "id" : "9510d47e-af9c-4b7b-b6f7-7bfd9b9a900e",
+        "name" : "persona",
+        "path" : "/org/demo_my/persona",
+        "parentId" : "5a181ffc-26af-4898-b923-f5e77ab4df65",
+        "subGroups" : [ {
+          "id" : "b6c6d6a2-9a6b-4776-944e-80776dfbc148",
+          "name" : "agent",
+          "path" : "/org/demo_my/persona/agent",
+          "parentId" : "9510d47e-af9c-4b7b-b6f7-7bfd9b9a900e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator", "audit:read" ]
+          }
+        }, {
+          "id" : "2ae51650-56fd-4fb4-9792-4d1fc300fb96",
+          "name" : "manager",
+          "path" : "/org/demo_my/persona/manager",
+          "parentId" : "9510d47e-af9c-4b7b-b6f7-7bfd9b9a900e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "4d420dbb-b874-4d07-a3b4-03c195a979f0",
+          "name" : "module_admin",
+          "path" : "/org/demo_my/persona/module_admin",
+          "parentId" : "9510d47e-af9c-4b7b-b6f7-7bfd9b9a900e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "2abfdb92-fc05-4122-962b-8a88e5bf5b47",
+          "name" : "reporter",
+          "path" : "/org/demo_my/persona/reporter",
+          "parentId" : "9510d47e-af9c-4b7b-b6f7-7bfd9b9a900e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:auditor" ]
+          }
+        }, {
+          "id" : "99333cf2-2c6b-4a00-a34e-ccca27b7bfcb",
+          "name" : "requester",
+          "path" : "/org/demo_my/persona/requester",
+          "parentId" : "9510d47e-af9c-4b7b-b6f7-7bfd9b9a900e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "c83e65ba-7f2a-45ea-87e8-9dfe79c6fc73",
+          "name" : "tenant_admin",
+          "path" : "/org/demo_my/persona/tenant_admin",
+          "parentId" : "9510d47e-af9c-4b7b-b6f7-7bfd9b9a900e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "b82c283d-2579-49f0-93f8-118204aa8adf",
+          "name" : "viewer",
+          "path" : "/org/demo_my/persona/viewer",
+          "parentId" : "9510d47e-af9c-4b7b-b6f7-7bfd9b9a900e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:viewer" ]
+          }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      } ],
+      "attributes" : { },
+      "realmRoles" : [ ],
+      "clientRoles" : { }
+    }, {
+      "id" : "5caece6d-2abd-44f9-b1ff-5bd5edee3f3a",
+      "name" : "demo_qa",
+      "path" : "/org/demo_qa",
+      "parentId" : "a71e661c-45d6-46f1-aaf8-6b5be1d695ac",
+      "subGroups" : [ {
+        "id" : "b09bbc53-3147-4cda-99b3-c23878c6faed",
+        "name" : "module",
+        "path" : "/org/demo_qa/module",
+        "parentId" : "5caece6d-2abd-44f9-b1ff-5bd5edee3f3a",
+        "subGroups" : [ {
+          "id" : "65e589fa-99e3-4a01-a22c-87fc7adbc77f",
+          "name" : "ACC",
+          "path" : "/org/demo_qa/module/ACC",
+          "parentId" : "b09bbc53-3147-4cda-99b3-c23878c6faed",
+          "subGroups" : [ {
+            "id" : "f2cf659a-c898-4487-8bd4-415de6d23dc7",
+            "name" : "admin",
+            "path" : "/org/demo_qa/module/ACC/admin",
+            "parentId" : "65e589fa-99e3-4a01-a22c-87fc7adbc77f",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:admin" ]
+            }
+          }, {
+            "id" : "0281d290-80f5-437a-94ef-c6d99e46f786",
+            "name" : "user",
+            "path" : "/org/demo_qa/module/ACC/user",
+            "parentId" : "65e589fa-99e3-4a01-a22c-87fc7adbc77f",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        }, {
+          "id" : "6b5a6e85-4918-44c2-8cad-5f9890c9bfc6",
+          "name" : "PAY",
+          "path" : "/org/demo_qa/module/PAY",
+          "parentId" : "b09bbc53-3147-4cda-99b3-c23878c6faed",
+          "subGroups" : [ {
+            "id" : "5c2fb1ed-dc6c-485a-b17c-7dd3ad9c1b45",
+            "name" : "admin",
+            "path" : "/org/demo_qa/module/PAY/admin",
+            "parentId" : "6b5a6e85-4918-44c2-8cad-5f9890c9bfc6",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:admin" ]
+            }
+          }, {
+            "id" : "36aa2410-9dcb-4d7c-9a58-dd899bf47102",
+            "name" : "user",
+            "path" : "/org/demo_qa/module/PAY/user",
+            "parentId" : "6b5a6e85-4918-44c2-8cad-5f9890c9bfc6",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      }, {
+        "id" : "c5684cef-7307-42ea-b99c-3cd5954b8241",
+        "name" : "persona",
+        "path" : "/org/demo_qa/persona",
+        "parentId" : "5caece6d-2abd-44f9-b1ff-5bd5edee3f3a",
+        "subGroups" : [ {
+          "id" : "cda82488-164f-4c24-b85a-e99287a0bd31",
+          "name" : "agent",
+          "path" : "/org/demo_qa/persona/agent",
+          "parentId" : "c5684cef-7307-42ea-b99c-3cd5954b8241",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator", "audit:read" ]
+          }
+        }, {
+          "id" : "72f85d7a-ca0e-42b6-b57d-5995f36f3ffc",
+          "name" : "manager",
+          "path" : "/org/demo_qa/persona/manager",
+          "parentId" : "c5684cef-7307-42ea-b99c-3cd5954b8241",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "caf099c4-6358-4a68-af30-643908090bbf",
+          "name" : "module_admin",
+          "path" : "/org/demo_qa/persona/module_admin",
+          "parentId" : "c5684cef-7307-42ea-b99c-3cd5954b8241",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "d43eae44-1879-469d-9461-45bf01a33a80",
+          "name" : "reporter",
+          "path" : "/org/demo_qa/persona/reporter",
+          "parentId" : "c5684cef-7307-42ea-b99c-3cd5954b8241",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:auditor" ]
+          }
+        }, {
+          "id" : "c89db427-e8e3-4ee4-9937-72dce1ecd897",
+          "name" : "requester",
+          "path" : "/org/demo_qa/persona/requester",
+          "parentId" : "c5684cef-7307-42ea-b99c-3cd5954b8241",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "d3f09e41-5da1-4f3c-8ce1-b7bcb68126f0",
+          "name" : "tenant_admin",
+          "path" : "/org/demo_qa/persona/tenant_admin",
+          "parentId" : "c5684cef-7307-42ea-b99c-3cd5954b8241",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "5858a794-e81e-4b25-b1b6-e6f9b42c4f67",
+          "name" : "viewer",
+          "path" : "/org/demo_qa/persona/viewer",
+          "parentId" : "c5684cef-7307-42ea-b99c-3cd5954b8241",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:viewer" ]
+          }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      } ],
+      "attributes" : { },
+      "realmRoles" : [ ],
+      "clientRoles" : { }
+    }, {
+      "id" : "a7ee133c-3885-4843-bb75-84d878657594",
+      "name" : "demo_sa",
+      "path" : "/org/demo_sa",
+      "parentId" : "a71e661c-45d6-46f1-aaf8-6b5be1d695ac",
+      "subGroups" : [ {
+        "id" : "04257bf9-50ef-4d00-a6c8-c5d560c3de33",
+        "name" : "module",
+        "path" : "/org/demo_sa/module",
+        "parentId" : "a7ee133c-3885-4843-bb75-84d878657594",
+        "subGroups" : [ {
+          "id" : "119db0d2-b698-4ba1-86e5-bd33b948a18b",
+          "name" : "ACC",
+          "path" : "/org/demo_sa/module/ACC",
+          "parentId" : "04257bf9-50ef-4d00-a6c8-c5d560c3de33",
+          "subGroups" : [ {
+            "id" : "44e8e1be-3dae-4f7f-ac89-76203b9fb732",
+            "name" : "admin",
+            "path" : "/org/demo_sa/module/ACC/admin",
+            "parentId" : "119db0d2-b698-4ba1-86e5-bd33b948a18b",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:admin" ]
+            }
+          }, {
+            "id" : "471755eb-83a4-4ed3-a8e0-d9cbcc7a3243",
+            "name" : "user",
+            "path" : "/org/demo_sa/module/ACC/user",
+            "parentId" : "119db0d2-b698-4ba1-86e5-bd33b948a18b",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        }, {
+          "id" : "034aa913-defd-4074-8cbd-470422cc0cae",
+          "name" : "PAY",
+          "path" : "/org/demo_sa/module/PAY",
+          "parentId" : "04257bf9-50ef-4d00-a6c8-c5d560c3de33",
+          "subGroups" : [ {
+            "id" : "3a309a07-2cba-41a8-990c-c27b33dabe23",
+            "name" : "admin",
+            "path" : "/org/demo_sa/module/PAY/admin",
+            "parentId" : "034aa913-defd-4074-8cbd-470422cc0cae",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:admin" ]
+            }
+          }, {
+            "id" : "1686aedb-a89f-4ad4-a2ed-a7498c4c8639",
+            "name" : "user",
+            "path" : "/org/demo_sa/module/PAY/user",
+            "parentId" : "034aa913-defd-4074-8cbd-470422cc0cae",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      }, {
+        "id" : "b4b9dc70-3816-4bae-ab92-f8421b5bd79b",
+        "name" : "persona",
+        "path" : "/org/demo_sa/persona",
+        "parentId" : "a7ee133c-3885-4843-bb75-84d878657594",
+        "subGroups" : [ {
+          "id" : "1f8cb7c6-7702-4bfc-a441-bd5dcbe5ec21",
+          "name" : "agent",
+          "path" : "/org/demo_sa/persona/agent",
+          "parentId" : "b4b9dc70-3816-4bae-ab92-f8421b5bd79b",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator", "audit:read" ]
+          }
+        }, {
+          "id" : "8eb7f88c-e0e8-4aab-9130-9afc54886cfa",
+          "name" : "manager",
+          "path" : "/org/demo_sa/persona/manager",
+          "parentId" : "b4b9dc70-3816-4bae-ab92-f8421b5bd79b",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "b7e8a35b-4108-4243-8ad6-b63158cfbd00",
+          "name" : "module_admin",
+          "path" : "/org/demo_sa/persona/module_admin",
+          "parentId" : "b4b9dc70-3816-4bae-ab92-f8421b5bd79b",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "236f8c6e-b7ca-4aed-b2e2-51b2ed06d306",
+          "name" : "reporter",
+          "path" : "/org/demo_sa/persona/reporter",
+          "parentId" : "b4b9dc70-3816-4bae-ab92-f8421b5bd79b",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:auditor" ]
+          }
+        }, {
+          "id" : "1f3d4048-4f00-4aba-a7b1-a4a029240f17",
+          "name" : "requester",
+          "path" : "/org/demo_sa/persona/requester",
+          "parentId" : "b4b9dc70-3816-4bae-ab92-f8421b5bd79b",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "3709dfc8-1658-4782-94c1-2781d3a9f3cc",
+          "name" : "tenant_admin",
+          "path" : "/org/demo_sa/persona/tenant_admin",
+          "parentId" : "b4b9dc70-3816-4bae-ab92-f8421b5bd79b",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "6d004cbb-143f-4c24-86e1-a7946d1b6a01",
+          "name" : "viewer",
+          "path" : "/org/demo_sa/persona/viewer",
+          "parentId" : "b4b9dc70-3816-4bae-ab92-f8421b5bd79b",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:viewer" ]
+          }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      } ],
+      "attributes" : { },
+      "realmRoles" : [ ],
+      "clientRoles" : { }
+    }, {
+      "id" : "4ed6c4ea-b592-4355-9d14-d443bceeff61",
+      "name" : "demo_us",
+      "path" : "/org/demo_us",
+      "parentId" : "a71e661c-45d6-46f1-aaf8-6b5be1d695ac",
+      "subGroups" : [ {
+        "id" : "2ec57417-ef20-4264-9be3-03b895d03f17",
+        "name" : "module",
+        "path" : "/org/demo_us/module",
+        "parentId" : "4ed6c4ea-b592-4355-9d14-d443bceeff61",
+        "subGroups" : [ {
+          "id" : "e543c0f7-e359-407b-a870-034064422df1",
+          "name" : "ACC",
+          "path" : "/org/demo_us/module/ACC",
+          "parentId" : "2ec57417-ef20-4264-9be3-03b895d03f17",
+          "subGroups" : [ {
+            "id" : "aeac818f-a936-4d80-99d1-a2582b946086",
+            "name" : "admin",
+            "path" : "/org/demo_us/module/ACC/admin",
+            "parentId" : "e543c0f7-e359-407b-a870-034064422df1",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:admin" ]
+            }
+          }, {
+            "id" : "3446bcf3-e29f-44f6-ba52-6133fd3a027a",
+            "name" : "user",
+            "path" : "/org/demo_us/module/ACC/user",
+            "parentId" : "e543c0f7-e359-407b-a870-034064422df1",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:ACC:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        }, {
+          "id" : "90ec1eb0-e873-4208-bd23-cc1e5ad1a360",
+          "name" : "PAY",
+          "path" : "/org/demo_us/module/PAY",
+          "parentId" : "2ec57417-ef20-4264-9be3-03b895d03f17",
+          "subGroups" : [ {
+            "id" : "e0fd55d3-9839-457b-944f-9949eefd84a3",
+            "name" : "admin",
+            "path" : "/org/demo_us/module/PAY/admin",
+            "parentId" : "90ec1eb0-e873-4208-bd23-cc1e5ad1a360",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:admin" ]
+            }
+          }, {
+            "id" : "e360f1fa-fcf5-43ca-9e5a-f2419fd8a435",
+            "name" : "user",
+            "path" : "/org/demo_us/module/PAY/user",
+            "parentId" : "90ec1eb0-e873-4208-bd23-cc1e5ad1a360",
+            "subGroups" : [ ],
+            "attributes" : { },
+            "realmRoles" : [ ],
+            "clientRoles" : {
+              "athyper-api-runtime" : [ "mod:PAY:user" ]
+            }
+          } ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : { }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      }, {
+        "id" : "c05e1aa2-b815-4761-84ad-cc962c93a22e",
+        "name" : "persona",
+        "path" : "/org/demo_us/persona",
+        "parentId" : "4ed6c4ea-b592-4355-9d14-d443bceeff61",
+        "subGroups" : [ {
+          "id" : "f98c0f81-0db9-46a2-94da-f2a556bf998b",
+          "name" : "agent",
+          "path" : "/org/demo_us/persona/agent",
+          "parentId" : "c05e1aa2-b815-4761-84ad-cc962c93a22e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator", "audit:read" ]
+          }
+        }, {
+          "id" : "af0cd4dc-2e9b-472b-a962-2c2aea1595b4",
+          "name" : "manager",
+          "path" : "/org/demo_us/persona/manager",
+          "parentId" : "c05e1aa2-b815-4761-84ad-cc962c93a22e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "73038eff-9e9a-435e-a533-f5da1bea78bf",
+          "name" : "module_admin",
+          "path" : "/org/demo_us/persona/module_admin",
+          "parentId" : "c05e1aa2-b815-4761-84ad-cc962c93a22e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "6b467041-367f-47fc-914e-3bcf7b772c36",
+          "name" : "reporter",
+          "path" : "/org/demo_us/persona/reporter",
+          "parentId" : "c05e1aa2-b815-4761-84ad-cc962c93a22e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:auditor" ]
+          }
+        }, {
+          "id" : "e92ef51b-5786-441a-b60e-dca71b04add6",
+          "name" : "requester",
+          "path" : "/org/demo_us/persona/requester",
+          "parentId" : "c05e1aa2-b815-4761-84ad-cc962c93a22e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:operator" ]
+          }
+        }, {
+          "id" : "65d674bb-ca48-4c5d-8570-ea7618831819",
+          "name" : "tenant_admin",
+          "path" : "/org/demo_us/persona/tenant_admin",
+          "parentId" : "c05e1aa2-b815-4761-84ad-cc962c93a22e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:editor" ]
+          }
+        }, {
+          "id" : "8d22a6cb-898e-4e21-9e66-d176439c6f2c",
+          "name" : "viewer",
+          "path" : "/org/demo_us/persona/viewer",
+          "parentId" : "c05e1aa2-b815-4761-84ad-cc962c93a22e",
+          "subGroups" : [ ],
+          "attributes" : { },
+          "realmRoles" : [ ],
+          "clientRoles" : {
+            "athyper-api-runtime" : [ "base:viewer" ]
+          }
+        } ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : { }
+      } ],
+      "attributes" : { },
+      "realmRoles" : [ ],
+      "clientRoles" : { }
+    } ],
+    "attributes" : { },
+    "realmRoles" : [ ],
+    "clientRoles" : { }
+  }, {
+    "id" : "141a9377-f809-453d-be8e-006f70dca0d8",
+    "name" : "svc",
+    "path" : "/svc",
+    "subGroups" : [ {
+      "id" : "33792d11-3748-4fc4-9ea0-e3be60132e84",
+      "name" : "athyper",
+      "path" : "/svc/athyper",
+      "parentId" : "141a9377-f809-453d-be8e-006f70dca0d8",
+      "subGroups" : [ {
+        "id" : "62f61aea-6e3a-476a-93c8-ed6075f0f53b",
+        "name" : "runtime-worker",
+        "path" : "/svc/athyper/runtime-worker",
+        "parentId" : "33792d11-3748-4fc4-9ea0-e3be60132e84",
+        "subGroups" : [ ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : {
+          "athyper-api-runtime" : [ "svc:worker" ]
+        }
+      } ],
+      "attributes" : { },
+      "realmRoles" : [ ],
+      "clientRoles" : { }
+    }, {
+      "id" : "3ad7aaf6-1ad8-4c86-b75a-3032a8688796",
+      "name" : "neon",
+      "path" : "/svc/neon",
+      "parentId" : "141a9377-f809-453d-be8e-006f70dca0d8",
+      "subGroups" : [ {
+        "id" : "68f6b2ca-3ffa-47f2-846b-92b5a23953c5",
+        "name" : "bff",
+        "path" : "/svc/neon/bff",
+        "parentId" : "3ad7aaf6-1ad8-4c86-b75a-3032a8688796",
+        "subGroups" : [ ],
+        "attributes" : { },
+        "realmRoles" : [ ],
+        "clientRoles" : {
+          "athyper-api-runtime" : [ "svc:bff" ]
+        }
+      } ],
+      "attributes" : { },
+      "realmRoles" : [ ],
+      "clientRoles" : { }
+    } ],
+    "attributes" : { },
+    "realmRoles" : [ ],
+    "clientRoles" : { }
+  } ],
   "defaultRole" : {
     "id" : "1cec4d75-6e0d-4ba4-a4e0-d6c0cf2a9ac6",
     "name" : "default-roles-athyper",
@@ -484,6 +2335,179 @@
   "webAuthnPolicyPasswordlessAcceptableAaguids" : [ ],
   "webAuthnPolicyPasswordlessExtraOrigins" : [ ],
   "users" : [ {
+    "id" : "d55a058d-2d7c-4d9e-a8f6-d4db2b8ea1e7",
+    "username" : "demoin_agent",
+    "firstName" : "Arjun",
+    "lastName" : "Nair",
+    "email" : "arjun.nair@demo.in",
+    "emailVerified" : true,
+    "enabled" : true,
+    "createdTimestamp" : 1771383723350,
+    "totp" : false,
+    "credentials" : [ {
+      "id" : "bd0a55e1-3946-4668-84f4-420f16f8ce4f",
+      "type" : "password",
+      "userLabel" : "Demo password",
+      "createdDate" : 1771383723350,
+      "secretData" : "{\"value\":\"f9t235zCMOdcpzEEQNZ+U3oONEEU2811rZMWLO+owzE=\",\"salt\":\"D1HM/TRp+MUfb6I5YXZ1HQ==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":5,\"algorithm\":\"argon2\",\"additionalParameters\":{\"hashLength\":[\"32\"],\"memory\":[\"7168\"],\"type\":[\"id\"],\"version\":[\"1.3\"],\"parallelism\":[\"1\"]}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "clientRoles" : {
+      "neon-web" : [ "neon:PERSONA:agent", "neon:WORKBENCH:OPS" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ "/org/demo_in/persona/agent" ]
+  }, {
+    "id" : "0e405c15-a1ce-4faa-a8ac-32db665a5ca9",
+    "username" : "demoin_manager",
+    "firstName" : "Raj",
+    "lastName" : "Patel",
+    "email" : "raj.patel@demo.in",
+    "emailVerified" : true,
+    "enabled" : true,
+    "createdTimestamp" : 1771383723350,
+    "totp" : false,
+    "credentials" : [ {
+      "id" : "7d2f2589-bfc7-4401-8daf-8af7bc24339c",
+      "type" : "password",
+      "createdDate" : 1771390044281,
+      "secretData" : "{\"value\":\"vXJz/sn1Tyyr3dLTdA+dBCXRSd7vz8EkUzoEIobGBkM=\",\"salt\":\"QKkChRGaA9a7QegkKDvIPw==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":5,\"algorithm\":\"argon2\",\"additionalParameters\":{\"hashLength\":[\"32\"],\"memory\":[\"7168\"],\"type\":[\"id\"],\"version\":[\"1.3\"],\"parallelism\":[\"1\"]}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "clientRoles" : {
+      "neon-web" : [ "neon:WORKBENCH:USER", "neon:PERSONA:manager", "neon:MODULE:ACC" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ "/org/demo_in/module/ACC/admin", "/org/demo_in/persona/manager" ]
+  }, {
+    "id" : "4fb19dab-3244-4f36-8862-9cd2ef1041dc",
+    "username" : "demoin_reporter",
+    "firstName" : "Meena",
+    "lastName" : "Kumar",
+    "email" : "meena.kumar@demo.in",
+    "emailVerified" : true,
+    "enabled" : true,
+    "createdTimestamp" : 1771383723350,
+    "totp" : false,
+    "credentials" : [ {
+      "id" : "7eb67a08-3836-4ea1-aeff-801b85038928",
+      "type" : "password",
+      "userLabel" : "Demo password",
+      "createdDate" : 1771383723350,
+      "secretData" : "{\"value\":\"f9t235zCMOdcpzEEQNZ+U3oONEEU2811rZMWLO+owzE=\",\"salt\":\"D1HM/TRp+MUfb6I5YXZ1HQ==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":5,\"algorithm\":\"argon2\",\"additionalParameters\":{\"hashLength\":[\"32\"],\"memory\":[\"7168\"],\"type\":[\"id\"],\"version\":[\"1.3\"],\"parallelism\":[\"1\"]}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "clientRoles" : {
+      "neon-web" : [ "neon:WORKBENCH:USER", "neon:PERSONA:reporter" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ "/org/demo_in/persona/reporter" ]
+  }, {
+    "id" : "fc19202e-2366-4d15-b491-53fb4df61ce2",
+    "username" : "demoin_requester",
+    "firstName" : "Anita",
+    "lastName" : "Desai",
+    "email" : "anita.desai@demo.in",
+    "emailVerified" : true,
+    "enabled" : true,
+    "createdTimestamp" : 1771383723350,
+    "totp" : false,
+    "credentials" : [ {
+      "id" : "40d30d87-d525-4c11-b27d-abab77ef917c",
+      "type" : "password",
+      "userLabel" : "Demo password",
+      "createdDate" : 1771383723350,
+      "secretData" : "{\"value\":\"f9t235zCMOdcpzEEQNZ+U3oONEEU2811rZMWLO+owzE=\",\"salt\":\"D1HM/TRp+MUfb6I5YXZ1HQ==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":5,\"algorithm\":\"argon2\",\"additionalParameters\":{\"hashLength\":[\"32\"],\"memory\":[\"7168\"],\"type\":[\"id\"],\"version\":[\"1.3\"],\"parallelism\":[\"1\"]}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "clientRoles" : {
+      "neon-web" : [ "neon:WORKBENCH:USER", "neon:PERSONA:requester" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ "/org/demo_in/persona/requester" ]
+  }, {
+    "id" : "06295c87-5c59-4914-9c5a-fe6530fbdc78",
+    "username" : "demoin_tenant_admin",
+    "firstName" : "Priya",
+    "lastName" : "Sharma",
+    "email" : "priya.sharma@demo.in",
+    "emailVerified" : true,
+    "enabled" : true,
+    "createdTimestamp" : 1771383723350,
+    "totp" : false,
+    "credentials" : [ {
+      "id" : "a124edef-a8cb-4cd2-bd6b-0caa2c224d71",
+      "type" : "password",
+      "createdDate" : 1771390043875,
+      "secretData" : "{\"value\":\"pii+d9tfIq+NOqqC1Nud/hiuPvCfbZhrbOTaYvZCsNg=\",\"salt\":\"CDzWIGxgDlkvKwL6yygJoQ==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":5,\"algorithm\":\"argon2\",\"additionalParameters\":{\"hashLength\":[\"32\"],\"memory\":[\"7168\"],\"type\":[\"id\"],\"version\":[\"1.3\"],\"parallelism\":[\"1\"]}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "clientRoles" : {
+      "neon-web" : [ "neon:PERSONA:tenant_admin", "neon:WORKBENCH:ADMIN" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ "/org/demo_in/persona/tenant_admin" ]
+  }, {
+    "id" : "1d13047f-fb34-482b-b48e-c511c7c64040",
+    "username" : "demoin_viewer",
+    "firstName" : "Vikram",
+    "lastName" : "Singh",
+    "email" : "vikram.singh@demo.in",
+    "emailVerified" : true,
+    "enabled" : true,
+    "createdTimestamp" : 1771383723350,
+    "totp" : false,
+    "credentials" : [ {
+      "id" : "6e1ad64e-4392-4f7b-8fca-f1d9295415d2",
+      "type" : "password",
+      "userLabel" : "Demo password",
+      "createdDate" : 1771383723350,
+      "secretData" : "{\"value\":\"f9t235zCMOdcpzEEQNZ+U3oONEEU2811rZMWLO+owzE=\",\"salt\":\"D1HM/TRp+MUfb6I5YXZ1HQ==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":5,\"algorithm\":\"argon2\",\"additionalParameters\":{\"hashLength\":[\"32\"],\"memory\":[\"7168\"],\"type\":[\"id\"],\"version\":[\"1.3\"],\"parallelism\":[\"1\"]}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "clientRoles" : {
+      "neon-web" : [ "neon:WORKBENCH:USER", "neon:PERSONA:viewer" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ "/org/demo_in/persona/viewer" ]
+  }, {
+    "id" : "88e9fa9a-da3d-4b2e-83b0-e663779a3a0a",
+    "username" : "demomy_manager",
+    "firstName" : "Ahmad",
+    "lastName" : "Ibrahim",
+    "email" : "ahmad.ibrahim@demo.my",
+    "emailVerified" : true,
+    "enabled" : true,
+    "createdTimestamp" : 1771383723350,
+    "totp" : false,
+    "credentials" : [ {
+      "id" : "110028d1-b396-41bd-8b8d-3b41107cf7b9",
+      "type" : "password",
+      "userLabel" : "Demo password",
+      "createdDate" : 1771383723350,
+      "secretData" : "{\"value\":\"f9t235zCMOdcpzEEQNZ+U3oONEEU2811rZMWLO+owzE=\",\"salt\":\"D1HM/TRp+MUfb6I5YXZ1HQ==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":5,\"algorithm\":\"argon2\",\"additionalParameters\":{\"hashLength\":[\"32\"],\"memory\":[\"7168\"],\"type\":[\"id\"],\"version\":[\"1.3\"],\"parallelism\":[\"1\"]}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "clientRoles" : {
+      "neon-web" : [ "neon:WORKBENCH:USER", "neon:PERSONA:manager", "neon:MODULE:PAY" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ "/org/demo_my/persona/manager", "/org/demo_my/module/PAY/user" ]
+  }, {
     "id" : "3b76fefa-de60-4299-8561-3040960b8cea",
     "username" : "demomy_viewer",
     "firstName" : "Chandravel",
@@ -504,22 +2528,92 @@
     "disableableCredentialTypes" : [ ],
     "requiredActions" : [ ],
     "clientRoles" : {
-      "neon-web" : [ "neon:WORKBENCH:USER", "neon:PERSONAS:requester", "neon:MODULES:ACC", "neon:MODULES:PAY" ]
+      "neon-web" : [ "neon:WORKBENCH:USER" ]
     },
     "clientConsents" : [ {
       "clientId" : "neon-web",
       "grantedClientScopes" : [ "neon-web", "profile", "email", "roles" ],
-      "createdDate" : 1770586864526,
-      "lastUpdatedDate" : 1770586864569
+      "createdDate" : 1771384353332,
+      "lastUpdatedDate" : 1771384353361
     } ],
     "notBefore" : 0,
-    "groups" : [ ]
+    "groups" : [ "/org/demo_my/persona/viewer" ]
+  }, {
+    "id" : "009afe9b-5ba8-41d4-be2f-c78eeb049090",
+    "username" : "demous_manager",
+    "firstName" : "Sarah",
+    "lastName" : "Johnson",
+    "email" : "sarah.johnson@demo.us",
+    "emailVerified" : true,
+    "enabled" : true,
+    "createdTimestamp" : 1771383723350,
+    "totp" : false,
+    "credentials" : [ {
+      "id" : "87eb5847-fb07-43ec-b54f-8930ba431362",
+      "type" : "password",
+      "userLabel" : "Demo password",
+      "createdDate" : 1771383723350,
+      "secretData" : "{\"value\":\"f9t235zCMOdcpzEEQNZ+U3oONEEU2811rZMWLO+owzE=\",\"salt\":\"D1HM/TRp+MUfb6I5YXZ1HQ==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":5,\"algorithm\":\"argon2\",\"additionalParameters\":{\"hashLength\":[\"32\"],\"memory\":[\"7168\"],\"type\":[\"id\"],\"version\":[\"1.3\"],\"parallelism\":[\"1\"]}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "clientRoles" : {
+      "neon-web" : [ "neon:WORKBENCH:USER", "neon:PERSONA:manager" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ "/org/demo_us/persona/manager" ]
+  }, {
+    "id" : "3001f830-f142-43e7-997c-d1e4ad5cbb58",
+    "username" : "service-account-athyper-svc-runtime-worker",
+    "emailVerified" : false,
+    "enabled" : true,
+    "createdTimestamp" : 1771289834483,
+    "totp" : false,
+    "serviceAccountClientId" : "athyper-svc-runtime-worker",
+    "credentials" : [ ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "default-roles-athyper" ],
+    "clientRoles" : {
+      "athyper-api-runtime" : [ "audit:write", "wf:timer:run", "event:publish", "outbox:process", "wf:approval:execute" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ "/svc/athyper/runtime-worker" ]
+  }, {
+    "id" : "defd2c3e-9a27-408e-bbd2-78e2cf05088b",
+    "username" : "service-account-neon-svc-bff",
+    "emailVerified" : false,
+    "enabled" : true,
+    "createdTimestamp" : 1771261707840,
+    "totp" : false,
+    "serviceAccountClientId" : "neon-svc-bff",
+    "credentials" : [ ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "default-roles-athyper" ],
+    "clientRoles" : {
+      "athyper-api-runtime" : [ "doc:write", "runtime:invoke", "content:read", "doc:read", "content:sign:url" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ "/svc/neon/bff" ]
   } ],
   "scopeMappings" : [ {
     "clientScope" : "offline_access",
     "roles" : [ "offline_access" ]
   } ],
   "clientScopeMappings" : {
+    "athyper-api-runtime" : [ {
+      "client" : "athyper-svc-runtime-worker",
+      "roles" : [ "svc:worker" ]
+    }, {
+      "client" : "neon-svc-bff",
+      "roles" : [ "svc:bff" ]
+    } ],
+    "neon-web" : [ {
+      "client" : "neon-web",
+      "roles" : [ "neon:PERSONA:reporter", "neon:WORKBENCH:OPS", "neon:PERSONA:manager", "neon:PERSONA:module_admin", "neon:PERSONA:viewer", "neon:MODULE:PAY", "neon:WORKBENCH:USER", "neon:WORKBENCH:PARTNER", "neon:PERSONA:tenant_admin", "neon:WORKBENCH:ADMIN", "neon:MODULE:ACC", "neon:PERSONA:agent", "neon:PERSONA:requester" ]
+    } ],
     "account" : [ {
       "client" : "account-console",
       "roles" : [ "manage-account", "view-groups" ]
@@ -618,12 +2712,113 @@
     "protocol" : "openid-connect",
     "attributes" : {
       "realm_client" : "false",
-      "client.use.lightweight.access.token.enabled" : "true"
+      "client.use.lightweight.access.token.enabled" : "true",
+      "post.logout.redirect.uris" : "+"
     },
     "authenticationFlowBindingOverrides" : { },
     "fullScopeAllowed" : true,
     "nodeReRegistrationTimeout" : 0,
     "defaultClientScopes" : [ "web-origins", "acr", "profile", "roles", "basic", "email" ],
+    "optionalClientScopes" : [ "address", "phone", "organization", "offline_access", "microprofile-jwt" ]
+  }, {
+    "id" : "d56a7bcb-f347-40da-88f8-37da3a2accc1",
+    "clientId" : "athyper-api-runtime",
+    "name" : "athyper Runtime API",
+    "description" : "Bearer-only resource server for Athyper Runtime REST APIs",
+    "rootUrl" : "",
+    "adminUrl" : "",
+    "baseUrl" : "",
+    "surrogateAuthRequired" : false,
+    "enabled" : true,
+    "alwaysDisplayInConsole" : false,
+    "clientAuthenticatorType" : "client-secret",
+    "redirectUris" : [ "" ],
+    "webOrigins" : [ "" ],
+    "notBefore" : 0,
+    "bearerOnly" : true,
+    "consentRequired" : false,
+    "standardFlowEnabled" : false,
+    "implicitFlowEnabled" : false,
+    "directAccessGrantsEnabled" : false,
+    "serviceAccountsEnabled" : false,
+    "publicClient" : false,
+    "frontchannelLogout" : true,
+    "protocol" : "openid-connect",
+    "attributes" : {
+      "logout.confirmation.enabled" : "false",
+      "realm_client" : "false",
+      "oidc.ciba.grant.enabled" : "false",
+      "client.secret.creation.time" : "1771382007",
+      "backchannel.logout.session.required" : "true",
+      "standard.token.exchange.enabled" : "false",
+      "frontchannel.logout.session.required" : "true",
+      "post.logout.redirect.uris" : "+",
+      "display.on.consent.screen" : "false",
+      "oauth2.device.authorization.grant.enabled" : "false",
+      "backchannel.logout.revoke.offline.tokens" : "false",
+      "dpop.bound.access.tokens" : "false"
+    },
+    "authenticationFlowBindingOverrides" : { },
+    "fullScopeAllowed" : false,
+    "nodeReRegistrationTimeout" : -1,
+    "defaultClientScopes" : [ "profile", "roles" ],
+    "optionalClientScopes" : [ ]
+  }, {
+    "id" : "71276f45-9dda-49d5-b837-2ee988f33d85",
+    "clientId" : "athyper-svc-runtime-worker",
+    "name" : "",
+    "description" : "",
+    "rootUrl" : "",
+    "adminUrl" : "",
+    "baseUrl" : "",
+    "surrogateAuthRequired" : false,
+    "enabled" : true,
+    "alwaysDisplayInConsole" : false,
+    "clientAuthenticatorType" : "client-secret",
+    "secret" : "LJ1JpGEN896wleR6KZVY1MQBiKY56ZzE",
+    "redirectUris" : [ ],
+    "webOrigins" : [ ],
+    "notBefore" : 0,
+    "bearerOnly" : false,
+    "consentRequired" : false,
+    "standardFlowEnabled" : false,
+    "implicitFlowEnabled" : false,
+    "directAccessGrantsEnabled" : false,
+    "serviceAccountsEnabled" : true,
+    "publicClient" : false,
+    "frontchannelLogout" : true,
+    "protocol" : "openid-connect",
+    "attributes" : {
+      "logout.confirmation.enabled" : "false",
+      "realm_client" : "false",
+      "oidc.ciba.grant.enabled" : "false",
+      "client.secret.creation.time" : "1771289834",
+      "backchannel.logout.session.required" : "true",
+      "standard.token.exchange.enabled" : "false",
+      "frontchannel.logout.session.required" : "true",
+      "post.logout.redirect.uris" : "+",
+      "display.on.consent.screen" : "false",
+      "oauth2.device.authorization.grant.enabled" : "false",
+      "backchannel.logout.revoke.offline.tokens" : "false",
+      "dpop.bound.access.tokens" : "false"
+    },
+    "authenticationFlowBindingOverrides" : { },
+    "fullScopeAllowed" : false,
+    "nodeReRegistrationTimeout" : -1,
+    "protocolMappers" : [ {
+      "id" : "1f179778-9758-44db-95d7-653b964e8f1f",
+      "name" : "athyper-api-runtime audience",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-audience-mapper",
+      "consentRequired" : false,
+      "config" : {
+        "included.client.audience" : "athyper-api-runtime",
+        "id.token.claim" : "false",
+        "access.token.claim" : "true",
+        "introspection.token.claim" : "true"
+      }
+    } ],
+    "defaultClientScopes" : [ "web-origins", "service_account", "acr", "profile", "roles", "basic", "email" ],
     "optionalClientScopes" : [ "address", "phone", "organization", "offline_access", "microprofile-jwt" ]
   }, {
     "id" : "0739b786-0e6e-41f6-9be5-1b0125f159ce",
@@ -638,7 +2833,7 @@
     "notBefore" : 0,
     "bearerOnly" : true,
     "consentRequired" : false,
-    "standardFlowEnabled" : true,
+    "standardFlowEnabled" : false,
     "implicitFlowEnabled" : false,
     "directAccessGrantsEnabled" : false,
     "serviceAccountsEnabled" : false,
@@ -646,12 +2841,70 @@
     "frontchannelLogout" : false,
     "protocol" : "openid-connect",
     "attributes" : {
-      "realm_client" : "true"
+      "realm_client" : "true",
+      "post.logout.redirect.uris" : "+"
     },
     "authenticationFlowBindingOverrides" : { },
     "fullScopeAllowed" : false,
     "nodeReRegistrationTimeout" : 0,
     "defaultClientScopes" : [ "web-origins", "acr", "profile", "roles", "basic", "email" ],
+    "optionalClientScopes" : [ "address", "phone", "organization", "offline_access", "microprofile-jwt" ]
+  }, {
+    "id" : "8d74173b-2df3-4341-bde8-d183428a4ede",
+    "clientId" : "neon-svc-bff",
+    "name" : "Neon Server BFF Service Account",
+    "description" : "",
+    "rootUrl" : "",
+    "adminUrl" : "",
+    "baseUrl" : "",
+    "surrogateAuthRequired" : false,
+    "enabled" : true,
+    "alwaysDisplayInConsole" : false,
+    "clientAuthenticatorType" : "client-secret",
+    "secret" : "qj3OBEOoU2czmZTMllyNUsaEKoMXmhwE",
+    "redirectUris" : [ ],
+    "webOrigins" : [ ],
+    "notBefore" : 0,
+    "bearerOnly" : false,
+    "consentRequired" : false,
+    "standardFlowEnabled" : false,
+    "implicitFlowEnabled" : false,
+    "directAccessGrantsEnabled" : false,
+    "serviceAccountsEnabled" : true,
+    "publicClient" : false,
+    "frontchannelLogout" : true,
+    "protocol" : "openid-connect",
+    "attributes" : {
+      "logout.confirmation.enabled" : "false",
+      "realm_client" : "false",
+      "oidc.ciba.grant.enabled" : "false",
+      "client.secret.creation.time" : "1771261707",
+      "backchannel.logout.session.required" : "true",
+      "standard.token.exchange.enabled" : "false",
+      "frontchannel.logout.session.required" : "true",
+      "post.logout.redirect.uris" : "+",
+      "display.on.consent.screen" : "false",
+      "oauth2.device.authorization.grant.enabled" : "false",
+      "backchannel.logout.revoke.offline.tokens" : "false",
+      "dpop.bound.access.tokens" : "false"
+    },
+    "authenticationFlowBindingOverrides" : { },
+    "fullScopeAllowed" : false,
+    "nodeReRegistrationTimeout" : -1,
+    "protocolMappers" : [ {
+      "id" : "e9eeb0fb-ca62-496b-a410-741eb73f2288",
+      "name" : "athyper-api-runtime audience",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-audience-mapper",
+      "consentRequired" : false,
+      "config" : {
+        "included.client.audience" : "athyper-api-runtime",
+        "id.token.claim" : "false",
+        "access.token.claim" : "true",
+        "introspection.token.claim" : "true"
+      }
+    } ],
+    "defaultClientScopes" : [ "web-origins", "service_account", "acr", "profile", "roles", "basic", "email" ],
     "optionalClientScopes" : [ "address", "phone", "organization", "offline_access", "microprofile-jwt" ]
   }, {
     "id" : "fd2341e8-7fdc-42c3-a269-2551e82397d2",
@@ -665,7 +2918,7 @@
     "enabled" : true,
     "alwaysDisplayInConsole" : false,
     "clientAuthenticatorType" : "client-secret",
-    "redirectUris" : [ "", "http://localhost:3000/*", "https://neon.athyper.local/*", "http://localhost:3001/*" ],
+    "redirectUris" : [ "http://localhost:3000/*", "https://neon.athyper.local/*", "http://localhost:3001/*" ],
     "webOrigins" : [ "https://neon.athyper.local", "http://localhost:3001", "http://localhost:3000" ],
     "notBefore" : 0,
     "bearerOnly" : false,
@@ -703,8 +2956,23 @@
       "dpop.bound.access.tokens" : "false"
     },
     "authenticationFlowBindingOverrides" : { },
-    "fullScopeAllowed" : true,
+    "fullScopeAllowed" : false,
     "nodeReRegistrationTimeout" : -1,
+    "protocolMappers" : [ {
+      "id" : "437d6bef-c3d0-4a6c-bc55-903c2e653010",
+      "name" : "athyper-api-runtime audience",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-audience-mapper",
+      "consentRequired" : false,
+      "config" : {
+        "included.client.audience" : "athyper-api-runtime",
+        "id.token.claim" : "false",
+        "lightweight.claim" : "false",
+        "introspection.token.claim" : "true",
+        "access.token.claim" : "true",
+        "userinfo.token.claim" : "false"
+      }
+    } ],
     "defaultClientScopes" : [ "web-origins", "acr", "profile", "roles", "basic", "email" ],
     "optionalClientScopes" : [ "address", "phone", "organization", "offline_access", "microprofile-jwt" ]
   }, {
@@ -720,7 +2988,7 @@
     "notBefore" : 0,
     "bearerOnly" : true,
     "consentRequired" : false,
-    "standardFlowEnabled" : true,
+    "standardFlowEnabled" : false,
     "implicitFlowEnabled" : false,
     "directAccessGrantsEnabled" : false,
     "serviceAccountsEnabled" : false,
@@ -728,7 +2996,8 @@
     "frontchannelLogout" : false,
     "protocol" : "openid-connect",
     "attributes" : {
-      "realm_client" : "true"
+      "realm_client" : "true",
+      "post.logout.redirect.uris" : "+"
     },
     "authenticationFlowBindingOverrides" : { },
     "fullScopeAllowed" : false,
@@ -803,7 +3072,8 @@
       "config" : {
         "id.token.claim" : "true",
         "introspection.token.claim" : "true",
-        "access.token.claim" : "true"
+        "access.token.claim" : "true",
+        "userinfo.token.claim" : "true"
       }
     } ]
   }, {
@@ -912,8 +3182,9 @@
       "consentRequired" : false,
       "config" : {
         "user.session.note" : "AUTH_TIME",
-        "id.token.claim" : "true",
         "introspection.token.claim" : "true",
+        "userinfo.token.claim" : "true",
+        "id.token.claim" : "true",
         "access.token.claim" : "true",
         "claim.name" : "auth_time",
         "jsonType.label" : "long"
@@ -936,12 +3207,13 @@
       "protocolMapper" : "oidc-organization-membership-mapper",
       "consentRequired" : false,
       "config" : {
-        "id.token.claim" : "true",
         "introspection.token.claim" : "true",
+        "multivalued" : "true",
+        "userinfo.token.claim" : "true",
+        "id.token.claim" : "true",
         "access.token.claim" : "true",
         "claim.name" : "organization",
-        "jsonType.label" : "String",
-        "multivalued" : "true"
+        "jsonType.label" : "String"
       }
     } ]
   }, {
@@ -977,6 +3249,7 @@
       "config" : {
         "introspection.token.claim" : "true",
         "multivalued" : "true",
+        "userinfo.token.claim" : "true",
         "user.attribute" : "foo",
         "id.token.claim" : "true",
         "access.token.claim" : "true",
@@ -1022,8 +3295,9 @@
       "consentRequired" : false,
       "config" : {
         "user.session.note" : "clientAddress",
-        "id.token.claim" : "true",
         "introspection.token.claim" : "true",
+        "userinfo.token.claim" : "true",
+        "id.token.claim" : "true",
         "access.token.claim" : "true",
         "claim.name" : "clientAddress",
         "jsonType.label" : "String"
@@ -1036,8 +3310,9 @@
       "consentRequired" : false,
       "config" : {
         "user.session.note" : "client_id",
-        "id.token.claim" : "true",
         "introspection.token.claim" : "true",
+        "userinfo.token.claim" : "true",
+        "id.token.claim" : "true",
         "access.token.claim" : "true",
         "claim.name" : "client_id",
         "jsonType.label" : "String"
@@ -1050,8 +3325,9 @@
       "consentRequired" : false,
       "config" : {
         "user.session.note" : "clientHost",
-        "id.token.claim" : "true",
         "introspection.token.claim" : "true",
+        "userinfo.token.claim" : "true",
+        "id.token.claim" : "true",
         "access.token.claim" : "true",
         "claim.name" : "clientHost",
         "jsonType.label" : "String"
@@ -1415,11 +3691,11 @@
     "strictTransportSecurity" : "max-age=31536000; includeSubDomains"
   },
   "smtpServer" : { },
-  "eventsEnabled" : false,
+  "eventsEnabled" : true,
   "eventsListeners" : [ "jboss-logging" ],
-  "enabledEventTypes" : [ ],
-  "adminEventsEnabled" : false,
-  "adminEventsDetailsEnabled" : false,
+  "enabledEventTypes" : [ "SEND_RESET_PASSWORD", "UPDATE_CONSENT_ERROR", "GRANT_CONSENT", "REMOVE_TOTP", "REVOKE_GRANT", "UPDATE_TOTP", "LOGIN_ERROR", "CLIENT_LOGIN", "RESET_PASSWORD_ERROR", "CODE_TO_TOKEN_ERROR", "REGISTER_ERROR", "REVOKE_GRANT_ERROR", "LOGOUT_ERROR", "IMPERSONATE", "LOGIN", "UPDATE_PASSWORD_ERROR", "TOKEN_EXCHANGE", "CLIENT_REGISTER_ERROR", "LOGOUT", "REGISTER", "USER_INFO_REQUEST", "CLIENT_REGISTER", "INTROSPECT_TOKEN_ERROR", "REFRESH_TOKEN", "UPDATE_PASSWORD", "RESET_PASSWORD", "INTROSPECT_TOKEN", "CLIENT_DELETE", "UPDATE_CONSENT", "VERIFY_EMAIL_ERROR", "CLIENT_DELETE_ERROR", "SEND_RESET_PASSWORD_ERROR", "VERIFY_EMAIL", "CLIENT_LOGIN_ERROR", "REFRESH_TOKEN_ERROR", "TOKEN_EXCHANGE_ERROR", "CODE_TO_TOKEN", "USER_INFO_REQUEST_ERROR", "GRANT_CONSENT_ERROR" ],
+  "adminEventsEnabled" : true,
+  "adminEventsDetailsEnabled" : true,
   "identityProviders" : [ ],
   "identityProviderMappers" : [ ],
   "components" : {
@@ -1495,7 +3771,7 @@
       "subType" : "anonymous",
       "subComponents" : { },
       "config" : {
-        "allowed-protocol-mapper-types" : [ "saml-user-attribute-mapper", "oidc-usermodel-property-mapper", "oidc-address-mapper", "saml-role-list-mapper", "saml-user-property-mapper", "oidc-usermodel-attribute-mapper", "oidc-full-name-mapper", "oidc-sha256-pairwise-sub-mapper" ]
+        "allowed-protocol-mapper-types" : [ "oidc-address-mapper", "oidc-sha256-pairwise-sub-mapper", "saml-user-property-mapper", "saml-user-attribute-mapper", "oidc-usermodel-property-mapper", "saml-role-list-mapper", "oidc-full-name-mapper", "oidc-usermodel-attribute-mapper" ]
       }
     }, {
       "id" : "0a185b2a-1e6b-4c4c-9f7b-8d839d5b7d62",
@@ -1504,7 +3780,7 @@
       "subType" : "authenticated",
       "subComponents" : { },
       "config" : {
-        "allowed-protocol-mapper-types" : [ "oidc-sha256-pairwise-sub-mapper", "oidc-usermodel-attribute-mapper", "oidc-full-name-mapper", "saml-user-property-mapper", "saml-user-attribute-mapper", "oidc-usermodel-property-mapper", "oidc-address-mapper", "saml-role-list-mapper" ]
+        "allowed-protocol-mapper-types" : [ "oidc-address-mapper", "oidc-usermodel-attribute-mapper", "oidc-sha256-pairwise-sub-mapper", "oidc-full-name-mapper", "oidc-usermodel-property-mapper", "saml-user-property-mapper", "saml-role-list-mapper", "saml-user-attribute-mapper" ]
       }
     } ],
     "org.keycloak.keys.KeyProvider" : [ {
@@ -2260,8 +4536,8 @@
   "attributes" : {
     "cibaBackchannelTokenDeliveryMode" : "poll",
     "cibaAuthRequestedUserHint" : "login_hint",
-    "oauth2DevicePollingInterval" : "5",
     "clientOfflineSessionMaxLifespan" : "0",
+    "oauth2DevicePollingInterval" : "5",
     "clientSessionIdleTimeout" : "0",
     "clientOfflineSessionIdleTimeout" : "0",
     "cibaInterval" : "5",
@@ -2315,14 +4591,40 @@
     "alias" : "demo_in",
     "enabled" : true,
     "description" : "Demo India",
-    "attributes" : { }
+    "attributes" : { },
+    "members" : [ {
+      "username" : "demoin_agent",
+      "membershipType" : "UNMANAGED"
+    }, {
+      "username" : "demoin_manager",
+      "membershipType" : "UNMANAGED"
+    }, {
+      "username" : "demoin_reporter",
+      "membershipType" : "UNMANAGED"
+    }, {
+      "username" : "demoin_requester",
+      "membershipType" : "UNMANAGED"
+    }, {
+      "username" : "demoin_tenant_admin",
+      "membershipType" : "UNMANAGED"
+    }, {
+      "username" : "demoin_viewer",
+      "membershipType" : "UNMANAGED"
+    } ]
   }, {
     "id" : "7ef25b64-a322-4d4c-8e28-54e955e43cb0",
     "name" : "demo_my",
     "alias" : "demo_my",
     "enabled" : true,
     "description" : "Demo Malaysia",
-    "attributes" : { }
+    "attributes" : { },
+    "members" : [ {
+      "username" : "demomy_manager",
+      "membershipType" : "UNMANAGED"
+    }, {
+      "username" : "demomy_viewer",
+      "membershipType" : "UNMANAGED"
+    } ]
   }, {
     "id" : "493036ca-28a3-4d3f-ae8e-28d61cd48ba0",
     "name" : "demo_qa",
@@ -2343,7 +4645,11 @@
     "alias" : "demo_us",
     "enabled" : true,
     "description" : "Demo USA",
-    "attributes" : { }
+    "attributes" : { },
+    "members" : [ {
+      "username" : "demous_manager",
+      "membershipType" : "UNMANAGED"
+    } ]
   } ],
   "verifiableCredentialsEnabled" : false,
   "adminPermissionsEnabled" : false,

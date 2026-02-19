@@ -4,6 +4,7 @@ import { emitMeshAudit } from "@/lib/schema-manager/audit-writer";
 import { hashSidForAudit, MeshAuditEvent } from "@/lib/schema-manager/audit";
 
 import type { NextRequest } from "next/server";
+import type { ZodSchema } from "zod";
 
 interface RouteContext {
     params: Promise<{ entity: string }>;
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const isUpdate = body && typeof body.fieldId === "string" && !isReorder;
 
     const schema = isReorder ? reorderFieldsSchema : isUpdate ? updateFieldSchema : createFieldSchema;
-    const validated = validateBody(parsed.body, schema);
+    const validated = validateBody(parsed.body, schema as ZodSchema);
     if (!validated.ok) return validated.response;
 
     const method = isUpdate ? "PUT" : "POST";

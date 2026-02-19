@@ -1,68 +1,37 @@
 "use client";
 
-import { Plus, RefreshCw, Shapes } from "lucide-react";
-import { useMemo, useState } from "react";
+// components/mesh/schemas/SchemaExplorer.tsx
+//
+// Meta-Studio schema explorer — enhanced version using the generic list page system.
 
+import { useMemo } from "react";
+
+import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/mesh/shared/EmptyState";
 import { useSchemaList } from "@/lib/schema-manager/use-schema-list";
 
-import { SchemaCard } from "./SchemaCard";
-import { SchemaFilters } from "./SchemaFilters";
-import { SchemaTable } from "./SchemaTable";
+import {
+    AdvancedFilterPanel,
+    EntityCardGrid,
+    EntityDataGrid,
+    FilterChips,
+    KpiSummaryBar,
+    ListCommandBar,
+    ListPageFooter,
+    ListPageHeader,
+    ListPageProvider,
+    SelectionToolbar,
+    useListPage,
+} from "@/components/mesh/list";
 
-import type { SchemaFilterValues } from "./SchemaFilters";
+import { createSchemaListConfig } from "./schema-list-config";
+
 import type { EntitySummary } from "@/lib/schema-manager/types";
 
-interface SchemaExplorerProps {
-    basePath: string;
-}
+// ─── Inner content (consumes context) ────────────────────────
 
-function filterEntities(entities: EntitySummary[], filters: SchemaFilterValues): EntitySummary[] {
-    return entities.filter((e) => {
-        if (filters.search) {
-            const q = filters.search.toLowerCase();
-            if (!e.name.toLowerCase().includes(q) && !e.tableName.toLowerCase().includes(q)) {
-                return false;
-            }
-        }
-        if (filters.kind !== "all" && e.kind !== filters.kind) return false;
-        if (filters.status !== "all") {
-            const status = e.currentVersion?.status ?? "draft";
-            if (status !== filters.status) return false;
-        }
-        return true;
-    });
-}
-
-export function SchemaExplorer({ basePath }: SchemaExplorerProps) {
-    const { entities, loading, error, refresh } = useSchemaList();
-    const [filters, setFilters] = useState<SchemaFilterValues>({
-        search: "",
-        kind: "all",
-        status: "all",
-    });
-    const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
-
-    const filtered = useMemo(() => filterEntities(entities, filters), [entities, filters]);
-
-    if (loading) {
-        return (
-            <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                    <Skeleton className="h-9 w-[200px]" />
-                    <Skeleton className="h-9 w-[140px]" />
-                    <Skeleton className="h-9 w-[140px]" />
-                </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-[120px] rounded-lg" />
-                    ))}
-                </div>
-            </div>
-        );
-    }
+function SchemaExplorerContent() {
+    const { state, error, refresh } = useListPage<EntitySummary>();
 
     if (error) {
         return (
@@ -78,50 +47,62 @@ export function SchemaExplorer({ basePath }: SchemaExplorerProps) {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
-                <SchemaFilters
-                    filters={filters}
-                    onFiltersChange={setFilters}
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
-                />
-                <div className="flex items-center gap-2 shrink-0">
-                    <Button variant="outline" size="sm" onClick={refresh}>
-                        <RefreshCw className="size-3.5" />
-                    </Button>
-                    <Button size="sm">
-                        <Plus className="mr-1.5 size-3.5" />
-                        New Entity
-                    </Button>
-                </div>
-            </div>
+            {/* Zone 1 — Page Header */}
+            <ListPageHeader<EntitySummary>
+                breadcrumbs={[
+                    { label: "Admin", href: "#" },
+                    { label: "Mesh" },
+                    { label: "Schema Explorer" },
+                ]}
+            />
 
-            {filtered.length === 0 ? (
-                <EmptyState
-                    icon={Shapes}
-                    title="No entities found"
-                    description={
-                        entities.length === 0
-                            ? "Get started by creating your first entity definition."
-                            : "No entities match your current filters. Try adjusting your search."
-                    }
-                    actionLabel={entities.length === 0 ? "Create Entity" : undefined}
-                />
-            ) : viewMode === "grid" ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {filtered.map((entity) => (
-                        <SchemaCard key={entity.id} entity={entity} basePath={basePath} />
-                    ))}
-                </div>
+            {/* Zone 2 — KPI Summary */}
+            <KpiSummaryBar<EntitySummary> />
+
+            {/* Zone 3 — Command Bar */}
+            <ListCommandBar<EntitySummary> />
+
+            {/* Filter Chips */}
+            <FilterChips<EntitySummary> />
+
+            {/* Zone 3B — Advanced Filters */}
+            <AdvancedFilterPanel<EntitySummary> />
+
+            {/* Selection Toolbar */}
+            <SelectionToolbar<EntitySummary> />
+
+            {/* Zone 4 — Results */}
+            {state.viewMode === "table" ? (
+                <EntityDataGrid<EntitySummary> />
             ) : (
-                <SchemaTable entities={filtered} basePath={basePath} />
+                <EntityCardGrid<EntitySummary> />
             )}
 
-            {filtered.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                    Showing {filtered.length} of {entities.length} entities
-                </p>
-            )}
+            {/* Footer */}
+            <ListPageFooter<EntitySummary> />
         </div>
+    );
+}
+
+// ─── Wrapper (provides context) ──────────────────────────────
+
+interface SchemaExplorerProps {
+    basePath: string;
+}
+
+export function SchemaExplorer({ basePath }: SchemaExplorerProps) {
+    const { entities, loading, error, refresh } = useSchemaList();
+    const config = useMemo(() => createSchemaListConfig(basePath), [basePath]);
+
+    return (
+        <ListPageProvider<EntitySummary>
+            config={config}
+            items={entities}
+            loading={loading}
+            error={error}
+            refresh={refresh}
+        >
+            <SchemaExplorerContent />
+        </ListPageProvider>
     );
 }

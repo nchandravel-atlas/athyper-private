@@ -267,14 +267,17 @@ export function FieldFormDialog({ open, onOpenChange, field, existingFields = []
                                 render={({ field: f }) => (
                                     <FormItem>
                                         <FormLabel>UI Type</FormLabel>
-                                        <Select onValueChange={f.onChange} value={f.value ?? ""}>
+                                        <Select
+                                            onValueChange={(v) => f.onChange(v === "__none__" ? null : v)}
+                                            value={f.value ?? "__none__"}
+                                        >
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Auto-detect" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="">Auto-detect</SelectItem>
+                                                <SelectItem value="__none__">Auto-detect</SelectItem>
                                                 {UI_TYPES.map((t) => (
                                                     <SelectItem key={t} value={t}>{t}</SelectItem>
                                                 ))}

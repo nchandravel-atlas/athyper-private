@@ -617,14 +617,14 @@ export function ViewConfigurator({ entityName }: ViewConfiguratorProps) {
                                 <div className="flex-1">
                                     <Label className="text-xs text-muted-foreground">Sort By</Label>
                                     <Select
-                                        value={activePreset.defaultSortField ?? ""}
-                                        onValueChange={setSortField}
+                                        value={activePreset.defaultSortField ?? "__none__"}
+                                        onValueChange={(v) => setSortField(v === "__none__" ? "" : v)}
                                     >
                                         <SelectTrigger className="mt-1 h-8 text-xs">
                                             <SelectValue placeholder="None" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">None</SelectItem>
+                                            <SelectItem value="__none__">None</SelectItem>
                                             {visibleColumns.map((c) => (
                                                 <SelectItem key={c.fieldName} value={c.fieldName}>
                                                     {c.fieldName}

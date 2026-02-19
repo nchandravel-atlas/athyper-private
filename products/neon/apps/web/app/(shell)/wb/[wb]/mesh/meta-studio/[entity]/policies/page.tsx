@@ -57,8 +57,11 @@ export default function PoliciesPage() {
                 const body = (await res.json()) as { error?: { message?: string } };
                 throw new Error(body.error?.message ?? `Failed to load policies (${res.status})`);
             }
-            const body = (await res.json()) as { data: PoliciesData };
-            setData(body.data);
+            const body = (await res.json()) as { data?: Partial<PoliciesData> };
+            setData({
+                entityPolicies: body.data?.entityPolicies ?? [],
+                fieldSecurityPolicies: body.data?.fieldSecurityPolicies ?? [],
+            });
         } catch (err) {
             if ((err as Error).name === "AbortError") return;
             setError(err instanceof Error ? err.message : "Failed to load policies");

@@ -13,7 +13,7 @@ import type { NextRequest } from "next/server";
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { entity: string } }
+    { params }: { params: Promise<{ entity: string }> }
 ) {
     const auth = await requireAdminSession();
     if (!auth.ok) return auth.response;
@@ -29,7 +29,7 @@ export async function GET(
         );
     }
 
-    const entity = params.entity;
+    const { entity } = await params;
 
     try {
         // Fetch both versions from runtime API

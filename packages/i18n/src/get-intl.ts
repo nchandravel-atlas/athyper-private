@@ -22,7 +22,8 @@ const messageCache = new Map<Locale, Record<string, string>>();
  * Load all messages for a locale by merging common + dashboard modules.
  */
 async function loadMessages(locale: Locale): Promise<Record<string, string>> {
-    if (messageCache.has(locale)) {
+    // In development, skip the cache so new/changed keys are picked up immediately
+    if (process.env.NODE_ENV !== "development" && messageCache.has(locale)) {
         return messageCache.get(locale)!;
     }
 

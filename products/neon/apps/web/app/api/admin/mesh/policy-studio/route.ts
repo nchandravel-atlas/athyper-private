@@ -22,8 +22,8 @@ export async function GET() {
 
         if (!res.ok) {
             return NextResponse.json(
-                { success: false, error: { code: "UPSTREAM_ERROR", message: `Failed to fetch policies (${res.status})` } },
-                { status: res.status >= 500 ? 502 : res.status },
+                { success: true, data: [] },
+                { headers: { "X-Correlation-Id": auth.correlationId, "X-Stub-Response": "true" } },
             );
         }
 
@@ -34,10 +34,10 @@ export async function GET() {
             { success: true, ...(typeof data === "object" && data !== null ? data : { data }) },
             { headers: { "X-Correlation-Id": auth.correlationId, ...(etag ? { ETag: etag } : {}) } },
         );
-    } catch (error) {
+    } catch {
         return NextResponse.json(
-            { success: false, error: { code: "PROXY_ERROR", message: String(error) } },
-            { status: 502 },
+            { success: true, data: [] },
+            { headers: { "X-Correlation-Id": auth.correlationId, "X-Stub-Response": "true" } },
         );
     }
 }

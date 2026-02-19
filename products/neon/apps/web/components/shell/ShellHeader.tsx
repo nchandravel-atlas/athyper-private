@@ -2,21 +2,21 @@
 
 // components/shell/ShellHeader.tsx
 //
-// Header bar for the workbench shell.
-// Left: SidebarTrigger + Separator + SearchDialog
-// Right: Notification/Help/AI icons + WorkbenchSwitcher + TenantSwitcher
+// Header bar for the workbench shell (SAP Business Network style).
+// Left:  ⌘ Neon | ☰ | Workbench ▼ | Test Mode badge
+// Right: Search | Tier + Upgrade | 📢 🔔 ❓ | User avatar
 
-import { CircleHelp, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { CircleHelp, Command, Megaphone } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
-import { LocaleSwitcher } from "@/components/shell/LocaleSwitcher";
-import { TenantSwitcher } from "@/components/shell/TenantSwitcher";
-import { ViewportSwitcher } from "@/components/shell/ViewportSwitcher";
+import { GlobalDrawerTrigger } from "@/components/shell/GlobalDrawer";
+import { UserMenu } from "@/components/shell/UserMenu";
 import { WorkbenchSwitcher } from "@/components/shell/WorkbenchSwitcher";
 import { SearchDialog } from "@/components/sidebar/search-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { NotificationBell, NotificationInboxPanel } from "@athyper/ui";
 import { useMessages } from "@/lib/i18n/messages-context";
@@ -25,6 +25,8 @@ import { useNotificationStream } from "@/lib/notifications/useNotificationStream
 import { useUnreadCount } from "@/lib/notifications/useUnreadCount";
 import { cn } from "@/lib/utils";
 
+import type { SessionBootstrap } from "@/lib/session-bootstrap";
+
 interface ShellHeaderProps {
     workbench: string;
 }
@@ -32,8 +34,18 @@ interface ShellHeaderProps {
 export function ShellHeader({ workbench }: ShellHeaderProps) {
     const { t } = useMessages();
     const [inboxOpen, setInboxOpen] = useState(false);
+    const [bootstrap, setBootstrap] = useState<SessionBootstrap | undefined>(undefined);
 
-    // Fetch notifications data
+    useEffect(() => {
+        const bs = (window as unknown as Record<string, unknown>).__SESSION_BOOTSTRAP__ as
+            | SessionBootstrap
+            | undefined;
+        if (bs) setBootstrap(bs);
+    }, []);
+
+    const environment = bootstrap?.environment ?? null;
+    const subscriptionTier = bootstrap?.subscriptionTier ?? "Standard";
+
     const { count: unreadCount, refresh: refreshCount } = useUnreadCount();
     const {
         notifications,
@@ -44,19 +56,15 @@ export function ShellHeader({ workbench }: ShellHeaderProps) {
         refresh: refreshNotifications,
     } = useNotifications({ limit: 50 });
 
-    // Subscribe to real-time notification events via SSE
     useNotificationStream({
         onNotificationNew: () => {
-            // New notification received - refresh count and list
             refreshCount();
             refreshNotifications();
         },
         onNotificationRead: () => {
-            // Notification marked as read - refresh count
             refreshCount();
         },
         onNotificationDismissed: () => {
-            // Notification dismissed - refresh count
             refreshCount();
         },
     });
@@ -64,31 +72,71 @@ export function ShellHeader({ workbench }: ShellHeaderProps) {
     return (
         <header
             className={cn(
-                "flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12",
-                "[html[data-navbar-style=sticky]_&]:sticky [html[data-navbar-style=sticky]_&]:top-0 [html[data-navbar-style=sticky]_&]:z-50 [html[data-navbar-style=sticky]_&]:overflow-hidden [html[data-navbar-style=sticky]_&]:rounded-t-[inherit] [html[data-navbar-style=sticky]_&]:bg-background/50 [html[data-navbar-style=sticky]_&]:backdrop-blur-md",
+                "flex h-12 shrink-0 items-center gap-2 border-b",
+                "[html[data-navbar-style=sticky]_&]:sticky [html[data-navbar-style=sticky]_&]:top-0 [html[data-navbar-style=sticky]_&]:z-50 [html[data-navbar-style=sticky]_&]:bg-background/50 [html[data-navbar-style=sticky]_&]:backdrop-blur-md",
             )}
         >
-            <div className="flex w-full items-center justify-between px-4 lg:px-6">
-                {/* Left section: Sidebar trigger + Search */}
-                <div className="flex items-center gap-1 lg:gap-2">
-                    <SidebarTrigger className="-ml-1" />
-                    <Separator
-                        orientation="vertical"
-                        className="mx-2 data-[orientation=vertical]:h-4"
-                    />
-                    <SearchDialog />
-                    <ViewportSwitcher />
+            <div className="flex w-full items-center px-4 lg:px-6">
+                {/* ── Left: Brand + Drawer + Workbench + Test Mode ── */}
+                <div className="flex items-center gap-2">
+                    <Link href={`/wb/${workbench}/home`} className="flex items-center gap-2">
+                        <Command className="size-4 text-primary" />
+                        <span className="text-sm font-semibold tracking-tight">Neon</span>
+                    </Link>
+
+                    <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4" />
+
+                    <GlobalDrawerTrigger />
+
+                    <WorkbenchSwitcher />
+
+                    {environment !== null && environment !== "production" && (
+                        <Badge
+                            variant="secondary"
+                            className="bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800"
+                        >
+                            {t("common.header.test_mode")}
+                        </Badge>
+                    )}
                 </div>
 
-                {/* Right section: Icons + Switchers */}
+                {/* ── Spacer ── */}
+                <div className="flex-1" />
+
+                {/* ── Right: Search + Tier + Icons + User ── */}
                 <div className="flex items-center gap-1">
-                    {/* Notifications */}
+                    <SearchDialog />
+
+                    <span className="hidden sm:inline text-sm text-muted-foreground px-2">
+                        {subscriptionTier}
+                    </span>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs"
+                        asChild
+                    >
+                        <Link href={`/wb/${workbench}/settings/subscription`}>
+                            {t("common.header.upgrade")}
+                        </Link>
+                    </Button>
+
+                    <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4" />
+
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8">
+                                <Megaphone className="size-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{t("common.header.announcements")}</TooltipContent>
+                    </Tooltip>
+
                     <NotificationBell
                         unreadCount={unreadCount}
                         onClick={() => setInboxOpen(true)}
                         tooltipContent={t("common.header.notifications")}
                     />
-
                     <NotificationInboxPanel
                         open={inboxOpen}
                         onOpenChange={setInboxOpen}
@@ -99,11 +147,7 @@ export function ShellHeader({ workbench }: ShellHeaderProps) {
                         onMarkAllRead={markAllRead}
                         onDismiss={dismiss}
                         onNotificationClick={(notification) => {
-                            // Mark as read when clicked
-                            if (!notification.isRead) {
-                                markRead(notification.id);
-                            }
-                            // Close panel
+                            if (!notification.isRead) markRead(notification.id);
                             setInboxOpen(false);
                         }}
                     />
@@ -117,35 +161,9 @@ export function ShellHeader({ workbench }: ShellHeaderProps) {
                         <TooltipContent>{t("common.header.help")}</TooltipContent>
                     </Tooltip>
 
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8">
-                                <Sparkles className="size-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>{t("common.header.ai_assistant")}</TooltipContent>
-                    </Tooltip>
+                    <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4" />
 
-                    <Separator
-                        orientation="vertical"
-                        className="mx-1 data-[orientation=vertical]:h-4"
-                    />
-
-                    <LocaleSwitcher />
-
-                    <Separator
-                        orientation="vertical"
-                        className="mx-1 data-[orientation=vertical]:h-4"
-                    />
-
-                    <WorkbenchSwitcher />
-
-                    <Separator
-                        orientation="vertical"
-                        className="mx-1 data-[orientation=vertical]:h-4"
-                    />
-
-                    <TenantSwitcher workbench={workbench} />
+                    <UserMenu workbench={workbench} />
                 </div>
             </div>
         </header>

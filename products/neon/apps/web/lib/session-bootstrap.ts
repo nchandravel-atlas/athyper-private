@@ -10,6 +10,7 @@
 import { cookies } from "next/headers";
 
 import { normalizeClaims, serializeModules, serializePersonas } from "./auth/claims-normalizer";
+import { WORKBENCHES } from "./auth/types";
 
 import type { Workbench } from "./auth/types";
 
@@ -43,6 +44,10 @@ export interface SessionBootstrap {
     tenantId: string;
     /** User ID (Keycloak sub). */
     userId: string;
+    /** Deployment environment (local, staging, production). */
+    environment: string;
+    /** Subscription tier for the tenant (e.g. "Standard", "Professional", "Enterprise"). */
+    subscriptionTier: string;
 }
 
 async function getRedisClient() {
@@ -95,13 +100,19 @@ export async function getSessionBootstrap(): Promise<SessionBootstrap | null> {
             idleTimeoutSec: IDLE_TIMEOUT_SEC,
             csrfToken: session.csrfToken ?? "",
             locale: cookieStore.get("neon_locale")?.value ?? "en",
-            allowedWorkbenches: normalized.allowedWorkbenches,
+            // In local dev, grant all workbenches so developers can switch freely
+            allowedWorkbenches:
+                (process.env.ENVIRONMENT ?? "local") === "local"
+                    ? ([...WORKBENCHES] as Workbench[])
+                    : normalized.allowedWorkbenches,
             clientRoles: normalized.clientRoles,
             modules: serializeModules(normalized.modules),
             personas: serializePersonas(normalized.personas),
             groups: normalized.groups,
             tenantId: normalized.tenantId,
             userId: normalized.userId,
+            environment: process.env.ENVIRONMENT ?? "local",
+            subscriptionTier: "Standard",
         };
     } catch {
         return null;

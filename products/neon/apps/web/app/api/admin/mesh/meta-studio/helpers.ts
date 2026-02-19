@@ -283,6 +283,24 @@ export async function proxyGet(
         emitProxyMetric({ correlationId: auth.correlationId, endpoint: path, method: "GET", durationMs, status: res.status });
 
         if (!res.ok) {
+            // Fall back to stubs when upstream returns an error in dev mode
+            if (isStubEnabled()) {
+                const stubData = resolveStub(path);
+                if (stubData !== null) {
+                    emitProxyMetric({ correlationId: auth.correlationId, endpoint: path, method: "GET", durationMs, status: 200, error: "stub_fallback" });
+                    return NextResponse.json(
+                        { success: true, data: stubData },
+                        {
+                            headers: {
+                                "X-Correlation-Id": auth.correlationId,
+                                "X-Stub-Response": "true",
+                                "X-Stub-Reason": `upstream_${res.status}`,
+                            },
+                        },
+                    );
+                }
+            }
+
             const text = await res.text();
             return NextResponse.json(
                 { success: false, error: { code: "UPSTREAM_ERROR", message: text } },

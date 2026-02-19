@@ -2,6 +2,8 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "redis";
 
+import { computeSessionState, IDLE_TIMEOUT_SEC } from "@/lib/session-verdict";
+
 // ─── Feature flag: expose full token payloads in debug ──────────
 // Default: false — only show safe metadata (issuer, azp, exp, sub)
 // Set AUTH_DEBUG_EXPOSE_TOKENS=true in .env.local to see full JWTs
@@ -76,92 +78,6 @@ function scrubPii(payload: Record<string, unknown> | null): Record<string, unkno
   return scrubbed;
 }
 
-/**
- * Orthogonal state dimensions (clean separation):
- *
- *   Session state (lifecycle):  active | idle_warning | idle_expired | revoked
- *   Token state (access token): valid | expiring | expired
- *
- * These are independent. Session state tracks user activity/lifecycle.
- * Token state tracks access token expiry. Neither implies the other.
- *
- * Overall verdict derives from the worst of both:
- *   healthy          — session active, token valid
- *   degraded         — token expiring, idle warning, or token expired (but recoverable)
- *   reauth_required  — token expired + refresh invalid, OR session revoked/idle_expired
- */
-type SessionState = "active" | "idle_warning" | "idle_expired" | "revoked";
-type TokenState = "valid" | "expiring" | "expired";
-type Verdict = "healthy" | "degraded" | "reauth_required";
-
-/** Idle timeout configuration (seconds). */
-const IDLE_TIMEOUT_SEC = 900;        // 15 minutes — session killed
-const IDLE_WARNING_SEC = 180;        // warn 3 minutes before idle timeout
-
-interface SessionStateResult {
-  sessionState: SessionState;
-  tokenState: TokenState;
-  tokenRemaining: number | null;
-  idleRemaining: number | null;
-  refreshValid: boolean;
-  verdict: Verdict;
-}
-
-/** Compute session state from stored session data. */
-function computeSessionState(
-  session: Record<string, unknown>,
-  now: number,
-): SessionStateResult {
-  // Explicit revocation flag (set by admin kill-session or IAM change)
-  if (session.revoked === true) {
-    return { sessionState: "revoked", tokenState: "expired", tokenRemaining: null, idleRemaining: null, refreshValid: false, verdict: "reauth_required" };
-  }
-
-  const accessExpiresAt = typeof session.accessExpiresAt === "number" ? session.accessExpiresAt : 0;
-  const lastSeenAt = typeof session.lastSeenAt === "number" ? session.lastSeenAt : 0;
-  const refreshExpiresAt = typeof session.refreshExpiresAt === "number" ? session.refreshExpiresAt : 0;
-
-  // Token remaining
-  const tokenRemaining = accessExpiresAt > 0 ? Math.max(0, accessExpiresAt - now) : null;
-
-  // Idle remaining (time until idle timeout fires)
-  const idleSince = lastSeenAt > 0 ? now - lastSeenAt : 0;
-  const idleRemaining = lastSeenAt > 0 ? Math.max(0, IDLE_TIMEOUT_SEC - idleSince) : null;
-
-  // Refresh token validity
-  const hasRefreshToken = !!session.refreshToken;
-  const refreshExpired = refreshExpiresAt > 0 && now > refreshExpiresAt;
-  const refreshValid = hasRefreshToken && !refreshExpired;
-
-  // ─── Token state (independent of session lifecycle) ─────────
-  const tokenExpired = accessExpiresAt > 0 && now >= accessExpiresAt;
-  const tokenExpiring = !tokenExpired && accessExpiresAt > 0 && accessExpiresAt - now < 120;
-  const tokenState: TokenState = tokenExpired ? "expired" : tokenExpiring ? "expiring" : "valid";
-
-  // ─── Session state (independent of token expiry) ────────────
-  let sessionState: SessionState;
-  if (lastSeenAt > 0 && idleSince >= IDLE_TIMEOUT_SEC) {
-    sessionState = "idle_expired";
-  } else if (lastSeenAt > 0 && idleRemaining !== null && idleRemaining <= IDLE_WARNING_SEC) {
-    sessionState = "idle_warning";
-  } else {
-    sessionState = "active";
-  }
-
-  // ─── Overall verdict (worst of both dimensions) ─────────────
-  let verdict: Verdict;
-  if (tokenExpired && !refreshValid) {
-    verdict = "reauth_required";      // terminal: no way to recover tokens
-  } else if (sessionState === "idle_expired") {
-    verdict = "reauth_required";      // terminal: session timed out
-  } else if (tokenExpired || tokenExpiring || sessionState === "idle_warning") {
-    verdict = "degraded";             // recoverable: refresh or user activity can fix
-  } else {
-    verdict = "healthy";
-  }
-
-  return { sessionState, tokenState, tokenRemaining, idleRemaining, refreshValid, verdict };
-}
 
 /**
  * Resolve tenant ID from request context.
@@ -226,6 +142,17 @@ export async function GET(req: Request) {
       refreshValid,
       verdict,
     } = computeSessionState(session, now);
+
+    // ─── API boundary guard ─────────────────────────────────────
+    // The shell layout redirects expired sessions at the page level (Option C),
+    // but the API must also enforce this independently (defense-in-depth).
+    // A direct API call bypasses the layout entirely.
+    if (verdict === "reauth_required") {
+      return NextResponse.json(
+        { error: "SESSION_EXPIRED", authenticated: false, verdict, sessionState, tokenState },
+        { status: 401 },
+      );
+    }
 
     // ─── Decode JWTs ────────────────────────────────────────────
     const rawAccessPayload = session.accessToken ? decodeJwtPayload(session.accessToken) : null;

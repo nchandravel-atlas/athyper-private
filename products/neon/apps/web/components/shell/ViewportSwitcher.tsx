@@ -4,7 +4,7 @@
 //
 // Toggle between Desktop / Tablet / Mobile viewport preview.
 // Only rendered when NODE_ENV === "development".
-// Applies inline styles directly to the sidebar-inset element for reliable width constraining.
+// Applies inline styles directly to the shell-main element for reliable width constraining.
 
 import { Monitor, Smartphone, Tablet } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -27,7 +27,7 @@ const VIEWPORTS: { value: Viewport; icon: typeof Monitor; label: string }[] = [
 ];
 
 function applyViewport(viewport: Viewport) {
-    const inset = document.querySelector<HTMLElement>('[data-slot="sidebar-inset"]');
+    const inset = document.querySelector<HTMLElement>('[data-slot="shell-main"]');
     if (!inset) return;
 
     const width = VIEWPORT_WIDTHS[viewport];
@@ -57,16 +57,16 @@ function applyViewport(viewport: Viewport) {
 export function ViewportSwitcher() {
     const [viewport, setViewport] = useState<Viewport>("desktop");
 
-    if (process.env.NODE_ENV !== "development") {
-        return null;
-    }
-
     const handleChange = useCallback((value: string) => {
         if (!value) return; // prevent deselection
         const v = value as Viewport;
         setViewport(v);
         applyViewport(v);
     }, []);
+
+    if (process.env.NODE_ENV !== "development") {
+        return null;
+    }
 
     return (
         <ToggleGroup

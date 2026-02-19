@@ -1,7 +1,7 @@
 "use client";
 
 import {
-    ChevronsUpDown,
+    ChevronDown,
     Handshake,
     Settings,
     Shield,
@@ -46,23 +46,13 @@ export function WorkbenchSwitcher() {
         router.push(target);
     }
 
-    // If only one workbench available, show it as a static label
-    if (auth.allowedWorkbenches.length <= 1) {
-        return (
-            <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                <CurrentIcon className="size-4" />
-                <span className="hidden sm:inline">{current.label}</span>
-            </div>
-        );
-    }
-
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-1.5">
                     <CurrentIcon className="size-4" />
-                    <span className="hidden sm:inline">{current.label}</span>
-                    <ChevronsUpDown className="size-3 opacity-50" />
+                    <span className="hidden sm:inline">{current.label} Workbench</span>
+                    <ChevronDown className="size-3 opacity-50" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">

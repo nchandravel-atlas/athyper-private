@@ -46,6 +46,11 @@ export function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl;
     const method = req.method;
 
+    // Forward the current pathname as a request header so Server Components
+    // (e.g. the shell layout session gate) can read it without client-side JS.
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-pathname", pathname);
+
     // ─── CSRF enforcement for mutating API requests ──────────────
     if (pathname.startsWith("/api/") && MUTATING_METHODS.has(method) && !CSRF_EXEMPT_PATHS.has(pathname)) {
         const csrfHeader = req.headers.get("x-csrf-token");
@@ -61,12 +66,12 @@ export function middleware(req: NextRequest) {
 
     // ─── API routes pass through ─────────────────────────────────
     if (pathname.startsWith("/api/auth") || pathname.startsWith("/api/admin") || pathname.startsWith("/api/nav") || pathname.startsWith("/api/ui") || pathname.startsWith("/api/data")) {
-        return NextResponse.next();
+        return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
     // ─── Public routes ───────────────────────────────────────────
     if (PUBLIC_PATHS.has(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
-        return NextResponse.next();
+        return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
     // ─── Session gate for protected routes ───────────────────────
@@ -102,7 +107,7 @@ export function middleware(req: NextRequest) {
             .map((part) => part.split(";")[0].trim().split("-")[0].toLowerCase())
             .find((lang) => SUPPORTED_LOCALES.has(lang));
 
-        const response = NextResponse.next();
+        const response = NextResponse.next({ request: { headers: requestHeaders } });
         response.cookies.set(LOCALE_COOKIE, preferred ?? DEFAULT_LOCALE, {
             path: "/",
             httpOnly: false,
@@ -112,7 +117,7 @@ export function middleware(req: NextRequest) {
         return response;
     }
 
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {

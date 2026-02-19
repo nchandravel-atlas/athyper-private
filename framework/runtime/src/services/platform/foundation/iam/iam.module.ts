@@ -353,7 +353,6 @@ class MfaChallengeHandler implements RouteHandler {
         const result = await mfaService.createChallenge({
             principalId,
             tenantId,
-            method: req.body?.method ?? "totp",
         });
         res.status(200).json({ success: true, data: result });
     }
@@ -366,14 +365,14 @@ class MfaVerifyHandler implements RouteHandler {
         const tenantId = ctx.tenant.tenantKey ?? "default";
         const result = await mfaService.verifyChallenge(
             {
-                principalId,
-                tenantId,
                 code: req.body?.code ?? "",
                 challengeToken: req.body?.challengeToken,
-                trustDevice: req.body?.trustDevice ?? false,
+                rememberDevice: req.body?.trustDevice ?? false,
                 deviceName: req.body?.deviceName,
             },
             {
+                principalId,
+                tenantId,
                 ipAddress: ctx.request.ip,
                 userAgent: ctx.request.userAgent,
             }

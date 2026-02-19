@@ -583,7 +583,7 @@ export class PublishService {
 
     // Persist to meta.publish_artifact table
     try {
-      await (this.db as Kysely<Record<string, Record<string, unknown>>>)
+      await (this.db as unknown as Kysely<Record<string, Record<string, unknown>>>)
         .insertInto("meta.publish_artifact" as never)
         .values({
           id: artifactId,
@@ -633,12 +633,12 @@ export class PublishService {
     tenantId: string
   ): Promise<PublishArtifact | undefined> {
     try {
-      const row = await (this.db as Kysely<Record<string, Record<string, unknown>>>)
+      const row = await (this.db as unknown as Kysely<Record<string, Record<string, unknown>>>)
         .selectFrom("meta.publish_artifact" as never)
         .selectAll()
-        .where("tenant_id" as never, "=", tenantId)
-        .where("entity_name" as never, "=", entityName)
-        .where("version" as never, "=", version)
+        .where("tenant_id" as never, "=", tenantId as never)
+        .where("entity_name" as never, "=", entityName as never)
+        .where("version" as never, "=", version as never)
         .executeTakeFirst() as Record<string, unknown> | undefined;
 
       if (!row) return undefined;
@@ -724,11 +724,11 @@ export class PublishService {
     tenantId: string
   ): Promise<PublishArtifact[]> {
     try {
-      const rows = await (this.db as Kysely<Record<string, Record<string, unknown>>>)
+      const rows = await (this.db as unknown as Kysely<Record<string, Record<string, unknown>>>)
         .selectFrom("meta.publish_artifact" as never)
         .selectAll()
-        .where("tenant_id" as never, "=", tenantId)
-        .where("entity_name" as never, "=", entityName)
+        .where("tenant_id" as never, "=", tenantId as never)
+        .where("entity_name" as never, "=", entityName as never)
         .orderBy("published_at" as never, "desc")
         .execute() as Record<string, unknown>[];
 

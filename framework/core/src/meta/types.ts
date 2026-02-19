@@ -29,7 +29,9 @@ export type FieldType =
   | "reference"
   | "enum"
   | "json"
-  | "uuid";
+  | "uuid"
+  | "decimal"
+  | "rich_text";
 
 /**
  * Field definition in entity schema

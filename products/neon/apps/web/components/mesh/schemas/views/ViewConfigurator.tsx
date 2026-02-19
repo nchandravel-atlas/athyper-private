@@ -128,6 +128,7 @@ function SortableColumnRow({
                 type="button"
                 onClick={onRemove}
                 className="text-muted-foreground hover:text-destructive"
+                title="Remove column"
             >
                 <X className="size-3.5" />
             </button>
@@ -184,7 +185,7 @@ function PresetTab({
                         className="h-5 w-28 text-xs"
                         autoFocus
                     />
-                    <button type="button" onClick={commitRename}>
+                    <button type="button" onClick={commitRename} title="Confirm rename">
                         <Check className="size-3" />
                     </button>
                 </div>
@@ -209,6 +210,7 @@ function PresetTab({
                             setEditing(true);
                         }}
                         className="text-muted-foreground hover:text-foreground"
+                        title="Rename preset"
                     >
                         <Pencil className="size-2.5" />
                     </button>
@@ -227,6 +229,7 @@ function PresetTab({
                             type="button"
                             onClick={onDelete}
                             className="text-muted-foreground hover:text-destructive"
+                            title="Delete preset"
                         >
                             <Trash2 className="size-2.5" />
                         </button>

@@ -22,6 +22,9 @@ export const AuthAuditEvent = {
     SESSION_BINDING_MISMATCH: "auth.session_binding_mismatch",
     SESSION_DESTROYED: "auth.session_destroyed",
     IDLE_TOUCH_REJECTED: "auth.idle_touch_rejected",
+    // MFA events
+    MFA_VERIFY_SUCCESS: "auth.mfa_verify_success",
+    MFA_VERIFY_FAILED: "auth.mfa_verify_failed",
     // Diagnostics actions
     DIAG_CACHE_CLEAR: "diag.cache_clear",
     DIAG_AUTOFIX: "diag.autofix",

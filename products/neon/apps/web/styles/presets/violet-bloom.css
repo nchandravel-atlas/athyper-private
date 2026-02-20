@@ -44,16 +44,16 @@ value: violet-bloom
   --shadow-lg: 0px 4px 8px 0px oklch(0.35 0.06 300 / 0.1), 0px 4px 6px -1px oklch(0.35 0.06 300 / 0.1);
   --shadow-xl: 0px 8px 16px 0px oklch(0.35 0.06 300 / 0.12), 0px 8px 10px -1px oklch(0.35 0.06 300 / 0.12);
   --shadow-2xl: 0px 16px 32px 0px oklch(0.35 0.06 300 / 0.2);
-  --categorical-1: oklch(0.52 0.18 248);
-  --categorical-2: oklch(0.55 0.15 160);
-  --categorical-3: oklch(0.66 0.14 80);
-  --categorical-4: oklch(0.5 0.2 310);
-  --categorical-5: oklch(0.6 0.18 345);
-  --success: oklch(0.55 0.15 160);
+  --categorical-1: oklch(0.50 0.18 285);
+  --categorical-2: oklch(0.48 0.16 305);
+  --categorical-3: oklch(0.52 0.16 265);
+  --categorical-4: oklch(0.50 0.14 330);
+  --categorical-5: oklch(0.55 0.12 245);
+  --success: oklch(0.52 0.14 265);
   --success-foreground: oklch(0.98 0 0);
-  --warning: oklch(0.66 0.14 80);
-  --warning-foreground: oklch(0.2 0.04 80);
-  --info: oklch(0.52 0.18 248);
+  --warning: oklch(0.60 0.16 330);
+  --warning-foreground: oklch(0.15 0.02 330);
+  --info: oklch(0.50 0.18 285);
   --info-foreground: oklch(0.98 0 0);
 }
 
@@ -97,15 +97,15 @@ value: violet-bloom
   --shadow-lg: 0px 4px 8px 0px oklch(0.1 0.04 300 / 0.3), 0px 4px 6px -1px oklch(0.1 0.04 300 / 0.3);
   --shadow-xl: 0px 8px 16px 0px oklch(0.1 0.04 300 / 0.35), 0px 8px 10px -1px oklch(0.1 0.04 300 / 0.35);
   --shadow-2xl: 0px 16px 32px 0px oklch(0.1 0.04 300 / 0.45);
-  --categorical-1: oklch(0.7 0.14 248);
-  --categorical-2: oklch(0.72 0.12 160);
-  --categorical-3: oklch(0.78 0.1 80);
-  --categorical-4: oklch(0.68 0.16 310);
-  --categorical-5: oklch(0.72 0.14 345);
-  --success: oklch(0.72 0.12 160);
-  --success-foreground: oklch(0.12 0.02 160);
-  --warning: oklch(0.78 0.1 80);
-  --warning-foreground: oklch(0.18 0.03 80);
-  --info: oklch(0.7 0.14 248);
-  --info-foreground: oklch(0.12 0.02 248);
+  --categorical-1: oklch(0.68 0.14 285);
+  --categorical-2: oklch(0.66 0.12 305);
+  --categorical-3: oklch(0.70 0.12 265);
+  --categorical-4: oklch(0.68 0.10 330);
+  --categorical-5: oklch(0.72 0.10 245);
+  --success: oklch(0.70 0.10 265);
+  --success-foreground: oklch(0.12 0.02 265);
+  --warning: oklch(0.74 0.12 330);
+  --warning-foreground: oklch(0.15 0.02 330);
+  --info: oklch(0.68 0.14 285);
+  --info-foreground: oklch(0.12 0.02 285);
 }

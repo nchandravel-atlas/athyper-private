@@ -106,7 +106,7 @@ export function ShellHeader({ workbench }: ShellHeaderProps) {
                     {environment !== null && environment !== "production" && (
                         <Badge
                             variant="secondary"
-                            className="hidden @3xl:inline-flex bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800"
+                            className="hidden @3xl:inline-flex bg-info/15 text-info border-info/30"
                         >
                             {t("common.header.test_mode")}
                         </Badge>

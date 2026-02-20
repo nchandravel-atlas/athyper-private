@@ -20,6 +20,7 @@ import {
     SunMoon,
     Tablet,
     UserCircle,
+    Wrench,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -157,7 +158,8 @@ export function UserMenu({ workbench }: UserMenuProps) {
     function handleLocaleChange(code: string) {
         if (code === currentLocale) return;
         document.cookie = `neon_locale=${code}; path=/; max-age=${365 * 24 * 60 * 60}; samesite=lax`;
-        window.location.reload();
+        // Defer reload so React can finish committing dropdown state changes first
+        setTimeout(() => window.location.reload(), 0);
     }
 
     async function handleLogout() {
@@ -218,6 +220,10 @@ export function UserMenu({ workbench }: UserMenuProps) {
                     <DropdownMenuItem disabled>
                         <ArrowLeftRight className="mr-2 size-4" />
                         {t("tenant.menu.switch")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push(`/wb/${workbench}/settings/debug`)}>
+                        <Wrench className="mr-2 size-4" />
+                        {t("common.user.diagnostics")}
                     </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />

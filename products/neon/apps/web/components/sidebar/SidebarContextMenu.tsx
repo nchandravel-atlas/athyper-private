@@ -64,13 +64,13 @@ export function SidebarContextMenu({ dashboardId, visibility, permission, workbe
     return (
         <div
             ref={menuRef}
-            className="absolute right-0 top-8 z-50 w-40 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+            className="absolute right-0 top-8 z-50 w-40 rounded-md border border-border bg-popover py-1 shadow-lg"
         >
             {canEdit && !isSystem && (
                 <button
                     type="button"
                     onClick={handleEdit}
-                    className="flex w-full items-center px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+                    className="flex w-full items-center px-3 py-1.5 text-sm text-popover-foreground hover:bg-muted"
                 >
                     Edit
                 </button>
@@ -79,7 +79,7 @@ export function SidebarContextMenu({ dashboardId, visibility, permission, workbe
             <button
                 type="button"
                 onClick={handleDuplicate}
-                className="flex w-full items-center px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+                className="flex w-full items-center px-3 py-1.5 text-sm text-popover-foreground hover:bg-muted"
             >
                 Duplicate
             </button>
@@ -88,7 +88,7 @@ export function SidebarContextMenu({ dashboardId, visibility, permission, workbe
                 <button
                     type="button"
                     onClick={handleHide}
-                    className="flex w-full items-center px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+                    className="flex w-full items-center px-3 py-1.5 text-sm text-popover-foreground hover:bg-muted"
                 >
                     Hide
                 </button>
@@ -98,7 +98,7 @@ export function SidebarContextMenu({ dashboardId, visibility, permission, workbe
                 <button
                     type="button"
                     onClick={handleShare}
-                    className="flex w-full items-center px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+                    className="flex w-full items-center px-3 py-1.5 text-sm text-popover-foreground hover:bg-muted"
                 >
                     Share
                 </button>

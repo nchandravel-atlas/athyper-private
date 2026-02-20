@@ -167,7 +167,7 @@ export function VersionTimeline({ entityName, readonly }: VersionTimelineProps) 
                         <Button
                             size="sm"
                             variant="outline"
-                            className="gap-1.5 text-amber-600"
+                            className="gap-1.5 text-warning"
                             onClick={handleDeprecate}
                             disabled={deprecateMutation.loading}
                         >
@@ -286,9 +286,9 @@ function VersionCard({ version, isLatest, compareMode, isSelected, onToggleCompa
                 <div
                     className={`size-8 rounded-full border-2 flex items-center justify-center ${
                         version.status === "published"
-                            ? "border-green-500 bg-green-500/10"
+                            ? "border-success bg-success/10"
                             : version.status === "draft"
-                              ? "border-yellow-500 bg-yellow-500/10"
+                              ? "border-warning bg-warning/10"
                               : "border-muted-foreground/30 bg-muted"
                     }`}
                 >

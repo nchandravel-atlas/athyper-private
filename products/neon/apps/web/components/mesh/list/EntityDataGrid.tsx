@@ -92,9 +92,7 @@ export function EntityDataGrid<T>() {
                     {/* Select all checkbox */}
                     <TableHead className="w-[40px]">
                         <Checkbox
-                            checked={allSelected}
-                            // @ts-expect-error - indeterminate is valid
-                            indeterminate={someSelected}
+                            checked={allSelected ? true : someSelected ? "indeterminate" : false}
                             onCheckedChange={handleSelectAll}
                         />
                     </TableHead>

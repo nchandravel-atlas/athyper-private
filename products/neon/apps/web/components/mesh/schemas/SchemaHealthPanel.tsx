@@ -97,7 +97,7 @@ export function SchemaHealthPanel({ entities }: SchemaHealthPanelProps) {
                         </Badge>
                     )}
                     {warnings.length > 0 && (
-                        <Badge variant="outline" className="text-xs gap-1 text-amber-600">
+                        <Badge variant="outline" className="text-xs gap-1 text-warning">
                             <AlertTriangle className="size-3" />
                             {warnings.length} warning{warnings.length === 1 ? "" : "s"}
                         </Badge>
@@ -109,7 +109,7 @@ export function SchemaHealthPanel({ entities }: SchemaHealthPanelProps) {
                         </Badge>
                     )}
                     {healthy && (
-                        <Badge variant="secondary" className="text-xs gap-1 text-green-600">
+                        <Badge variant="secondary" className="text-xs gap-1 text-success">
                             <CheckCircle className="size-3" />
                             All healthy
                         </Badge>
@@ -128,14 +128,14 @@ export function SchemaHealthPanel({ entities }: SchemaHealthPanelProps) {
                     ))}
                     {warnings.map((issue, i) => (
                         <div key={`w-${i}`} className="flex items-center gap-2 text-xs">
-                            <AlertTriangle className="size-3 text-amber-500 shrink-0" />
+                            <AlertTriangle className="size-3 text-warning shrink-0" />
                             <span className="font-mono text-muted-foreground">{issue.entity}</span>
                             <span>{issue.message}</span>
                         </div>
                     ))}
                     {infos.map((issue, i) => (
                         <div key={`i-${i}`} className="flex items-center gap-2 text-xs">
-                            <Clock className="size-3 text-blue-500 shrink-0" />
+                            <Clock className="size-3 text-info shrink-0" />
                             <span className="font-mono text-muted-foreground">{issue.entity}</span>
                             <span>{issue.message}</span>
                         </div>

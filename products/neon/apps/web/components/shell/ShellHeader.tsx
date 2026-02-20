@@ -2,15 +2,21 @@
 
 // components/shell/ShellHeader.tsx
 //
-// Header bar for the workbench shell (SAP Business Network style).
-// Left:  ⌘ Neon | ☰ | Workbench ▼ | Test Mode badge
-// Right: Search | Tier + Upgrade | 📢 🔔 ❓ | User avatar
+// Responsive header bar for the workbench shell.
+// Uses CSS container queries (@container on shell-container) so it adapts
+// both to real viewport changes AND the dev viewport switcher tool.
+//
+// Breakpoints (Tailwind v4 container query variants):
+//   < @sm  (384px)  — Brand + Bell + User only
+//   @sm              — + Workbench (icon) + Search (icon only)
+//   @3xl  (768px)   — + Workbench text + Test Mode + all icons + separators
+//   @5xl  (1024px)  — + Tier text + Upgrade button (full desktop)
 
-import { CircleHelp, Command, Megaphone } from "lucide-react";
+import { CircleHelp, Command, Menu, Megaphone, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { GlobalDrawerTrigger } from "@/components/shell/GlobalDrawer";
+import { useGlobalDrawer } from "@/components/shell/GlobalDrawer";
 import { UserMenu } from "@/components/shell/UserMenu";
 import { WorkbenchSwitcher } from "@/components/shell/WorkbenchSwitcher";
 import { SearchDialog } from "@/components/sidebar/search-dialog";
@@ -32,6 +38,7 @@ interface ShellHeaderProps {
 }
 
 export function ShellHeader({ workbench }: ShellHeaderProps) {
+    const { setOpen: openDrawer } = useGlobalDrawer();
     const { t } = useMessages();
     const [inboxOpen, setInboxOpen] = useState(false);
     const [bootstrap, setBootstrap] = useState<SessionBootstrap | undefined>(undefined);
@@ -72,28 +79,34 @@ export function ShellHeader({ workbench }: ShellHeaderProps) {
     return (
         <header
             className={cn(
-                "flex h-12 shrink-0 items-center gap-2 border-b",
+                "flex h-12 shrink-0 items-center gap-1 border-b",
                 "[html[data-navbar-style=sticky]_&]:sticky [html[data-navbar-style=sticky]_&]:top-0 [html[data-navbar-style=sticky]_&]:z-50 [html[data-navbar-style=sticky]_&]:bg-background/50 [html[data-navbar-style=sticky]_&]:backdrop-blur-md",
             )}
         >
-            <div className="flex w-full items-center px-4 lg:px-6">
+            <div className="flex w-full items-center px-2 @3xl:px-4 @5xl:px-6">
                 {/* ── Left: Brand + Drawer + Workbench + Test Mode ── */}
-                <div className="flex items-center gap-2">
-                    <Link href={`/wb/${workbench}/home`} className="flex items-center gap-2">
+                <div className="flex items-center gap-1 @3xl:gap-2 min-w-0">
+                    <button
+                        type="button"
+                        onClick={() => openDrawer(true)}
+                        className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-accent shrink-0"
+                        aria-label="Open navigation"
+                    >
                         <Command className="size-4 text-primary" />
-                        <span className="text-sm font-semibold tracking-tight">Neon</span>
-                    </Link>
+                        <span className="text-sm font-semibold tracking-tight hidden @xs:inline">Neon</span>
+                        <Menu className="size-3.5 text-muted-foreground" />
+                    </button>
 
-                    <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4" />
+                    {/* Workbench switcher: hidden on tiny, icon-only on small, full on tablet+ */}
+                    <div className="hidden @sm:block">
+                        <WorkbenchSwitcher />
+                    </div>
 
-                    <GlobalDrawerTrigger />
-
-                    <WorkbenchSwitcher />
-
+                    {/* Test Mode badge: only on tablet+ */}
                     {environment !== null && environment !== "production" && (
                         <Badge
                             variant="secondary"
-                            className="bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800"
+                            className="hidden @3xl:inline-flex bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800"
                         >
                             {t("common.header.test_mode")}
                         </Badge>
@@ -101,19 +114,28 @@ export function ShellHeader({ workbench }: ShellHeaderProps) {
                 </div>
 
                 {/* ── Spacer ── */}
-                <div className="flex-1" />
+                <div className="flex-1 min-w-2" />
 
                 {/* ── Right: Search + Tier + Icons + User ── */}
-                <div className="flex items-center gap-1">
-                    <SearchDialog />
+                <div className="flex items-center gap-0.5 @3xl:gap-1">
+                    {/* Full search button: tablet+ */}
+                    <div className="hidden @3xl:block">
+                        <SearchDialog />
+                    </div>
+                    {/* Compact search icon: small screens only */}
+                    <div className="block @3xl:hidden">
+                        <SearchDialog compact />
+                    </div>
 
-                    <span className="hidden sm:inline text-sm text-muted-foreground px-2">
+                    {/* Tier text: desktop only */}
+                    <span className="hidden @5xl:inline text-sm text-muted-foreground px-2">
                         {subscriptionTier}
                     </span>
+                    {/* Upgrade button: desktop only */}
                     <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 text-xs"
+                        className="hidden @5xl:inline-flex h-7 text-xs"
                         asChild
                     >
                         <Link href={`/wb/${workbench}/settings/subscription`}>
@@ -121,17 +143,20 @@ export function ShellHeader({ workbench }: ShellHeaderProps) {
                         </Link>
                     </Button>
 
-                    <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4" />
+                    {/* Separator: tablet+ */}
+                    <Separator orientation="vertical" className="hidden @3xl:block mx-1 data-[orientation=vertical]:h-4" />
 
+                    {/* Announcements: tablet+ */}
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8">
+                            <Button variant="ghost" size="icon" className="hidden @3xl:inline-flex size-8">
                                 <Megaphone className="size-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>{t("common.header.announcements")}</TooltipContent>
                     </Tooltip>
 
+                    {/* Notification bell: always visible */}
                     <NotificationBell
                         unreadCount={unreadCount}
                         onClick={() => setInboxOpen(true)}
@@ -152,16 +177,18 @@ export function ShellHeader({ workbench }: ShellHeaderProps) {
                         }}
                     />
 
+                    {/* Help: tablet+ */}
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8">
+                            <Button variant="ghost" size="icon" className="hidden @3xl:inline-flex size-8">
                                 <CircleHelp className="size-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>{t("common.header.help")}</TooltipContent>
                     </Tooltip>
 
-                    <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4" />
+                    {/* Separator: tablet+ */}
+                    <Separator orientation="vertical" className="hidden @3xl:block mx-1 data-[orientation=vertical]:h-4" />
 
                     <UserMenu workbench={workbench} />
                 </div>

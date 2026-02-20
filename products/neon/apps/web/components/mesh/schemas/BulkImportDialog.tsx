@@ -186,9 +186,9 @@ export function BulkImportDialog({ open, onOpenChange, entityName, onImport }: B
                         )}
 
                         {parsed.warnings.length > 0 && (
-                            <div className="rounded-md border border-amber-500/50 bg-amber-500/5 p-3 space-y-1">
+                            <div className="rounded-md border border-warning/50 bg-warning/5 p-3 space-y-1">
                                 {parsed.warnings.map((w, i) => (
-                                    <p key={i} className="text-xs text-amber-600 flex items-center gap-1.5">
+                                    <p key={i} className="text-xs text-warning flex items-center gap-1.5">
                                         <AlertTriangle className="size-3 shrink-0" />
                                         {w}
                                     </p>

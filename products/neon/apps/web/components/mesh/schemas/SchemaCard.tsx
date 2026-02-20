@@ -6,15 +6,10 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { KindBadge } from "@/components/mesh/shared/KindBadge";
 import { StatusDot } from "@/components/mesh/shared/StatusDot";
+import { KIND_BORDER } from "@/lib/semantic-colors";
 import { cn } from "@/lib/utils";
 
 import type { EntitySummary } from "@/lib/schema-manager/types";
-
-const KIND_BORDER: Record<string, string> = {
-    ref: "border-l-blue-400",
-    ent: "border-l-green-400",
-    doc: "border-l-amber-400",
-};
 
 interface SchemaCardProps {
     entity: EntitySummary;

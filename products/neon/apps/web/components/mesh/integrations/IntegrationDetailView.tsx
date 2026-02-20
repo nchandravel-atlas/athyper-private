@@ -21,6 +21,7 @@ import {
     TableHeader, TableRow,
 } from "@/components/ui/table";
 import { BackLink } from "@/components/mesh/shared/BackLink";
+import { ENDPOINT_TYPE_BADGE, ACTIVE_BADGE } from "@/lib/semantic-colors";
 import { cn } from "@/lib/utils";
 import { buildHeaders } from "@/lib/schema-manager/use-csrf";
 
@@ -105,13 +106,6 @@ const TYPE_LABELS: Record<string, string> = {
     webhook: "Webhook",
 };
 
-const TYPE_BADGE_COLORS: Record<string, string> = {
-    rest_api: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-    graphql: "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300",
-    soap: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-    webhook: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
-};
-
 const AUTH_LABELS: Record<string, string> = {
     none: "None",
     api_key: "API Key",
@@ -169,9 +163,9 @@ function TriggerBadge({ mode, cron }: { mode: string; cron: string | null }) {
 // ─── Status Icon ─────────────────────────────────────────────
 
 function StatusIcon({ status }: { status: string | null }) {
-    if (status === "success") return <CheckCircle2 className="size-3.5 text-green-500" />;
-    if (status === "failure") return <XCircle className="size-3.5 text-red-500" />;
-    if (status === "partial") return <AlertTriangle className="size-3.5 text-amber-500" />;
+    if (status === "success") return <CheckCircle2 className="size-3.5 text-success" />;
+    if (status === "failure") return <XCircle className="size-3.5 text-destructive" />;
+    if (status === "partial") return <AlertTriangle className="size-3.5 text-warning" />;
     return <span className="text-xs text-muted-foreground italic">—</span>;
 }
 
@@ -370,7 +364,7 @@ function WebhooksTab({ webhooks }: { webhooks: WebhookSubscription[] }) {
                             </TableCell>
                             <TableCell>
                                 {webhook.isActive ? (
-                                    <Badge variant="outline" className="text-xs border-green-300 text-green-700 dark:border-green-700 dark:text-green-400">
+                                    <Badge variant="outline" className={cn("text-xs", ACTIVE_BADGE)}>
                                         Active
                                     </Badge>
                                 ) : (
@@ -512,7 +506,7 @@ function ConfigTab({ integration }: { integration: IntegrationDetail }) {
                         value={AUTH_LABELS[integration.authMethod] ?? integration.authMethod}
                     />
                     {integration.authMethod !== "none" && (
-                        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                        <div className="rounded-md border border-warning bg-warning/10 px-3 py-1.5 text-xs text-warning">
                             Credentials are encrypted and not displayed. Edit to update.
                         </div>
                     )}
@@ -676,7 +670,7 @@ export function IntegrationDetailView({ integrationId, backHref }: IntegrationDe
         );
     }
 
-    const typeColor = TYPE_BADGE_COLORS[integration.endpointType] ?? "";
+    const typeColor = ENDPOINT_TYPE_BADGE[integration.endpointType] ?? "";
 
     return (
         <div className="space-y-4">
@@ -692,7 +686,7 @@ export function IntegrationDetailView({ integrationId, backHref }: IntegrationDe
                         {TYPE_LABELS[integration.endpointType] ?? integration.endpointType}
                     </span>
                     {integration.isActive ? (
-                        <Badge variant="outline" className="text-xs border-green-300 text-green-700 dark:border-green-700 dark:text-green-400 shrink-0">
+                        <Badge variant="outline" className={cn("text-xs shrink-0", ACTIVE_BADGE)}>
                             Active
                         </Badge>
                     ) : (
@@ -798,11 +792,11 @@ export function IntegrationDetailView({ integrationId, backHref }: IntegrationDe
                         <div className="text-2xl font-bold">{integration.recentDeliveries.length}</div>
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                             <span className="inline-flex items-center gap-1">
-                                <CheckCircle2 className="size-3 text-green-500" />
+                                <CheckCircle2 className="size-3 text-success" />
                                 {integration.recentDeliveries.filter((d) => d.status === "success").length}
                             </span>
                             <span className="inline-flex items-center gap-1">
-                                <XCircle className="size-3 text-red-500" />
+                                <XCircle className="size-3 text-destructive" />
                                 {integration.recentDeliveries.filter((d) => d.status === "failure").length}
                             </span>
                         </div>

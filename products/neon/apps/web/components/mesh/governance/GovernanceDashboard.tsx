@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { buildHeaders } from "@/lib/schema-manager/use-csrf";
+import { CIRCUIT_BREAKER_BADGE, ENABLED_BADGE, SUMMARY_BORDER, SUMMARY_VALUE, healthIndicatorColor, percentBarColor } from "@/lib/semantic-colors";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -106,26 +107,14 @@ interface GovernanceData {
 // ─── Status Helpers ──────────────────────────────────────────
 
 function CircuitBreakerBadge({ state }: { state: string }) {
-    if (state === "CLOSED") {
-        return (
-            <Badge variant="outline" className="gap-1 text-xs border-green-300 text-green-700 dark:border-green-700 dark:text-green-400">
-                <CheckCircle2 className="size-3" />
-                Closed
-            </Badge>
-        );
-    }
-    if (state === "OPEN") {
-        return (
-            <Badge variant="outline" className="gap-1 text-xs border-red-300 text-red-700 dark:border-red-700 dark:text-red-400">
-                <XCircle className="size-3" />
-                Open
-            </Badge>
-        );
-    }
+    const color = CIRCUIT_BREAKER_BADGE[state] ?? CIRCUIT_BREAKER_BADGE.HALF_OPEN;
+    const icons: Record<string, typeof CheckCircle2> = { CLOSED: CheckCircle2, OPEN: XCircle };
+    const labels: Record<string, string> = { CLOSED: "Closed", OPEN: "Open", HALF_OPEN: "Half-Open" };
+    const Icon = icons[state] ?? AlertTriangle;
     return (
-        <Badge variant="outline" className="gap-1 text-xs border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400">
-            <AlertTriangle className="size-3" />
-            Half-Open
+        <Badge variant="outline" className={cn("gap-1 text-xs", color)}>
+            <Icon className="size-3" />
+            {labels[state] ?? state}
         </Badge>
     );
 }
@@ -136,9 +125,7 @@ function HealthIndicator({ value, warningThreshold, criticalThreshold, label }: 
     criticalThreshold: number;
     label: string;
 }) {
-    let color = "text-green-600 dark:text-green-400";
-    if (value >= criticalThreshold) color = "text-red-600 dark:text-red-400";
-    else if (value >= warningThreshold) color = "text-amber-600 dark:text-amber-400";
+    const color = healthIndicatorColor(value, warningThreshold, criticalThreshold);
 
     return (
         <div className="flex items-center justify-between">
@@ -163,7 +150,7 @@ function FeatureFlagRow({ label, enabled, value }: { label: string; enabled?: bo
         <div className="flex items-center justify-between py-1">
             <span className="text-sm text-muted-foreground">{label}</span>
             {enabled ? (
-                <Badge variant="outline" className="text-xs border-green-300 text-green-700 dark:border-green-700 dark:text-green-400">
+                <Badge variant="outline" className={cn("text-xs", ENABLED_BADGE)}>
                     Enabled
                 </Badge>
             ) : (
@@ -183,9 +170,7 @@ function formatBytes(bytes: number): string {
 }
 
 function PercentBar({ value, label }: { value: number; label: string }) {
-    let barColor = "bg-green-500";
-    if (value < 50) barColor = "bg-red-500";
-    else if (value < 80) barColor = "bg-amber-500";
+    const barColor = percentBarColor(value);
 
     return (
         <div className="space-y-1">
@@ -270,7 +255,7 @@ function DlqSection({ dlq }: { dlq: PipelineHealth["dlq"] }) {
                     <span className="text-sm text-muted-foreground">Total entries</span>
                     <span className={cn(
                         "text-2xl font-bold",
-                        dlq.total > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400",
+                        dlq.total > 0 ? "text-warning" : "text-success",
                     )}>
                         {dlq.total}
                     </span>
@@ -307,12 +292,12 @@ function HashChainSection({ hashChain }: { hashChain: HashChainStatus }) {
                 <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Status</span>
                     {allVerified ? (
-                        <Badge variant="outline" className="gap-1 text-xs border-green-300 text-green-700 dark:border-green-700 dark:text-green-400">
+                        <Badge variant="outline" className="gap-1 text-xs border-success text-success">
                             <ShieldCheck className="size-3" />
                             Verified
                         </Badge>
                     ) : (
-                        <Badge variant="outline" className="gap-1 text-xs border-red-300 text-red-700 dark:border-red-700 dark:text-red-400">
+                        <Badge variant="outline" className="gap-1 text-xs border-destructive text-destructive">
                             <XCircle className="size-3" />
                             Issues
                         </Badge>
@@ -385,7 +370,7 @@ function ComplianceSection({ compliance }: { compliance: ComplianceStats }) {
                         </span>
                         <span className={cn(
                             "font-mono font-medium",
-                            compliance.dsarRequestsOpen > 0 ? "text-amber-600 dark:text-amber-400" : "",
+                            compliance.dsarRequestsOpen > 0 ? "text-warning" : "",
                         )}>
                             {compliance.dsarRequestsOpen}
                         </span>
@@ -715,25 +700,14 @@ function SummaryCard({ icon: Icon, label, value, status }: {
     value: number | string;
     status: "healthy" | "warning" | "critical";
 }) {
-    const statusColors = {
-        healthy: "border-green-200 dark:border-green-800",
-        warning: "border-amber-200 dark:border-amber-800",
-        critical: "border-red-200 dark:border-red-800",
-    };
-    const valueColors = {
-        healthy: "text-green-600 dark:text-green-400",
-        warning: "text-amber-600 dark:text-amber-400",
-        critical: "text-red-600 dark:text-red-400",
-    };
-
     return (
-        <Card className={cn("border-l-4", statusColors[status])}>
+        <Card className={cn("border-l-4", SUMMARY_BORDER[status])}>
             <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                     <Icon className="size-4" />
                     <span className="text-xs font-medium">{label}</span>
                 </div>
-                <div className={cn("text-2xl font-bold font-mono", valueColors[status])}>
+                <div className={cn("text-2xl font-bold font-mono", SUMMARY_VALUE[status])}>
                     {typeof value === "number" ? value.toLocaleString() : value}
                 </div>
             </CardContent>

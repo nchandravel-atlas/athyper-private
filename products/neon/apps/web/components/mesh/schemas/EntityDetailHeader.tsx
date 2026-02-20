@@ -15,35 +15,29 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BackLink } from "@/components/mesh/shared/BackLink";
 import { KindBadge } from "@/components/mesh/shared/KindBadge";
 import { VersionBadge } from "@/components/mesh/shared/VersionBadge";
+import { STATUS_BANNER } from "@/lib/semantic-colors";
+import { cn } from "@/lib/utils";
 import { ActivityDrawer } from "./ActivityDrawer";
 
 import type { EntitySummary } from "@/lib/schema-manager/types";
 
 // ─── Version Status Banner ────────────────────────────────────
 
+const BANNER_MESSAGES: Record<string, string> = {
+    draft: "Draft — changes are not live until published",
+    published: "Published — this version is read-only. Create a new version to make changes.",
+    archived: "Archived — this version is deprecated and read-only",
+};
+
 function VersionStatusBanner({ status }: { status: string }) {
-    if (status === "draft") {
-        return (
-            <div className="rounded-md border border-green-200 bg-green-50 px-3 py-1.5 text-xs text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
-                Draft — changes are not live until published
-            </div>
-        );
-    }
-    if (status === "published") {
-        return (
-            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                Published — this version is read-only. Create a new version to make changes.
-            </div>
-        );
-    }
-    if (status === "archived") {
-        return (
-            <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
-                Archived — this version is deprecated and read-only
-            </div>
-        );
-    }
-    return null;
+    const style = STATUS_BANNER[status];
+    const message = BANNER_MESSAGES[status];
+    if (!style || !message) return null;
+    return (
+        <div className={cn("rounded-md border px-3 py-1.5 text-xs", style)}>
+            {message}
+        </div>
+    );
 }
 
 // ─── Header ───────────────────────────────────────────────────

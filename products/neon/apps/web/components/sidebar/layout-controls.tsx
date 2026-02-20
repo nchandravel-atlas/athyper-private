@@ -38,6 +38,13 @@ export function LayoutControls() {
         applyThemePreset(preset);
         setThemePreset(preset);
         persistPreference("theme_preset", preset);
+
+        const presetFont = THEME_PRESET_OPTIONS.find((p) => p.value === preset)?.font;
+        if (presetFont) {
+            applyFont(presetFont);
+            setFont(presetFont);
+            persistPreference("font", presetFont);
+        }
     };
 
     const onThemeModeChange = (mode: ThemeMode | "") => {
@@ -108,15 +115,14 @@ export function LayoutControls() {
                                             className="text-xs"
                                             value={preset.value}
                                         >
-                                            <span
-                                                className="size-2.5 rounded-full"
-                                                style={{
-                                                    backgroundColor:
-                                                        (resolvedThemeMode ?? "light") === "dark"
-                                                            ? preset.primary.dark
-                                                            : preset.primary.light,
-                                                }}
-                                            />
+                                            <span className="inline-grid size-5 shrink-0 grid-cols-2 overflow-hidden rounded">
+                                                {((resolvedThemeMode ?? "light") === "dark"
+                                                    ? preset.swatch.dark
+                                                    : preset.swatch.light
+                                                ).map((c, i) => (
+                                                    <span key={i} style={{ backgroundColor: c }} />
+                                                ))}
+                                            </span>
                                             {preset.label}
                                         </SelectItem>
                                     ))}

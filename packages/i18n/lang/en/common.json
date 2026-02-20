@@ -43,6 +43,8 @@
   "common.header.announcements": "Announcements",
   "common.header.upgrade": "Upgrade",
   "common.header.language": "Language",
+  "common.header.theme": "Theme",
+  "common.header.palette": "Palette",
   "common.navigation.modules": "Modules",
   "common.navigation.modules_error": "Failed to load navigation",
   "common.user.account": "Account",

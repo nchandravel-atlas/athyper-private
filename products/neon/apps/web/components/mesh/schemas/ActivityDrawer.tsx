@@ -92,16 +92,16 @@ function ActivityEntry({ entry }: { entry: MeshAuditEntry }) {
                         </summary>
                         <div className="mt-1 grid grid-cols-2 gap-2 text-[10px]">
                             {entry.before != null && (
-                                <div className="rounded border bg-red-500/5 p-2 overflow-auto max-h-32">
-                                    <p className="font-medium text-red-600 mb-1">Before</p>
+                                <div className="rounded border bg-destructive/10 p-2 overflow-auto max-h-32">
+                                    <p className="font-medium text-destructive mb-1">Before</p>
                                     <pre className="whitespace-pre-wrap break-all">
                                         {JSON.stringify(entry.before, null, 2)}
                                     </pre>
                                 </div>
                             )}
                             {entry.after != null && (
-                                <div className="rounded border bg-green-500/5 p-2 overflow-auto max-h-32">
-                                    <p className="font-medium text-green-600 mb-1">After</p>
+                                <div className="rounded border bg-success/10 p-2 overflow-auto max-h-32">
+                                    <p className="font-medium text-success mb-1">After</p>
                                     <pre className="whitespace-pre-wrap break-all">
                                         {JSON.stringify(entry.after, null, 2)}
                                     </pre>

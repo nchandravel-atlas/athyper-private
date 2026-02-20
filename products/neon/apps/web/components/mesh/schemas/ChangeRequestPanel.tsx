@@ -16,6 +16,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+import { CHECK_STATUS_COLOR } from "@/lib/semantic-colors";
+import { cn } from "@/lib/utils";
+
 import { RISK_LABELS, STATUS_LABELS } from "@/lib/schema-manager/change-request";
 
 import type { ChangeRequest, ChangeRequestStatus } from "@/lib/schema-manager/change-request";
@@ -26,13 +29,13 @@ function StatusIcon({ status }: { status: ChangeRequestStatus }) {
     switch (status) {
         case "approved":
         case "applied":
-            return <CheckCircle className="size-4 text-green-600" />;
+            return <CheckCircle className={cn("size-4", CHECK_STATUS_COLOR.passed)} />;
         case "rejected":
-            return <XCircle className="size-4 text-destructive" />;
+            return <XCircle className={cn("size-4", CHECK_STATUS_COLOR.failed)} />;
         case "pending_review":
-            return <Clock className="size-4 text-amber-600" />;
+            return <Clock className={cn("size-4", CHECK_STATUS_COLOR.warning)} />;
         default:
-            return <FileText className="size-4 text-muted-foreground" />;
+            return <FileText className={cn("size-4", CHECK_STATUS_COLOR.pending)} />;
     }
 }
 

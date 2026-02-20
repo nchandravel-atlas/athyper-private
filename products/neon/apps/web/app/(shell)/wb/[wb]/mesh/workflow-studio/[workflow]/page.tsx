@@ -55,9 +55,11 @@ interface LifecycleDetail {
 }
 
 function buildGraph(data: LifecycleDetail) {
-    const COLS = Math.max(3, Math.ceil(Math.sqrt(data.states.length)));
+    const states = data.states ?? [];
+    const transitions = data.transitions ?? [];
+    const COLS = Math.max(3, Math.ceil(Math.sqrt(states.length)));
 
-    const nodes: Node[] = data.states.map((state, i) => ({
+    const nodes: Node[] = states.map((state, i) => ({
         id: state.id,
         position: { x: (i % COLS) * 220, y: Math.floor(i / COLS) * 140 },
         data: {
@@ -81,7 +83,7 @@ function buildGraph(data: LifecycleDetail) {
         },
     }));
 
-    const edges: Edge[] = data.transitions.map((t) => ({
+    const edges: Edge[] = transitions.map((t) => ({
         id: t.id,
         source: t.fromStateId,
         target: t.toStateId,

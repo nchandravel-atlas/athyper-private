@@ -22,9 +22,9 @@ const buttonVariantMap: Record<string, "primary" | "ghost"> = {
   secondary: "ghost",
 };
 
-// Destructive actions get a red text override
+// Destructive actions get a semantic destructive override
 function getDestructiveClass(variant: string): string {
-  return variant === "destructive" ? "bg-red-600 hover:bg-red-700 text-white" : "";
+  return variant === "destructive" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : "";
 }
 
 interface EntityActionBarProps {

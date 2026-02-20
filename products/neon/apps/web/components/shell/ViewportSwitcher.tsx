@@ -4,7 +4,7 @@
 //
 // Toggle between Desktop / Tablet / Mobile viewport preview.
 // Only rendered when NODE_ENV === "development".
-// Applies inline styles directly to the shell-main element for reliable width constraining.
+// Applies inline styles directly to the shell-container element for reliable width constraining.
 
 import { Monitor, Smartphone, Tablet } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -27,30 +27,28 @@ const VIEWPORTS: { value: Viewport; icon: typeof Monitor; label: string }[] = [
 ];
 
 function applyViewport(viewport: Viewport) {
-    const inset = document.querySelector<HTMLElement>('[data-slot="shell-main"]');
-    if (!inset) return;
+    const container = document.querySelector<HTMLElement>('[data-slot="shell-container"]');
+    if (!container) return;
 
     const width = VIEWPORT_WIDTHS[viewport];
 
     if (width === null) {
         // Desktop — remove all viewport constraints
-        inset.style.removeProperty("max-width");
-        inset.style.removeProperty("margin-left");
-        inset.style.removeProperty("margin-right");
-        inset.style.removeProperty("border-left");
-        inset.style.removeProperty("border-right");
-        inset.style.removeProperty("transition");
-        inset.style.removeProperty("container-type");
+        container.style.removeProperty("max-width");
+        container.style.removeProperty("margin-left");
+        container.style.removeProperty("margin-right");
+        container.style.removeProperty("border-left");
+        container.style.removeProperty("border-right");
+        container.style.removeProperty("transition");
     } else {
         // Tablet or Mobile — constrain and center
-        inset.style.setProperty("max-width", `${width}px`, "important");
-        inset.style.setProperty("margin-left", "auto", "important");
-        inset.style.setProperty("margin-right", "auto", "important");
-        inset.style.setProperty("border-left", "1px dashed oklch(0.7 0 0 / 30%)");
-        inset.style.setProperty("border-right", "1px dashed oklch(0.7 0 0 / 30%)");
-        inset.style.setProperty("transition", "max-width 0.3s ease");
-        // Enable container queries so child grids respond to container width
-        inset.style.setProperty("container-type", "inline-size");
+        // container-type: inline-size is already set via @container class in CSS
+        container.style.setProperty("max-width", `${width}px`, "important");
+        container.style.setProperty("margin-left", "auto", "important");
+        container.style.setProperty("margin-right", "auto", "important");
+        container.style.setProperty("border-left", "1px dashed oklch(0.7 0 0 / 30%)");
+        container.style.setProperty("border-right", "1px dashed oklch(0.7 0 0 / 30%)");
+        container.style.setProperty("transition", "max-width 0.3s ease");
     }
 }
 

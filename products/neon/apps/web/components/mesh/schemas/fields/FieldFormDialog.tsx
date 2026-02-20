@@ -291,10 +291,10 @@ export function FieldFormDialog({ open, onOpenChange, field, existingFields = []
 
                         {/* Type change warning */}
                         {typeChangeWarning && (
-                            <div className="rounded-md border border-amber-500/50 bg-amber-500/5 p-3 flex items-start gap-2">
-                                <AlertTriangle className="size-4 text-amber-500 shrink-0 mt-0.5" />
+                            <div className="rounded-md border border-warning/50 bg-warning/5 p-3 flex items-start gap-2">
+                                <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
                                 <div className="text-xs">
-                                    <p className="text-amber-600 font-medium">{typeChangeWarning}</p>
+                                    <p className="text-warning font-medium">{typeChangeWarning}</p>
                                     {isUnsafeTypeCast(field?.dataType ?? "", watchDataType) && (
                                         <Badge variant="destructive" className="text-[10px] mt-1">
                                             Breaking Change

@@ -5,22 +5,11 @@
 // Zone 2 — Responsive row of clickable KPI metric cards.
 
 import { Card, CardContent } from "@/components/ui/card";
+import { KPI_CARD, KPI_VALUE } from "@/lib/semantic-colors";
 import { cn } from "@/lib/utils";
 
 import { useListPage, useListPageActions } from "./ListPageContext";
 import type { KpiVariant } from "./types";
-
-const VARIANT_STYLES: Record<KpiVariant, string> = {
-    default: "border-border hover:border-primary/30",
-    warning: "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20",
-    critical: "border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-950/20",
-};
-
-const VARIANT_VALUE_STYLES: Record<KpiVariant, string> = {
-    default: "text-foreground",
-    warning: "text-amber-700 dark:text-amber-300",
-    critical: "text-red-700 dark:text-red-300",
-};
 
 function formatKpiValue(value: number | string, format?: "number" | "currency" | "percent"): string {
     if (typeof value === "string") return value;
@@ -59,7 +48,7 @@ export function KpiSummaryBar<T>() {
                         key={kpi.id}
                         className={cn(
                             "transition-all",
-                            VARIANT_STYLES[variant],
+                            KPI_CARD[variant],
                             isClickable && "cursor-pointer hover:shadow-md",
                         )}
                         onClick={
@@ -73,7 +62,7 @@ export function KpiSummaryBar<T>() {
                                 <kpi.icon className="size-4 text-muted-foreground" />
                             </div>
                             <div className="min-w-0">
-                                <p className={cn("text-xl font-bold tabular-nums", VARIANT_VALUE_STYLES[variant])}>
+                                <p className={cn("text-xl font-bold tabular-nums", KPI_VALUE[variant])}>
                                     {displayValue}
                                 </p>
                                 <p className="text-xs text-muted-foreground truncate">

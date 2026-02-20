@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 
+import { CHECK_STATUS_COLOR } from "@/lib/semantic-colors";
 import type { ValidationRule, ValidationTestResult } from "@/lib/schema-manager/use-entity-validation";
 
 // ─── Props ───────────────────────────────────────────────────
@@ -91,8 +92,8 @@ export function ValidationTestPanel({ rules, onTest }: ValidationTestPanelProps)
                         <div className="flex items-center gap-2">
                             {result.valid ? (
                                 <>
-                                    <CheckCircle className="h-4 w-4 text-green-500" />
-                                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                                    <CheckCircle className={`h-4 w-4 ${CHECK_STATUS_COLOR.passed}`} />
+                                    <span className={`text-sm font-medium ${CHECK_STATUS_COLOR.passed}`}>
                                         All rules passed
                                     </span>
                                 </>
@@ -105,7 +106,7 @@ export function ValidationTestPanel({ rules, onTest }: ValidationTestPanelProps)
                                 </>
                             )}
                             {result.warnings.length > 0 && (
-                                <Badge variant="outline" className="text-amber-600 border-amber-300">
+                                <Badge variant="outline" className="text-warning border-warning">
                                     <AlertTriangle className="mr-1 h-3 w-3" />
                                     {result.warnings.length} warning{result.warnings.length !== 1 ? "s" : ""}
                                 </Badge>
@@ -129,16 +130,16 @@ export function ValidationTestPanel({ rules, onTest }: ValidationTestPanelProps)
 
                         {/* Warnings */}
                         {result.warnings.map((warn, i) => (
-                            <div key={`warn-${i}`} className="rounded border border-amber-300/30 bg-amber-50/50 dark:bg-amber-900/10 p-2 text-xs">
+                            <div key={`warn-${i}`} className="rounded border border-warning/30 bg-warning/10 p-2 text-xs">
                                 <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-amber-600 border-amber-300">
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-warning border-warning">
                                         WARN
                                     </Badge>
                                     <span className="font-mono text-muted-foreground">{warn.fieldPath}</span>
                                     <span className="text-muted-foreground">—</span>
                                     <span className="font-medium">{warn.ruleName}</span>
                                 </div>
-                                <p className="mt-1 text-amber-700 dark:text-amber-400">{warn.message}</p>
+                                <p className="mt-1 text-warning">{warn.message}</p>
                             </div>
                         ))}
                     </div>

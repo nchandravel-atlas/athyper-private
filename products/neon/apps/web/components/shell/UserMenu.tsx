@@ -12,6 +12,13 @@ import {
     CreditCard,
     Globe,
     LogOut,
+    Monitor,
+    Moon,
+    Palette,
+    Smartphone,
+    Sun,
+    SunMoon,
+    Tablet,
     UserCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -31,8 +38,55 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useMessages } from "@/lib/i18n/messages-context";
+import { applyFont } from "@/lib/preferences/layout-utils";
+import { persistPreference } from "@/lib/preferences/preferences-storage";
+import { THEME_PRESET_OPTIONS, type ThemeMode, type ThemePreset } from "@/lib/preferences/theme";
+import { applyThemePreset } from "@/lib/preferences/theme-utils";
+import { cn } from "@/lib/utils";
+import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
 import type { SessionBootstrap } from "@/lib/session-bootstrap";
+
+const THEME_MODES = [
+    { value: "light" as const, icon: Sun, label: "Light" },
+    { value: "dark" as const, icon: Moon, label: "Dark" },
+    { value: "system" as const, icon: Monitor, label: "System" },
+];
+
+type Viewport = "desktop" | "tablet" | "mobile";
+
+const VIEWPORT_WIDTHS: Record<Viewport, number | null> = {
+    desktop: null,
+    tablet: 768,
+    mobile: 375,
+};
+
+const VIEWPORTS = [
+    { value: "desktop" as const, icon: Monitor, label: "Desktop" },
+    { value: "tablet" as const, icon: Tablet, label: "Tablet (768px)" },
+    { value: "mobile" as const, icon: Smartphone, label: "Mobile (375px)" },
+];
+
+function applyViewport(viewport: Viewport) {
+    const container = document.querySelector<HTMLElement>('[data-slot="shell-container"]');
+    if (!container) return;
+    const width = VIEWPORT_WIDTHS[viewport];
+    if (width === null) {
+        container.style.removeProperty("max-width");
+        container.style.removeProperty("margin-left");
+        container.style.removeProperty("margin-right");
+        container.style.removeProperty("border-left");
+        container.style.removeProperty("border-right");
+        container.style.removeProperty("transition");
+    } else {
+        container.style.setProperty("max-width", `${width}px`, "important");
+        container.style.setProperty("margin-left", "auto", "important");
+        container.style.setProperty("margin-right", "auto", "important");
+        container.style.setProperty("border-left", "1px dashed oklch(0.7 0 0 / 30%)");
+        container.style.setProperty("border-right", "1px dashed oklch(0.7 0 0 / 30%)");
+        container.style.setProperty("transition", "max-width 0.3s ease");
+    }
+}
 
 const LOCALES = [
     { code: "en", label: "English", native: "English" },
@@ -61,6 +115,13 @@ interface UserMenuProps {
 export function UserMenu({ workbench }: UserMenuProps) {
     const router = useRouter();
     const { t } = useMessages();
+    const themeMode = usePreferencesStore((s) => s.themeMode);
+    const setThemeMode = usePreferencesStore((s) => s.setThemeMode);
+    const resolvedThemeMode = usePreferencesStore((s) => s.resolvedThemeMode);
+    const themePreset = usePreferencesStore((s) => s.themePreset);
+    const setThemePreset = usePreferencesStore((s) => s.setThemePreset);
+    const setFont = usePreferencesStore((s) => s.setFont);
+    const [viewport, setViewport] = useState<Viewport>("desktop");
     const [bootstrap, setBootstrap] = useState<SessionBootstrap | undefined>(undefined);
 
     useEffect(() => {
@@ -74,6 +135,24 @@ export function UserMenu({ workbench }: UserMenuProps) {
     const persona = bootstrap?.persona ?? "viewer";
     const currentLocale = bootstrap?.locale ?? "en";
     const initials = getInitials(displayName);
+
+    function handleThemeChange(mode: ThemeMode) {
+        setThemeMode(mode);
+        persistPreference("theme_mode", mode);
+    }
+
+    function handlePresetChange(preset: ThemePreset) {
+        applyThemePreset(preset);
+        setThemePreset(preset);
+        persistPreference("theme_preset", preset);
+
+        const presetFont = THEME_PRESET_OPTIONS.find((p) => p.value === preset)?.font;
+        if (presetFont) {
+            applyFont(presetFont);
+            setFont(presetFont);
+            persistPreference("font", presetFont);
+        }
+    }
 
     function handleLocaleChange(code: string) {
         if (code === currentLocale) return;
@@ -168,6 +247,97 @@ export function UserMenu({ workbench }: UserMenuProps) {
                         ))}
                     </DropdownMenuSubContent>
                 </DropdownMenuSub>
+                {/* ── Theme Preset Palette ── */}
+                <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                        <Palette className="mr-2 size-4" />
+                        {t("common.header.palette")}
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="w-48">
+                        {THEME_PRESET_OPTIONS.map((preset) => {
+                            const isActive = themePreset === preset.value;
+                            const colors =
+                                (resolvedThemeMode ?? "light") === "dark"
+                                    ? preset.swatch.dark
+                                    : preset.swatch.light;
+                            return (
+                                <DropdownMenuItem
+                                    key={preset.value}
+                                    onClick={() => handlePresetChange(preset.value as ThemePreset)}
+                                >
+                                    <span className="mr-2 inline-grid size-7 shrink-0 grid-cols-2 overflow-hidden rounded-lg">
+                                        {colors.map((c, i) => (
+                                            <span key={i} style={{ backgroundColor: c }} />
+                                        ))}
+                                    </span>
+                                    <span className="flex-1 text-sm">{preset.label}</span>
+                                    {isActive && (
+                                        <Check className="size-3.5 text-primary" />
+                                    )}
+                                </DropdownMenuItem>
+                            );
+                        })}
+                    </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                {/* ── Theme Mode ── */}
+                <div className="flex items-center justify-between px-2 py-1.5">
+                    <span className="flex items-center gap-2 text-sm">
+                        <SunMoon className="size-4 text-muted-foreground" />
+                        {t("common.header.theme")}
+                    </span>
+                    <div className="inline-flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
+                        {THEME_MODES.map(({ value, icon: Icon, label }) => (
+                            <button
+                                key={value}
+                                type="button"
+                                aria-label={label}
+                                title={label}
+                                onClick={() => handleThemeChange(value)}
+                                className={cn(
+                                    "inline-flex items-center justify-center rounded-md p-1.5 transition-all",
+                                    themeMode === value
+                                        ? "bg-background text-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground",
+                                )}
+                            >
+                                <Icon className="size-3.5" />
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                {process.env.NODE_ENV === "development" && (
+                    <>
+                        <DropdownMenuSeparator />
+                        <div className="flex items-center justify-between px-2 py-1.5">
+                            <span className="flex items-center gap-2 text-sm">
+                                <Monitor className="size-4 text-muted-foreground" />
+                                Viewport
+                            </span>
+                            <div className="inline-flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
+                                {VIEWPORTS.map(({ value, icon: Icon, label }) => (
+                                    <button
+                                        key={value}
+                                        type="button"
+                                        aria-label={label}
+                                        title={label}
+                                        onClick={() => {
+                                            setViewport(value);
+                                            applyViewport(value);
+                                        }}
+                                        className={cn(
+                                            "inline-flex items-center justify-center rounded-md p-1.5 transition-all",
+                                            viewport === value
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground",
+                                        )}
+                                    >
+                                        <Icon className="size-3.5" />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 size-4" />

@@ -6,6 +6,7 @@ import { GripVertical, Pencil, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FIELD_ATTR_BADGE } from "@/lib/semantic-colors";
 import { cn } from "@/lib/utils";
 
 import { FieldTypeIcon } from "./FieldTypeIcon";
@@ -78,22 +79,22 @@ export function FieldRow({ field, onEdit, onDelete }: FieldRowProps) {
                     {field.dataType}
                 </Badge>
                 {field.isRequired && (
-                    <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 dark:text-orange-400 dark:border-orange-700">
+                    <Badge variant="outline" className={cn("text-xs", FIELD_ATTR_BADGE.required)}>
                         required
                     </Badge>
                 )}
                 {field.isUnique && (
-                    <Badge variant="outline" className="text-xs text-purple-600 border-purple-300 dark:text-purple-400 dark:border-purple-700">
+                    <Badge variant="outline" className={cn("text-xs", FIELD_ATTR_BADGE.unique)}>
                         unique
                     </Badge>
                 )}
                 {field.isSearchable && (
-                    <Badge variant="outline" className="text-xs text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-700">
+                    <Badge variant="outline" className={cn("text-xs", FIELD_ATTR_BADGE.searchable)}>
                         searchable
                     </Badge>
                 )}
                 {field.isFilterable && (
-                    <Badge variant="outline" className="text-xs text-green-600 border-green-300 dark:text-green-400 dark:border-green-700">
+                    <Badge variant="outline" className={cn("text-xs", FIELD_ATTR_BADGE.filterable)}>
                         filterable
                     </Badge>
                 )}

@@ -43,6 +43,8 @@
   "common.header.announcements": "الإعلانات",
   "common.header.upgrade": "ترقية",
   "common.header.language": "اللغة",
+  "common.header.theme": "المظهر",
+  "common.header.palette": "لوحة الألوان",
   "common.navigation.modules": "الوحدات",
   "common.navigation.modules_error": "فشل تحميل التنقل",
   "common.user.account": "الحساب",

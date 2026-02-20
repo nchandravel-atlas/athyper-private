@@ -30,7 +30,7 @@ export function ShellClientLayout({ workbench, children }: ShellClientLayoutProp
     return (
         <GlobalDrawerProvider>
             <GlobalDrawer workbench={workbench} />
-            <div className="flex min-h-svh flex-col">
+            <div data-slot="shell-container" className="@container flex min-h-svh flex-col">
                 <ShellHeader workbench={workbench} />
                 <main data-slot="shell-main" className="flex-1 overflow-auto p-4 md:p-6">
                     {children}

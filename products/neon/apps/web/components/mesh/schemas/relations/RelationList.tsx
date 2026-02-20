@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { RELATION_TYPE_BADGE } from "@/lib/semantic-colors";
 
 import type { RelationDefinition } from "@/lib/schema-manager/types";
 
-const KIND_CONFIG: Record<string, { label: string; color: string }> = {
-    belongs_to: { label: "Belongs To", color: "text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-700" },
-    has_many: { label: "Has Many", color: "text-green-600 border-green-300 dark:text-green-400 dark:border-green-700" },
-    m2m: { label: "Many-to-Many", color: "text-purple-600 border-purple-300 dark:text-purple-400 dark:border-purple-700" },
+const KIND_LABELS: Record<string, string> = {
+    belongs_to: "Belongs To",
+    has_many: "Has Many",
+    m2m: "Many-to-Many",
 };
 
 const DELETE_RULE_LABELS: Record<string, string> = {
@@ -46,13 +47,14 @@ export function RelationList({ relations, selectedId, onSelect, onEdit, onDelete
                 {kindOrder.map((kind) => {
                     const group = grouped.get(kind);
                     if (!group || group.length === 0) return null;
-                    const config = KIND_CONFIG[kind] ?? { label: kind, color: "" };
+                    const label = KIND_LABELS[kind] ?? kind;
+                    const badgeColor = RELATION_TYPE_BADGE[kind] ?? "";
 
                     return (
                         <div key={kind} className="space-y-2">
                             <div className="flex items-center gap-2">
-                                <Badge variant="outline" className={`text-xs ${config.color}`}>
-                                    {config.label}
+                                <Badge variant="outline" className={`text-xs ${badgeColor}`}>
+                                    {label}
                                 </Badge>
                                 <span className="text-xs text-muted-foreground">({group.length})</span>
                             </div>

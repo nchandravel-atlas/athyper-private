@@ -296,7 +296,7 @@ export function FieldEditor({ entityName, readonly = false }: FieldEditorProps) 
                     <h3 className="text-sm font-medium">Fields</h3>
                     <Badge variant="secondary" className="text-xs">{fields.length}</Badge>
                     {readonly && (
-                        <Badge variant="outline" className="text-xs text-amber-600">Read-only</Badge>
+                        <Badge variant="outline" className="text-xs text-warning">Read-only</Badge>
                     )}
                 </div>
                 <div className="flex items-center gap-2">

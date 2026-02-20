@@ -41,7 +41,7 @@ const KIND_LABELS: Record<string, string> = {
 
 const SEVERITY_CONFIG = {
     error: { icon: ShieldAlert, className: "text-destructive border-destructive/30", label: "Error" },
-    warning: { icon: AlertTriangle, className: "text-amber-600 border-amber-300", label: "Warning" },
+    warning: { icon: AlertTriangle, className: "text-warning border-warning", label: "Warning" },
 } as const;
 
 // ─── Component ───────────────────────────────────────────────
@@ -117,7 +117,7 @@ export function ValidationRuleEditor({ rules, fields, loading, onSave, onTest }:
                         {localRules.length}
                     </Badge>
                     {isDirty && (
-                        <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                        <Badge variant="outline" className="text-xs text-warning border-warning">
                             Unsaved
                         </Badge>
                     )}

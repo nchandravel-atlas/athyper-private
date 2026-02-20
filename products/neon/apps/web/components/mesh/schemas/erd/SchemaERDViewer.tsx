@@ -166,7 +166,7 @@ export function SchemaERDViewer({ entity, relations, onNodeClick }: SchemaERDVie
 
     return (
         <div
-            className="h-full min-h-[500px] rounded-md border bg-slate-950"
+            className="h-full min-h-[500px] rounded-md border bg-background"
             role="img"
             aria-label={`Entity relationship diagram for ${entity.name} showing ${relations.length} relation${relations.length === 1 ? "" : "s"}`}
         >
@@ -182,12 +182,12 @@ export function SchemaERDViewer({ entity, relations, onNodeClick }: SchemaERDVie
                 <Background color="#1e293b" gap={20} />
                 <Controls
                     showInteractive={false}
-                    className="[&>button]:bg-slate-800 [&>button]:border-slate-700 [&>button]:text-slate-300"
+                    className="[&>button]:bg-muted [&>button]:border-border [&>button]:text-muted-foreground"
                 />
                 <MiniMap
                     nodeColor={(node) => node.id === entity.name ? "#3b82f6" : "#475569"}
                     maskColor="rgba(0,0,0,0.6)"
-                    className="bg-slate-900 border-slate-700"
+                    className="bg-card border-border"
                 />
             </ReactFlow>
         </div>

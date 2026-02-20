@@ -13,24 +13,20 @@
 import {
     Command,
     GitBranch,
-    Handshake,
     LayoutDashboard,
     LogOut,
     Menu,
-    Monitor,
     Package,
     Plug,
     ScrollText,
     Settings,
     Shapes,
     Shield,
-    User,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
     createContext,
-    useCallback,
     useContext,
     useEffect,
     useMemo,
@@ -60,17 +56,14 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 import { useAuthOptional } from "@/lib/auth/auth-context";
-import { setLastWorkbench } from "@/lib/auth/context-resolver";
 import { WORKBENCH_CONFIGS } from "@/lib/auth/workbench-config";
 import { useMessages } from "@/lib/i18n/messages-context";
 import { filterNavTree } from "@/lib/nav/filter-nav";
 import { useNavTree } from "@/lib/nav/use-nav-tree";
 import { cn } from "@/lib/utils";
 
-import { ViewportSwitcher } from "./ViewportSwitcher";
 
 import type { Workbench } from "@/lib/auth/types";
-import type { LucideIcon } from "lucide-react";
 import type { SessionBootstrap } from "@/lib/session-bootstrap";
 
 // ─── Context ─────────────────────────────────────────────────────────────────
@@ -82,7 +75,7 @@ interface GlobalDrawerContextValue {
 
 const GlobalDrawerContext = createContext<GlobalDrawerContextValue | null>(null);
 
-function useGlobalDrawer() {
+export function useGlobalDrawer() {
     const ctx = useContext(GlobalDrawerContext);
     if (!ctx) throw new Error("useGlobalDrawer must be used within GlobalDrawerProvider");
     return ctx;
@@ -156,7 +149,6 @@ export function GlobalDrawer({ workbench }: GlobalDrawerProps) {
                 <DrawerHeader workbench={workbench} />
                 <ScrollArea className="flex-1">
                     <div className="space-y-1 px-3 py-3">
-                        <WorkbenchSection workbench={workbench} />
                         {workbench === "admin" && <MeshAdminSection workbench={workbench} />}
                         <EntitySection workbench={workbench} />
                         <SystemSection workbench={workbench} />
@@ -194,68 +186,6 @@ function SectionLabel({ children }: { children: ReactNode }) {
         <p className="px-2 pt-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
             {children}
         </p>
-    );
-}
-
-// ─── Workbench Section ────────────────────────────────────────────────────────
-
-const WB_ICON_MAP: Record<string, LucideIcon> = {
-    User,
-    Handshake,
-    Shield,
-    Settings,
-};
-
-function WorkbenchSection({ workbench }: { workbench: Workbench }) {
-    const auth = useAuthOptional();
-    const router = useRouter();
-    const { setOpen } = useGlobalDrawer();
-
-    const handleSwitch = useCallback(
-        (wb: Workbench) => {
-            if (wb === workbench) return;
-            setLastWorkbench(wb);
-            router.push(WORKBENCH_CONFIGS[wb].defaultRoute);
-            setOpen(false);
-        },
-        [workbench, router, setOpen],
-    );
-
-    if (!auth || auth.allowedWorkbenches.length <= 1) return null;
-
-    return (
-        <div>
-            <Separator />
-            <SectionLabel>Workbenches</SectionLabel>
-            <ul className="space-y-0.5">
-                {auth.allowedWorkbenches.map((wb) => {
-                    const config = WORKBENCH_CONFIGS[wb];
-                    const Icon = WB_ICON_MAP[config.icon] ?? Shield;
-                    const isActive = wb === workbench;
-                    return (
-                        <li key={wb}>
-                            <button
-                                onClick={() => handleSwitch(wb)}
-                                className={cn(
-                                    "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
-                                    isActive
-                                        ? "bg-accent text-accent-foreground font-medium"
-                                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                                )}
-                            >
-                                <Icon className="size-4 shrink-0" />
-                                <div className="flex min-w-0 flex-col items-start">
-                                    <span className="truncate">{config.label}</span>
-                                    <span className="truncate text-xs text-muted-foreground">
-                                        {config.description}
-                                    </span>
-                                </div>
-                            </button>
-                        </li>
-                    );
-                })}
-            </ul>
-        </div>
     );
 }
 
@@ -392,18 +322,6 @@ function SystemSection({ workbench }: { workbench: Workbench }) {
                     </Link>
                 </li>
             </ul>
-            {process.env.NODE_ENV === "development" && (
-                <>
-                    <SectionLabel>Dev Tools</SectionLabel>
-                    <div className="flex items-center gap-2.5 px-2 py-1.5">
-                        <Monitor className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Viewport</span>
-                        <div className="ml-auto">
-                            <ViewportSwitcher />
-                        </div>
-                    </div>
-                </>
-            )}
         </div>
     );
 }

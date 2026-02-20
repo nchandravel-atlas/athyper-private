@@ -104,7 +104,7 @@ export function CompilationDashboard({ entityName }: CompilationDashboardProps) 
                 <CardContent className="p-4">
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                         <div className="flex items-center gap-2">
-                            <div className="size-2 rounded-full bg-green-500" />
+                            <div className="size-2 rounded-full bg-success" />
                             <span className="text-sm font-medium">Up to date</span>
                         </div>
 
@@ -119,7 +119,7 @@ export function CompilationDashboard({ entityName }: CompilationDashboardProps) 
                                 className="ml-1 h-6 w-6 p-0"
                                 onClick={handleCopyHash}
                             >
-                                {copied ? <Check className="size-3 text-green-500" /> : <Copy className="size-3" />}
+                                {copied ? <Check className="size-3 text-success" /> : <Copy className="size-3" />}
                             </Button>
                         </div>
 
@@ -162,7 +162,7 @@ export function CompilationDashboard({ entityName }: CompilationDashboardProps) 
             </Tabs>
 
             {error && (
-                <div className="rounded-md border border-yellow-300 bg-yellow-50 p-3 text-xs text-yellow-800 dark:border-yellow-700 dark:bg-yellow-950 dark:text-yellow-200">
+                <div className="rounded-md border border-warning bg-warning/10 p-3 text-xs text-warning">
                     {error}
                 </div>
             )}

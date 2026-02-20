@@ -17,6 +17,8 @@ import {
     Clock
 } from "lucide-react";
 import { useCsrfToken } from "@/lib/use-csrf";
+import { CHECK_STATUS_COLOR, ITEM_TYPE_BADGE, PUBLISHING_STATUS_BADGE, readinessScoreClasses } from "@/lib/semantic-colors";
+import { cn } from "@/lib/utils";
 
 interface ReadinessCheck {
     id: string;
@@ -63,50 +65,47 @@ interface MarketplaceData {
 }
 
 function StatusIcon({ status }: { status: ReadinessCheck["status"] }) {
+    const color = CHECK_STATUS_COLOR[status] ?? "text-muted-foreground";
     switch (status) {
         case "passed":
-            return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+            return <CheckCircle2 className={cn("h-4 w-4", color)} />;
         case "failed":
-            return <XCircle className="h-4 w-4 text-red-600" />;
+            return <XCircle className={cn("h-4 w-4", color)} />;
         case "warning":
-            return <AlertCircle className="h-4 w-4 text-amber-600" />;
+            return <AlertCircle className={cn("h-4 w-4", color)} />;
         case "pending":
-            return <Clock className="h-4 w-4 text-gray-400" />;
+            return <Clock className={cn("h-4 w-4", color)} />;
     }
 }
 
 function ReadinessScore({ score }: { score: number }) {
-    const color = score >= 90 ? "text-green-600" : score >= 70 ? "text-amber-600" : "text-red-600";
-    const bgColor = score >= 90 ? "bg-green-50" : score >= 70 ? "bg-amber-50" : "bg-red-50";
-
+    const classes = readinessScoreClasses(score);
     return (
-        <div className={`flex items-center gap-1 px-2 py-1 rounded ${bgColor}`}>
-            <span className={`text-sm font-semibold ${color}`}>{score}%</span>
+        <div className={cn("flex items-center gap-1 px-2 py-1 rounded", classes.bg)}>
+            <span className={cn("text-sm font-semibold", classes.text)}>{score}%</span>
         </div>
     );
 }
 
 function PublishingStatusBadge({ status }: { status: PublishableItem["publishingStatus"] }) {
-    const variants: Record<PublishableItem["publishingStatus"], { label: string; className: string }> = {
-        draft: { label: "Draft", className: "bg-gray-100 text-gray-700" },
-        validating: { label: "Validating", className: "bg-blue-100 text-blue-700" },
-        ready: { label: "Ready", className: "bg-green-100 text-green-700" },
-        published: { label: "Published", className: "bg-purple-100 text-purple-700" },
-        rejected: { label: "Rejected", className: "bg-red-100 text-red-700" },
+    const labels: Record<PublishableItem["publishingStatus"], string> = {
+        draft: "Draft",
+        validating: "Validating",
+        ready: "Ready",
+        published: "Published",
+        rejected: "Rejected",
     };
-    const variant = variants[status];
-    return <Badge className={variant.className}>{variant.label}</Badge>;
+    return <Badge className={PUBLISHING_STATUS_BADGE[status] ?? ""}>{labels[status]}</Badge>;
 }
 
 function TypeBadge({ type }: { type: PublishableItem["type"] }) {
-    const variants: Record<PublishableItem["type"], { label: string; className: string }> = {
-        module: { label: "Module", className: "bg-blue-100 text-blue-700" },
-        app: { label: "App", className: "bg-purple-100 text-purple-700" },
-        entity_template: { label: "Entity Template", className: "bg-pink-100 text-pink-700" },
-        workflow_template: { label: "Workflow Template", className: "bg-amber-100 text-amber-700" },
+    const labels: Record<PublishableItem["type"], string> = {
+        module: "Module",
+        app: "App",
+        entity_template: "Entity Template",
+        workflow_template: "Workflow Template",
     };
-    const variant = variants[type];
-    return <Badge className={variant.className}>{variant.label}</Badge>;
+    return <Badge className={ITEM_TYPE_BADGE[type] ?? ""}>{labels[type]}</Badge>;
 }
 
 function CategoryIcon({ category }: { category: ReadinessCheck["category"] }) {
@@ -136,7 +135,7 @@ function ItemCard({ item }: { item: PublishableItem }) {
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
-                        <div className="p-2 rounded-lg bg-purple-100 text-purple-700 shrink-0">
+                        <div className="p-2 rounded-lg bg-categorical-4/15 text-categorical-4 shrink-0">
                             <Package className="h-5 w-5" />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -145,11 +144,11 @@ function ItemCard({ item }: { item: PublishableItem }) {
                                 <TypeBadge type={item.type} />
                                 <PublishingStatusBadge status={item.publishingStatus} />
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                                 {item.code} • v{item.version}
                             </p>
                             {item.description && (
-                                <p className="text-xs text-gray-600 mt-1 line-clamp-2">{item.description}</p>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.description}</p>
                             )}
                         </div>
                     </div>
@@ -158,7 +157,7 @@ function ItemCard({ item }: { item: PublishableItem }) {
 
                 {/* Stats */}
                 {item.marketplaceStats && (
-                    <div className="flex items-center gap-4 text-xs text-gray-600 pt-2 border-t">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
                         <div className="flex items-center gap-1">
                             <Download className="h-3 w-3" />
                             <span>{item.marketplaceStats.downloads.toLocaleString()} downloads</span>
@@ -169,7 +168,7 @@ function ItemCard({ item }: { item: PublishableItem }) {
                         </div>
                         {item.marketplaceStats.rating !== null && (
                             <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                                <Star className="h-3 w-3 fill-warning text-warning" />
                                 <span>{item.marketplaceStats.rating.toFixed(1)} ({item.marketplaceStats.reviews})</span>
                             </div>
                         )}
@@ -180,13 +179,13 @@ function ItemCard({ item }: { item: PublishableItem }) {
                 {(criticalIssues > 0 || warnings > 0) && (
                     <div className="flex items-center gap-3 text-xs">
                         {criticalIssues > 0 && (
-                            <div className="flex items-center gap-1 text-red-600">
+                            <div className="flex items-center gap-1 text-destructive">
                                 <XCircle className="h-3 w-3" />
                                 <span>{criticalIssues} blocking issue{criticalIssues !== 1 ? "s" : ""}</span>
                             </div>
                         )}
                         {warnings > 0 && (
-                            <div className="flex items-center gap-1 text-amber-600">
+                            <div className="flex items-center gap-1 text-warning">
                                 <AlertCircle className="h-3 w-3" />
                                 <span>{warnings} warning{warnings !== 1 ? "s" : ""}</span>
                             </div>
@@ -206,7 +205,7 @@ function ItemCard({ item }: { item: PublishableItem }) {
                     </Button>
 
                     {expanded && (
-                        <div className="space-y-1 pl-2 border-l-2 border-gray-200">
+                        <div className="space-y-1 pl-2 border-l-2 border-border">
                             {item.checks.map((check) => (
                                 <div key={check.id} className="flex items-start gap-2 text-xs">
                                     <StatusIcon status={check.status} />
@@ -215,13 +214,13 @@ function ItemCard({ item }: { item: PublishableItem }) {
                                             <CategoryIcon category={check.category} />
                                             <span className="font-medium">{check.name}</span>
                                             {check.blocksPublish && (
-                                                <Badge className="bg-red-100 text-red-700 text-[10px] px-1 py-0">
+                                                <Badge className="bg-destructive/15 text-destructive text-[10px] px-1 py-0">
                                                     Blocks Publish
                                                 </Badge>
                                             )}
                                         </div>
                                         {check.message && (
-                                            <p className="text-gray-600 mt-0.5">{check.message}</p>
+                                            <p className="text-muted-foreground mt-0.5">{check.message}</p>
                                         )}
                                     </div>
                                 </div>
@@ -231,7 +230,7 @@ function ItemCard({ item }: { item: PublishableItem }) {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between pt-2 border-t text-xs text-gray-500">
+                <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground">
                     <div>
                         {item.lastValidatedAt && (
                             <span>Last validated {new Date(item.lastValidatedAt).toLocaleDateString()}</span>
@@ -268,7 +267,7 @@ function useMarketplaceData() {
         async function fetchData() {
             try {
                 setLoading(true);
-                const headers = await buildHeaders();
+                const headers = buildHeaders();
                 const res = await fetch("/api/admin/mesh/marketplace", {
                     headers,
                     signal: controller.signal,
@@ -292,7 +291,8 @@ function useMarketplaceData() {
 
         fetchData();
         return () => controller.abort();
-    }, [buildHeaders]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- buildHeaders reads from window, not reactive state
+    }, []);
 
     return { data, loading, error };
 }
@@ -305,12 +305,12 @@ export function MarketplaceReadiness() {
         return (
             <div className="p-6 space-y-6">
                 <div className="flex items-center gap-3">
-                    <Package className="h-6 w-6 text-purple-600" />
+                    <Package className="h-6 w-6 text-categorical-4" />
                     <h1 className="text-2xl font-bold">Marketplace Readiness</h1>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {[...Array(4)].map((_, i) => (
-                        <Card key={i} className="p-4 h-24 animate-pulse bg-gray-100" />
+                        <Card key={i} className="p-4 h-24 animate-pulse bg-muted" />
                     ))}
                 </div>
             </div>
@@ -321,8 +321,8 @@ export function MarketplaceReadiness() {
         return (
             <div className="p-6">
                 <Card className="p-8 text-center">
-                    <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                    <p className="text-sm text-gray-600">{error || "Failed to load marketplace data"}</p>
+                    <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                    <p className="text-sm text-muted-foreground">{error || "Failed to load marketplace data"}</p>
                 </Card>
             </div>
         );
@@ -337,7 +337,7 @@ export function MarketplaceReadiness() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <Package className="h-6 w-6 text-purple-600" />
+                    <Package className="h-6 w-6 text-categorical-4" />
                     <h1 className="text-2xl font-bold">Marketplace Readiness</h1>
                 </div>
                 <Button size="sm">
@@ -351,63 +351,63 @@ export function MarketplaceReadiness() {
                 <Card className="p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Total Items</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Items</p>
                             <p className="text-2xl font-bold mt-1">{data.summary.totalItems}</p>
                         </div>
-                        <Package className="h-8 w-8 text-gray-400" />
+                        <Package className="h-8 w-8 text-muted-foreground" />
                     </div>
                 </Card>
 
                 <Card className="p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Ready to Publish</p>
-                            <p className="text-2xl font-bold mt-1 text-green-600">{data.summary.readyToPublish}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Ready to Publish</p>
+                            <p className="text-2xl font-bold mt-1 text-success">{data.summary.readyToPublish}</p>
                         </div>
-                        <CheckCircle2 className="h-8 w-8 text-green-600" />
+                        <CheckCircle2 className="h-8 w-8 text-success" />
                     </div>
                 </Card>
 
                 <Card className="p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Published</p>
-                            <p className="text-2xl font-bold mt-1 text-purple-600">{data.summary.published}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Published</p>
+                            <p className="text-2xl font-bold mt-1 text-categorical-4">{data.summary.published}</p>
                         </div>
-                        <Upload className="h-8 w-8 text-purple-600" />
+                        <Upload className="h-8 w-8 text-categorical-4" />
                     </div>
                 </Card>
 
                 <Card className="p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Needs Attention</p>
-                            <p className="text-2xl font-bold mt-1 text-amber-600">{data.summary.needsAttention}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Needs Attention</p>
+                            <p className="text-2xl font-bold mt-1 text-warning">{data.summary.needsAttention}</p>
                         </div>
-                        <AlertCircle className="h-8 w-8 text-amber-600" />
+                        <AlertCircle className="h-8 w-8 text-warning" />
                     </div>
                 </Card>
 
                 <Card className="p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Total Downloads</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Downloads</p>
                             <p className="text-2xl font-bold mt-1">{data.summary.totalDownloads.toLocaleString()}</p>
                             {data.summary.averageRating !== null && (
                                 <div className="flex items-center gap-1 mt-1">
-                                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                                    <span className="text-xs text-gray-600">{data.summary.averageRating.toFixed(1)} avg</span>
+                                    <Star className="h-3 w-3 fill-warning text-warning" />
+                                    <span className="text-xs text-muted-foreground">{data.summary.averageRating.toFixed(1)} avg</span>
                                 </div>
                             )}
                         </div>
-                        <Download className="h-8 w-8 text-gray-400" />
+                        <Download className="h-8 w-8 text-muted-foreground" />
                     </div>
                 </Card>
             </div>
 
             {/* Filters */}
             <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Filter:</span>
+                <span className="text-sm text-muted-foreground">Filter:</span>
                 {(["all", "draft", "validating", "ready", "published", "rejected"] as const).map((status) => (
                     <Button
                         key={status}
@@ -424,8 +424,8 @@ export function MarketplaceReadiness() {
             {/* Items */}
             {filteredItems.length === 0 ? (
                 <Card className="p-8 text-center">
-                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-sm text-gray-600">No items found with status: {filter}</p>
+                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-sm text-muted-foreground">No items found with status: {filter}</p>
                 </Card>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

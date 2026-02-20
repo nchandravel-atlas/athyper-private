@@ -19,6 +19,8 @@ import {
   Zap,
   AlertTriangle,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { EFFECT_BADGE } from "@/lib/semantic-colors";
 
 // ============================================================================
 // Types (mirrors SimulatorExplainTree from runtime)
@@ -120,16 +122,17 @@ export function DecisionTreeViewer({ result, className = "" }: DecisionTreeViewe
     <div className={`space-y-2 ${className}`}>
       {/* Final Decision Banner */}
       <div
-        className={`flex items-center gap-3 rounded-lg border-2 p-4 ${
+        className={cn(
+          "flex items-center gap-3 rounded-lg border-2 p-4",
           decision.allowed
-            ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950"
-            : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950"
-        }`}
+            ? "border-success bg-success/10"
+            : "border-destructive bg-destructive/10"
+        )}
       >
         {decision.allowed ? (
-          <CheckCircle2 className="h-6 w-6 text-green-600" />
+          <CheckCircle2 className="h-6 w-6 text-success" />
         ) : (
-          <XCircle className="h-6 w-6 text-red-600" />
+          <XCircle className="h-6 w-6 text-destructive" />
         )}
         <div>
           <div className="font-semibold text-lg">
@@ -143,8 +146,8 @@ export function DecisionTreeViewer({ result, className = "" }: DecisionTreeViewe
 
       {/* Warnings */}
       {result.warnings.length > 0 && (
-        <div className="flex items-start gap-2 rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-950">
-          <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
+        <div className="flex items-start gap-2 rounded-lg border border-warning bg-warning/10 p-3">
+          <AlertTriangle className="h-4 w-4 text-warning mt-0.5" />
           <div className="text-sm">
             {result.warnings.map((w, i) => (
               <div key={i}>{w}</div>
@@ -343,26 +346,25 @@ function RuleNode({ rule }: { rule: RuleEvalResult }) {
 
   return (
     <div
-      className={`rounded border text-xs ${
-        rule.isDecidingRule
-          ? "border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-950"
-          : ""
-      }`}
+      className={cn(
+        "rounded border text-xs",
+        rule.isDecidingRule && "border-info bg-info/10"
+      )}
     >
       <button
         className="flex w-full items-center gap-2 p-2 text-left hover:bg-muted/50"
         onClick={() => setOpen(!open)}
       >
         {rule.matched ? (
-          <CheckCircle2 className="h-3 w-3 text-green-500" />
+          <CheckCircle2 className="h-3 w-3 text-success" />
         ) : (
-          <XCircle className="h-3 w-3 text-gray-400" />
+          <XCircle className="h-3 w-3 text-muted-foreground" />
         )}
         <span className="font-mono">{rule.ruleId.substring(0, 8)}...</span>
         <EffectBadge effect={rule.effect} />
         <span className="text-muted-foreground">P{rule.priority}</span>
         {rule.isDecidingRule && (
-          <span className="ml-1 rounded bg-blue-200 px-1 text-blue-800 dark:bg-blue-800 dark:text-blue-200">
+          <span className="ml-1 rounded bg-info/20 px-1 text-info">
             deciding
           </span>
         )}
@@ -375,9 +377,9 @@ function RuleNode({ rule }: { rule: RuleEvalResult }) {
           {rule.conditionResults.map((cond, i) => (
             <div key={i} className="flex items-center gap-2 font-mono">
               {cond.passed ? (
-                <CheckCircle2 className="h-3 w-3 text-green-500" />
+                <CheckCircle2 className="h-3 w-3 text-success" />
               ) : (
-                <XCircle className="h-3 w-3 text-red-500" />
+                <XCircle className="h-3 w-3 text-destructive" />
               )}
               <span>{cond.field}</span>
               <span className="text-muted-foreground">{cond.operator}</span>
@@ -396,11 +398,12 @@ function RuleNode({ rule }: { rule: RuleEvalResult }) {
 function EffectBadge({ effect }: { effect: "allow" | "deny" }) {
   return (
     <span
-      className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${
+      className={cn(
+        "inline-flex rounded border px-1.5 py-0.5 text-xs font-medium",
         effect === "allow"
-          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-          : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-      }`}
+          ? "bg-success/10 " + EFFECT_BADGE.allow
+          : "bg-destructive/10 " + EFFECT_BADGE.deny
+      )}
     >
       {effect}
     </span>
@@ -423,7 +426,7 @@ function PerformanceBar({
       <span className="w-40 truncate">{label}</span>
       <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
         <div
-          className="h-full rounded-full bg-blue-500"
+          className="h-full rounded-full bg-info"
           style={{ width: `${Math.max(pct, 1)}%` }}
         />
       </div>

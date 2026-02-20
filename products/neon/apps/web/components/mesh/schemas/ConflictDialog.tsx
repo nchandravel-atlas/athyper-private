@@ -45,7 +45,7 @@ export function ConflictDialog({
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <AlertTriangle className="size-5 text-amber-500" />
+                        <AlertTriangle className="size-5 text-warning" />
                         Conflict Detected
                     </DialogTitle>
                     <DialogDescription>

@@ -44,6 +44,17 @@ value: brutalist
   --shadow-lg: 4px 4px 0px 0px hsl(0 0% 0% / 1), 4px 4px 6px -1px hsl(0 0% 0% / 1);
   --shadow-xl: 4px 4px 0px 0px hsl(0 0% 0% / 1), 4px 8px 10px -1px hsl(0 0% 0% / 1);
   --shadow-2xl: 4px 4px 0px 0px hsl(0 0% 0% / 2.5);
+  --categorical-1: oklch(0.5 0.2 255);
+  --categorical-2: oklch(0.55 0.2 145);
+  --categorical-3: oklch(0.7 0.18 80);
+  --categorical-4: oklch(0.5 0.2 300);
+  --categorical-5: oklch(0.6 0.22 345);
+  --success: oklch(0.55 0.2 145);
+  --success-foreground: oklch(0.98 0 0);
+  --warning: oklch(0.7 0.18 80);
+  --warning-foreground: oklch(0.15 0 0);
+  --info: oklch(0.5 0.2 255);
+  --info-foreground: oklch(0.98 0 0);
 }
 
 .dark:root[data-theme-preset="brutalist"] {
@@ -86,4 +97,15 @@ value: brutalist
   --shadow-lg: 4px 4px 0px 0px hsl(0 0% 0% / 1), 4px 4px 6px -1px hsl(0 0% 0% / 1);
   --shadow-xl: 4px 4px 0px 0px hsl(0 0% 0% / 1), 4px 8px 10px -1px hsl(0 0% 0% / 1);
   --shadow-2xl: 4px 4px 0px 0px hsl(0 0% 0% / 2.5);
+  --categorical-1: oklch(0.68 0.16 255);
+  --categorical-2: oklch(0.7 0.16 145);
+  --categorical-3: oklch(0.8 0.14 80);
+  --categorical-4: oklch(0.68 0.16 300);
+  --categorical-5: oklch(0.72 0.18 345);
+  --success: oklch(0.7 0.16 145);
+  --success-foreground: oklch(0 0 0);
+  --warning: oklch(0.8 0.14 80);
+  --warning-foreground: oklch(0 0 0);
+  --info: oklch(0.68 0.16 255);
+  --info-foreground: oklch(0 0 0);
 }

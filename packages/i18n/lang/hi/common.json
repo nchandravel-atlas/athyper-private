@@ -43,6 +43,8 @@
   "common.header.announcements": "घोषणाएं",
   "common.header.upgrade": "अपग्रेड",
   "common.header.language": "भाषा",
+  "common.header.theme": "थीम",
+  "common.header.palette": "पैलेट",
   "common.navigation.modules": "मॉड्यूल",
   "common.navigation.modules_error": "नेविगेशन लोड करने में विफल",
   "common.user.account": "खाता",

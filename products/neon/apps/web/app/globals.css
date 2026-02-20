@@ -2,9 +2,16 @@
 @import "tw-animate-css";
 
 /* Theme preset styles: these override CSS variables based on the selected data-theme-preset */
+@import "../styles/presets/mono.css";
+@import "../styles/presets/cosmic-night.css";
 @import "../styles/presets/brutalist.css";
 @import "../styles/presets/soft-pop.css";
 @import "../styles/presets/tangerine.css";
+@import "../styles/presets/vintage-paper.css";
+@import "../styles/presets/modern-minimal.css";
+@import "../styles/presets/bubblegum.css";
+@import "../styles/presets/violet-bloom.css";
+@import "../styles/presets/doom-64.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -48,6 +55,17 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-categorical-1: var(--categorical-1);
+  --color-categorical-2: var(--categorical-2);
+  --color-categorical-3: var(--categorical-3);
+  --color-categorical-4: var(--categorical-4);
+  --color-categorical-5: var(--categorical-5);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --font-sans: var(--font-geist), system-ui, sans-serif;
   --font-serif: var(--font-source-serif-4), Georgia, serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
@@ -99,6 +117,18 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  --categorical-1: oklch(0.55 0.2 255);
+  --categorical-2: oklch(0.55 0.17 155);
+  --categorical-3: oklch(0.65 0.16 75);
+  --categorical-4: oklch(0.55 0.2 300);
+  --categorical-5: oklch(0.62 0.2 340);
+  --success: oklch(0.55 0.17 155);
+  --success-foreground: oklch(0.98 0 0);
+  --warning: oklch(0.65 0.16 75);
+  --warning-foreground: oklch(0.2 0.04 75);
+  --info: oklch(0.55 0.2 255);
+  --info-foreground: oklch(0.98 0 0);
 }
 
 /* ─── BASE Dark Theme ─── */
@@ -145,6 +175,18 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.439 0 0);
+
+  --categorical-1: oklch(0.7 0.15 255);
+  --categorical-2: oklch(0.7 0.14 155);
+  --categorical-3: oklch(0.78 0.12 75);
+  --categorical-4: oklch(0.7 0.15 300);
+  --categorical-5: oklch(0.75 0.14 340);
+  --success: oklch(0.7 0.14 155);
+  --success-foreground: oklch(0.15 0.02 155);
+  --warning: oklch(0.78 0.12 75);
+  --warning-foreground: oklch(0.2 0.04 75);
+  --info: oklch(0.7 0.15 255);
+  --info-foreground: oklch(0.15 0.02 255);
 }
 
 @layer base {

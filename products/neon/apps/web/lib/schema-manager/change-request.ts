@@ -74,15 +74,15 @@ export function canTransition(from: ChangeRequestStatus, to: ChangeRequestStatus
 
 export const STATUS_LABELS: Record<ChangeRequestStatus, { label: string; color: string }> = {
     draft: { label: "Draft", color: "text-muted-foreground" },
-    pending_review: { label: "Pending Review", color: "text-amber-600" },
-    approved: { label: "Approved", color: "text-green-600" },
+    pending_review: { label: "Pending Review", color: "text-warning" },
+    approved: { label: "Approved", color: "text-success" },
     rejected: { label: "Rejected", color: "text-destructive" },
-    applied: { label: "Applied", color: "text-blue-600" },
+    applied: { label: "Applied", color: "text-info" },
 };
 
 export const RISK_LABELS: Record<RiskLevel, { label: string; color: string }> = {
-    low: { label: "Low", color: "text-green-600" },
-    medium: { label: "Medium", color: "text-amber-600" },
-    high: { label: "High", color: "text-orange-600" },
+    low: { label: "Low", color: "text-success" },
+    medium: { label: "Medium", color: "text-warning" },
+    high: { label: "High", color: "text-destructive" },
     critical: { label: "Critical", color: "text-destructive" },
 };

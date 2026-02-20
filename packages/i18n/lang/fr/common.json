@@ -43,6 +43,8 @@
   "common.header.announcements": "Annonces",
   "common.header.upgrade": "Mettre à niveau",
   "common.header.language": "Langue",
+  "common.header.theme": "Thème",
+  "common.header.palette": "Palette",
   "common.navigation.modules": "Modules",
   "common.navigation.modules_error": "Échec du chargement de la navigation",
   "common.user.account": "Compte",

@@ -14,7 +14,11 @@ import {
 } from "@/components/ui/command";
 import { useMessages } from "@/lib/i18n/messages-context";
 
-export function SearchDialog() {
+interface SearchDialogProps {
+    compact?: boolean;
+}
+
+export function SearchDialog({ compact }: SearchDialogProps) {
     const [open, setOpen] = React.useState(false);
     const { t } = useMessages();
 
@@ -31,17 +35,29 @@ export function SearchDialog() {
 
     return (
         <>
-            <Button
-                variant="link"
-                className="!px-0 font-normal text-muted-foreground hover:no-underline"
-                onClick={() => setOpen(true)}
-            >
-                <Search className="size-4" />
-                {t("common.header.search")}
-                <kbd className="inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium text-[10px]">
-                    <span className="text-xs">&#x2318;</span>J
-                </kbd>
-            </Button>
+            {compact ? (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    onClick={() => setOpen(true)}
+                    aria-label={t("common.header.search")}
+                >
+                    <Search className="size-4" />
+                </Button>
+            ) : (
+                <Button
+                    variant="link"
+                    className="!px-0 font-normal text-muted-foreground hover:no-underline"
+                    onClick={() => setOpen(true)}
+                >
+                    <Search className="size-4" />
+                    {t("common.header.search")}
+                    <kbd className="inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium text-[10px]">
+                        <span className="text-xs">&#x2318;</span>J
+                    </kbd>
+                </Button>
+            )}
             <CommandDialog open={open} onOpenChange={setOpen}>
                 <CommandInput placeholder={t("common.header.search_placeholder")} />
                 <CommandList>

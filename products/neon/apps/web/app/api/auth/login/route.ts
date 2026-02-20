@@ -6,6 +6,8 @@ async function getRedisClient() {
     const { createClient } = await import("redis");
     const url = process.env.REDIS_URL ?? "redis://localhost:6379/0";
     const client = createClient({ url });
+    // Suppress unhandled error events — errors are caught by callers via the connect() rejection
+    client.on("error", () => {});
     if (!client.isOpen) await client.connect();
     return client;
 }
@@ -59,7 +61,22 @@ export async function GET(req: Request) {
     const { codeVerifier, codeChallenge, state } = generatePkceChallenge();
 
     // Store PKCE state in Redis (short TTL — 5 min to complete login)
-    const redis = await getRedisClient();
+    let redis;
+    try {
+        redis = await getRedisClient();
+    } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("[auth/login] Redis connection failed:", msg);
+        return NextResponse.json(
+            {
+                error: "REDIS_UNAVAILABLE",
+                message: `Cannot connect to Redis. Ensure Redis is running and REDIS_URL is correct in .env.local. (${msg})`,
+                hint: "Run: cp .env.example .env.local  (in products/neon/apps/web/)",
+            },
+            { status: 503 },
+        );
+    }
+
     try {
         await redis.set(
             `pkce_state:${state}`,

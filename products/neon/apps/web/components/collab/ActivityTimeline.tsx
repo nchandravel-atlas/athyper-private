@@ -3,6 +3,7 @@
 import { useTimeline, type TimelineEntry } from "@/lib/collab";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { SEVERITY_BORDER } from "@/lib/semantic-colors";
 import {
     GitBranch,
     ShieldCheck,
@@ -22,18 +23,11 @@ const SOURCE_ICON: Record<string, React.ReactNode> = {
     audit_log: <FileText className="size-4" />,
 };
 
-const SEVERITY_COLOR: Record<string, string> = {
-    info: "border-l-blue-500",
-    warning: "border-l-amber-500",
-    error: "border-l-red-500",
-    critical: "border-l-red-700",
-};
-
 // ─── Timeline entry card ─────────────────────────────────────
 
 function TimelineCard({ entry }: { entry: TimelineEntry }) {
     const icon = SOURCE_ICON[entry.source] ?? <FileText className="size-4" />;
-    const borderColor = SEVERITY_COLOR[entry.severity] ?? "border-l-muted-foreground";
+    const borderColor = SEVERITY_BORDER[entry.severity] ?? "border-l-muted-foreground";
     const dateStr = new Date(entry.occurredAt).toLocaleString();
 
     return (

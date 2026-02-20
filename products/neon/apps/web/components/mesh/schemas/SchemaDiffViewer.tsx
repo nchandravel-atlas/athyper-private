@@ -3,21 +3,24 @@
 import { AlertTriangle, Minus, Plus, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 import type { FieldDiffEntry, IndexDiffEntry, RelationDiffEntry, SchemaDiff } from "@/lib/schema-manager/schema-diff";
+import { DIFF_ICON_COLOR } from "@/lib/semantic-colors";
 
 // ─── Diff Entry Row ───────────────────────────────────────────
 
 function DiffIcon({ kind }: { kind: string }) {
+    const colorClass = DIFF_ICON_COLOR[kind];
     switch (kind) {
         case "added":
-            return <Plus className="size-3.5 text-green-500" />;
+            return <Plus className={cn("size-3.5", colorClass)} />;
         case "removed":
-            return <Minus className="size-3.5 text-red-500" />;
+            return <Minus className={cn("size-3.5", colorClass)} />;
         case "modified":
         case "renamed":
         case "type_changed":
-            return <RefreshCw className="size-3.5 text-amber-500" />;
+            return <RefreshCw className={cn("size-3.5", colorClass)} />;
         default:
             return null;
     }

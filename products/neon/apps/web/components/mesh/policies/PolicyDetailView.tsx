@@ -32,6 +32,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { SUBJECT_TYPE_BADGE, EFFECT_BADGE, STATUS_BANNER } from "@/lib/semantic-colors";
 import { buildHeaders } from "@/lib/schema-manager/use-csrf";
 import { usePolicyMutations } from "@/lib/schema-manager/use-policy-mutations";
 
@@ -91,13 +92,6 @@ const SCOPE_LABELS: Record<string, string> = {
 
 // ─── Subject Badge ───────────────────────────────────────────
 
-const SUBJECT_COLORS: Record<string, string> = {
-    kc_role: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-    kc_group: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
-    user: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
-    service: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-};
-
 const SUBJECT_LABELS: Record<string, string> = {
     kc_role: "Role",
     kc_group: "Group",
@@ -107,7 +101,7 @@ const SUBJECT_LABELS: Record<string, string> = {
 
 function SubjectBadge({ type, subjectKey }: { type: string; subjectKey: string }) {
     const label = SUBJECT_LABELS[type] ?? type;
-    const color = SUBJECT_COLORS[type] ?? "";
+    const color = SUBJECT_TYPE_BADGE[type] ?? "";
     return (
         <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium", color)}>
             {label}: {subjectKey}
@@ -118,18 +112,12 @@ function SubjectBadge({ type, subjectKey }: { type: string; subjectKey: string }
 // ─── Effect Badge ────────────────────────────────────────────
 
 function EffectBadge({ effect }: { effect: "allow" | "deny" }) {
-    if (effect === "allow") {
-        return (
-            <Badge variant="outline" className="gap-1 border-green-300 text-green-700 dark:border-green-700 dark:text-green-400">
-                <ShieldCheck className="size-3" />
-                Allow
-            </Badge>
-        );
-    }
+    const Icon = effect === "allow" ? ShieldCheck : ShieldX;
+    const label = effect === "allow" ? "Allow" : "Deny";
     return (
-        <Badge variant="outline" className="gap-1 border-red-300 text-red-700 dark:border-red-700 dark:text-red-400">
-            <ShieldX className="size-3" />
-            Deny
+        <Badge variant="outline" className={cn("gap-1", EFFECT_BADGE[effect])}>
+            <Icon className="size-3" />
+            {label}
         </Badge>
     );
 }
@@ -382,29 +370,21 @@ function CompiledTab({ compiled }: { compiled: PolicyDetail["compiled"] }) {
 
 // ─── Version Status Banner ───────────────────────────────────
 
+const VERSION_STATUS_MESSAGES: Record<string, string> = {
+    draft: "Draft — rules can be edited. Publish to activate this policy version.",
+    published: "Published — this version is active and read-only. Create a new version to make changes.",
+    archived: "Archived — this version is deprecated and no longer evaluated.",
+};
+
 function VersionStatusBanner({ status }: { status: string }) {
-    if (status === "draft") {
-        return (
-            <div className="rounded-md border border-green-200 bg-green-50 px-3 py-1.5 text-xs text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
-                Draft — rules can be edited. Publish to activate this policy version.
-            </div>
-        );
-    }
-    if (status === "published") {
-        return (
-            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                Published — this version is active and read-only. Create a new version to make changes.
-            </div>
-        );
-    }
-    if (status === "archived") {
-        return (
-            <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
-                Archived — this version is deprecated and no longer evaluated.
-            </div>
-        );
-    }
-    return null;
+    const bannerClasses = STATUS_BANNER[status];
+    const message = VERSION_STATUS_MESSAGES[status];
+    if (!bannerClasses || !message) return null;
+    return (
+        <div className={cn("rounded-md border px-3 py-1.5 text-xs", bannerClasses)}>
+            {message}
+        </div>
+    );
 }
 
 // ─── Data Hook ───────────────────────────────────────────────
@@ -676,11 +656,11 @@ export function PolicyDetailView({ policyId, backHref }: PolicyDetailViewProps) 
                         <div className="text-2xl font-bold">{policy.rules.length}</div>
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                             <span className="inline-flex items-center gap-1">
-                                <ShieldCheck className="size-3 text-green-500" />
+                                <ShieldCheck className="size-3 text-success" />
                                 {policy.rules.filter((r) => r.effect === "allow").length} allow
                             </span>
                             <span className="inline-flex items-center gap-1">
-                                <ShieldX className="size-3 text-red-500" />
+                                <ShieldX className="size-3 text-destructive" />
                                 {policy.rules.filter((r) => r.effect === "deny").length} deny
                             </span>
                         </div>
@@ -708,7 +688,7 @@ export function PolicyDetailView({ policyId, backHref }: PolicyDetailViewProps) 
                     <CardContent>
                         <div className="text-2xl font-bold">
                             {policy.compiled ? (
-                                <span className="text-green-600 dark:text-green-400">Active</span>
+                                <span className="text-success">Active</span>
                             ) : (
                                 <span className="text-muted-foreground">Pending</span>
                             )}

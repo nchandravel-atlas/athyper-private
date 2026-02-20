@@ -23,6 +23,7 @@ import {
 import { EmptyState } from "@/components/mesh/shared/EmptyState";
 import { cn } from "@/lib/utils";
 import { buildHeaders } from "@/lib/schema-manager/use-csrf";
+import { ENDPOINT_TYPE_BORDER, ENDPOINT_TYPE_BADGE, SYNC_DOT, ACTIVE_BADGE } from "@/lib/semantic-colors";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -54,13 +55,6 @@ interface FilterValues {
 
 // ─── Endpoint Type Helpers ───────────────────────────────────
 
-const TYPE_BORDER: Record<string, string> = {
-    rest_api: "border-l-blue-400",
-    graphql: "border-l-pink-400",
-    soap: "border-l-amber-400",
-    webhook: "border-l-green-400",
-};
-
 const TYPE_LABELS: Record<string, string> = {
     rest_api: "REST API",
     graphql: "GraphQL",
@@ -68,16 +62,9 @@ const TYPE_LABELS: Record<string, string> = {
     webhook: "Webhook",
 };
 
-const TYPE_BADGE_COLORS: Record<string, string> = {
-    rest_api: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-    graphql: "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300",
-    soap: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-    webhook: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
-};
-
 function EndpointTypeBadge({ type }: { type: string }) {
     const label = TYPE_LABELS[type] ?? type;
-    const color = TYPE_BADGE_COLORS[type] ?? "";
+    const color = ENDPOINT_TYPE_BADGE[type] ?? "";
     return (
         <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium", color)}>
             {label}
@@ -106,15 +93,9 @@ function AuthBadge({ method }: { method: string }) {
 
 // ─── Sync Status Dot ─────────────────────────────────────────
 
-const SYNC_COLORS: Record<string, string> = {
-    success: "bg-green-500",
-    failure: "bg-red-500",
-    partial: "bg-amber-500",
-};
-
 function SyncStatusDot({ status }: { status: string | null }) {
     if (!status) return <span className="text-xs text-muted-foreground italic">Never synced</span>;
-    const color = SYNC_COLORS[status] ?? "bg-muted-foreground/40";
+    const color = SYNC_DOT[status] ?? "bg-muted-foreground/40";
     return (
         <span className="inline-flex items-center gap-1.5">
             <span className={cn("inline-block size-2 rounded-full", color)} />
@@ -126,7 +107,7 @@ function SyncStatusDot({ status }: { status: string | null }) {
 // ─── Integration Card ────────────────────────────────────────
 
 function IntegrationCard({ integration, basePath }: { integration: IntegrationSummary; basePath: string }) {
-    const borderColor = TYPE_BORDER[integration.endpointType] ?? "";
+    const borderColor = ENDPOINT_TYPE_BORDER[integration.endpointType] ?? "";
 
     return (
         <Link href={`${basePath}/${integration.id}`}>
@@ -150,7 +131,7 @@ function IntegrationCard({ integration, basePath }: { integration: IntegrationSu
                         </div>
                         <div className="shrink-0">
                             {integration.isActive ? (
-                                <Badge variant="outline" className="text-xs border-green-300 text-green-700 dark:border-green-700 dark:text-green-400">
+                                <Badge variant="outline" className={cn("text-xs", ACTIVE_BADGE)}>
                                     Active
                                 </Badge>
                             ) : (
@@ -232,7 +213,7 @@ function IntegrationTable({ integrations, basePath, onNavigate }: {
                         </TableCell>
                         <TableCell>
                             {integration.isActive ? (
-                                <Badge variant="outline" className="text-xs border-green-300 text-green-700 dark:border-green-700 dark:text-green-400">
+                                <Badge variant="outline" className={cn("text-xs", ACTIVE_BADGE)}>
                                     Active
                                 </Badge>
                             ) : (

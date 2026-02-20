@@ -10,16 +10,10 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusDot } from "@/components/mesh/shared/StatusDot";
+import { SCOPE_BORDER } from "@/lib/semantic-colors";
 import { cn } from "@/lib/utils";
 
 import type { PolicySummary } from "./types";
-
-const SCOPE_COLORS: Record<string, string> = {
-    global: "border-l-purple-400",
-    module: "border-l-blue-400",
-    entity: "border-l-green-400",
-    entity_version: "border-l-amber-400",
-};
 
 const SCOPE_LABELS: Record<string, string> = {
     global: "Global",
@@ -36,7 +30,7 @@ interface PolicyCardProps {
 export function PolicyCard({ policy, basePath }: PolicyCardProps) {
     const version = policy.currentVersion;
     const status = version?.status ?? "draft";
-    const borderColor = SCOPE_COLORS[policy.scopeType] ?? "";
+    const borderColor = SCOPE_BORDER[policy.scopeType] ?? "";
 
     return (
         <Link href={`${basePath}/${policy.id}`}>

@@ -43,6 +43,8 @@
   "common.header.announcements": "Pengumuman",
   "common.header.upgrade": "Naik Taraf",
   "common.header.language": "Bahasa",
+  "common.header.theme": "Tema",
+  "common.header.palette": "Palet",
   "common.navigation.modules": "Modul",
   "common.navigation.modules_error": "Gagal memuatkan navigasi",
   "common.user.account": "Akaun",

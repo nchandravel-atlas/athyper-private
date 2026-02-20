@@ -12,15 +12,13 @@ import { buildHeaders } from "@/lib/schema-manager/use-csrf";
 
 import {
     AdvancedFilterPanel,
-    EntityCardGrid,
-    EntityDataGrid,
     FilterChips,
-    KpiSummaryBar,
     ListCommandBar,
     ListPageFooter,
     ListPageHeader,
     ListPageProvider,
     SelectionToolbar,
+    ViewRouter,
     useListPage,
 } from "@/components/mesh/list";
 
@@ -86,7 +84,7 @@ function usePolicyList(): UsePolicyListResult {
 // ─── Inner content (consumes context) ────────────────────────
 
 function PolicyExplorerContent() {
-    const { state, error, refresh } = useListPage<PolicySummary>();
+    const { error, refresh } = useListPage<PolicySummary>();
 
     if (error) {
         return (
@@ -111,9 +109,6 @@ function PolicyExplorerContent() {
                 ]}
             />
 
-            {/* Zone 2 — KPI Summary */}
-            <KpiSummaryBar<PolicySummary> />
-
             {/* Zone 3 — Command Bar */}
             <ListCommandBar<PolicySummary> />
 
@@ -126,12 +121,8 @@ function PolicyExplorerContent() {
             {/* Selection Toolbar */}
             <SelectionToolbar<PolicySummary> />
 
-            {/* Zone 4 — Results */}
-            {state.viewMode === "table" ? (
-                <EntityDataGrid<PolicySummary> />
-            ) : (
-                <EntityCardGrid<PolicySummary> />
-            )}
+            {/* Zone 4 — Results (4-view router + preview drawer) */}
+            <ViewRouter<PolicySummary> />
 
             {/* Footer */}
             <ListPageFooter<PolicySummary> />

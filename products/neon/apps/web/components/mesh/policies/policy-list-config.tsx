@@ -6,8 +6,6 @@
 
 import {
     Archive,
-    Globe,
-    Layers,
     PencilLine,
     Plus,
     Shield,
@@ -37,42 +35,8 @@ export function createPolicyListConfig(basePath: string): ListPageConfig<PolicyS
         entityLabelPlural: "policies",
         icon: Shield,
         basePath,
-        getItemId: (item) => item.id,
+        getId: (item) => item.id,
         getItemHref: (item) => `${basePath}/${item.id}`,
-
-        // Zone 2 — KPIs
-        kpis: [
-            {
-                id: "total",
-                label: "Total Policies",
-                icon: Shield,
-                compute: (items) => items.length,
-            },
-            {
-                id: "global",
-                label: "Global",
-                icon: Globe,
-                compute: (items) =>
-                    items.filter((p) => p.scopeType === "global").length,
-                filterOnClick: { scopeType: "global" },
-            },
-            {
-                id: "draft",
-                label: "Draft",
-                icon: PencilLine,
-                compute: (items) =>
-                    items.filter((p) => (p.currentVersion?.status ?? "draft") === "draft").length,
-                filterOnClick: { status: "draft" },
-            },
-            {
-                id: "published",
-                label: "Published",
-                icon: Upload,
-                compute: (items) =>
-                    items.filter((p) => p.currentVersion?.status === "published").length,
-                filterOnClick: { status: "published" },
-            },
-        ],
 
         // Zone 3 — Command bar
         searchPlaceholder: "Search policies...",
@@ -210,6 +174,24 @@ export function createPolicyListConfig(basePath: string): ListPageConfig<PolicyS
                 </div>
             </div>
         ),
+
+        // View configuration
+        availableViews: ["table", "table-columns", "card-grid", "kanban"],
+        defaultViewMode: "card-grid",
+        defaultViewModeDesktop: "table",
+        kanban: {
+            getLaneId: (item) => item.currentVersion?.status ?? "draft",
+            lanes: [
+                { id: "draft", label: "Draft", icon: PencilLine },
+                { id: "published", label: "Published", icon: Upload },
+                { id: "archived", label: "Archived", icon: Archive },
+            ],
+        },
+        presets: [
+            { id: "default", label: "Default", isDefault: true },
+            { id: "global", label: "Global Policies", filters: { scopeType: "global" } },
+            { id: "published", label: "Published Only", filters: { status: "published" } },
+        ],
 
         // Primary action
         primaryAction: {

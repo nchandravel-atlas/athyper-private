@@ -39,6 +39,7 @@ interface DataGridRowProps<T> {
     isExpanded: boolean;
     expandRenderer?: (item: T) => React.ReactNode;
     href?: string;
+    hasPreview?: boolean;
 }
 
 export function DataGridRow<T>({
@@ -51,6 +52,7 @@ export function DataGridRow<T>({
     isExpanded,
     expandRenderer,
     href,
+    hasPreview,
 }: DataGridRowProps<T>) {
     const router = useRouter();
     const actions = useListPageActions();
@@ -69,9 +71,14 @@ export function DataGridRow<T>({
             ) {
                 return;
             }
+            // If preview is available: click opens preview, Shift+click navigates
+            if (hasPreview && !e.shiftKey) {
+                actions.setPreviewItem(itemId);
+                return;
+            }
             if (href) router.push(href);
         },
-        [href, router],
+        [href, router, hasPreview, itemId, actions],
     );
 
     return (

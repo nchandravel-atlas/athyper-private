@@ -12,15 +12,13 @@ import { useSchemaList } from "@/lib/schema-manager/use-schema-list";
 
 import {
     AdvancedFilterPanel,
-    EntityCardGrid,
-    EntityDataGrid,
     FilterChips,
-    KpiSummaryBar,
     ListCommandBar,
     ListPageFooter,
     ListPageHeader,
     ListPageProvider,
     SelectionToolbar,
+    ViewRouter,
     useListPage,
 } from "@/components/mesh/list";
 
@@ -31,7 +29,7 @@ import type { EntitySummary } from "@/lib/schema-manager/types";
 // ─── Inner content (consumes context) ────────────────────────
 
 function SchemaExplorerContent() {
-    const { state, error, refresh } = useListPage<EntitySummary>();
+    const { error, refresh } = useListPage<EntitySummary>();
 
     if (error) {
         return (
@@ -56,9 +54,6 @@ function SchemaExplorerContent() {
                 ]}
             />
 
-            {/* Zone 2 — KPI Summary */}
-            <KpiSummaryBar<EntitySummary> />
-
             {/* Zone 3 — Command Bar */}
             <ListCommandBar<EntitySummary> />
 
@@ -71,12 +66,8 @@ function SchemaExplorerContent() {
             {/* Selection Toolbar */}
             <SelectionToolbar<EntitySummary> />
 
-            {/* Zone 4 — Results */}
-            {state.viewMode === "table" ? (
-                <EntityDataGrid<EntitySummary> />
-            ) : (
-                <EntityCardGrid<EntitySummary> />
-            )}
+            {/* Zone 4 — Results (4-view router + preview drawer) */}
+            <ViewRouter<EntitySummary> />
 
             {/* Footer */}
             <ListPageFooter<EntitySummary> />

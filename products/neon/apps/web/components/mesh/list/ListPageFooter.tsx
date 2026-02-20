@@ -31,6 +31,9 @@ export function ListPageFooter<T>() {
     const total = filteredItems.length;
     if (total === 0) return null;
 
+    // In kanban mode, hide pagination unless config opts in
+    if (state.viewMode === "kanban" && !config.kanban?.paginate) return null;
+
     const start = (state.page - 1) * state.pageSize + 1;
     const end = Math.min(state.page * state.pageSize, total);
 

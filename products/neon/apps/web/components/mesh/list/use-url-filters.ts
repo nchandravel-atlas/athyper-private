@@ -7,7 +7,9 @@
 
 import { useEffect, useRef } from "react";
 
-import type { ListPageAction, ListPageState } from "./types";
+import type { ListPageAction, ListPageState, ViewMode } from "./types";
+
+const VALID_VIEW_MODES: ViewMode[] = ["table", "table-columns", "card-grid", "kanban"];
 
 const PARAM_SEARCH = "q";
 const PARAM_SORT = "sort";
@@ -37,7 +39,9 @@ export function readUrlState(): Partial<ListPageState> {
     if (dir === "asc" || dir === "desc") result.sortDir = dir;
 
     const view = params.get(PARAM_VIEW);
-    if (view === "grid" || view === "table") result.viewMode = view;
+    if (view && VALID_VIEW_MODES.includes(view as ViewMode)) {
+        result.viewMode = view as ViewMode;
+    }
 
     const page = params.get(PARAM_PAGE);
     if (page) {
@@ -69,6 +73,7 @@ export function readUrlState(): Partial<ListPageState> {
 function writeUrlState(
     state: ListPageState,
     defaultFilters: Record<string, string>,
+    defaultViewMode: ViewMode,
 ) {
     if (typeof window === "undefined") return;
 
@@ -79,7 +84,7 @@ function writeUrlState(
         params.set(PARAM_SORT, state.sortKey);
         params.set(PARAM_DIR, state.sortDir);
     }
-    if (state.viewMode !== "grid") params.set(PARAM_VIEW, state.viewMode);
+    if (state.viewMode !== defaultViewMode) params.set(PARAM_VIEW, state.viewMode);
     if (state.page > 1) params.set(PARAM_PAGE, String(state.page));
     if (state.pageSize !== 25) params.set(PARAM_PAGE_SIZE, String(state.pageSize));
 
@@ -104,6 +109,7 @@ export function useUrlFilters(
     state: ListPageState,
     dispatch: React.Dispatch<ListPageAction>,
     defaultFilters: Record<string, string>,
+    defaultViewMode: ViewMode = "card-grid",
 ) {
     const initialized = useRef(false);
 
@@ -141,6 +147,6 @@ export function useUrlFilters(
     // On state change: write state → URL
     useEffect(() => {
         if (!initialized.current) return;
-        writeUrlState(state, defaultFilters);
+        writeUrlState(state, defaultFilters, defaultViewMode);
     }, [state, defaultFilters]);
 }

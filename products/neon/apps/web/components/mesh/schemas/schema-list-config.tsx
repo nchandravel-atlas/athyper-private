@@ -31,43 +31,8 @@ export function createSchemaListConfig(basePath: string): ListPageConfig<EntityS
         entityLabelPlural: "entities",
         icon: Shapes,
         basePath,
-        getItemId: (item) => item.id,
+        getId: (item) => item.id,
         getItemHref: (item) => `${basePath}/${item.name}`,
-
-        // Zone 2 — KPIs
-        kpis: [
-            {
-                id: "total",
-                label: "Total Entities",
-                icon: Shapes,
-                compute: (items) => items.length,
-            },
-            {
-                id: "draft",
-                label: "Draft",
-                icon: PencilLine,
-                compute: (items) =>
-                    items.filter((e) => (e.currentVersion?.status ?? "draft") === "draft").length,
-                filterOnClick: { status: "draft" },
-                variantFn: (v) => (v > 10 ? "warning" : "default"),
-            },
-            {
-                id: "published",
-                label: "Published",
-                icon: Upload,
-                compute: (items) =>
-                    items.filter((e) => e.currentVersion?.status === "published").length,
-                filterOnClick: { status: "published" },
-            },
-            {
-                id: "archived",
-                label: "Archived",
-                icon: Archive,
-                compute: (items) =>
-                    items.filter((e) => e.currentVersion?.status === "archived").length,
-                filterOnClick: { status: "archived" },
-            },
-        ],
 
         // Zone 3 — Command bar
         searchPlaceholder: "Search entities...",
@@ -232,6 +197,30 @@ export function createSchemaListConfig(basePath: string): ListPageConfig<EntityS
                 )}
             </div>
         ),
+
+        // View configuration
+        availableViews: ["table", "table-columns", "card-grid", "kanban"],
+        defaultViewMode: "card-grid",
+        defaultViewModeDesktop: "table",
+        kanban: {
+            getLaneId: (item) => item.currentVersion?.status ?? "draft",
+            lanes: [
+                { id: "draft", label: "Draft", icon: PencilLine },
+                { id: "published", label: "Published", icon: Upload },
+                { id: "archived", label: "Archived", icon: Archive },
+            ],
+        },
+        presets: [
+            { id: "default", label: "Default", isDefault: true },
+            { id: "drafts", label: "My Drafts", filters: { status: "draft" }, viewMode: "kanban" },
+            { id: "published", label: "Published Only", filters: { status: "published" } },
+            {
+                id: "minimal",
+                label: "Minimal Columns",
+                viewMode: "table-columns",
+                columnVisibility: { name: true, kind: true, status: true, table: false, version: false, relations: false, fields: false },
+            },
+        ],
 
         // Primary action
         primaryAction: {

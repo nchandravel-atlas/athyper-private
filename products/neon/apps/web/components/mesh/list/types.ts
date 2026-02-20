@@ -1,10 +1,20 @@
 // components/mesh/list/types.ts
 //
-// Core generic types for the Enhanced Robust List Page system.
+// Core generic types for the CollectionExplorerPage system.
 // All zone components reference these types via ListPageConfig<T>.
 
 import type { LucideIcon } from "lucide-react";
 import type React from "react";
+
+// ─── View Mode ──────────────────────────────────────────────
+
+export type ViewMode = "table" | "table-columns" | "card-grid" | "kanban";
+
+export interface ViewModeDef {
+    mode: ViewMode;
+    label: string;
+    icon: LucideIcon;
+}
 
 // ─── Column Definitions ──────────────────────────────────────
 
@@ -20,7 +30,34 @@ export interface ColumnDef<T> {
     /** Tailwind width class, e.g. "w-[200px]" */
     width?: string;
     hidden?: boolean;
+    /** Eligible for group-by operations */
+    groupable?: boolean;
+    /** Can be pinned left/right in adjustable columns view */
+    pinnable?: boolean;
+    /** Current pin state */
+    pinned?: "left" | "right" | false;
+    /** Appears in Adapt Filters panel */
+    filterable?: boolean;
+    /** Filter control type when filterable */
+    filterType?: "text" | "select" | "date" | "boolean";
+    /** Options for select-type filters */
+    filterOptions?: { value: string; label: string }[];
 }
+
+// ─── Sort & Group Rules ─────────────────────────────────────
+
+export interface SortRule {
+    fieldId: string;
+    dir: "asc" | "desc";
+}
+
+export interface GroupRule {
+    fieldId: string;
+    dir?: "asc" | "desc";
+    collapsed?: boolean;
+}
+
+export type Density = "compact" | "comfortable" | "spacious";
 
 // ─── Filter Definitions ──────────────────────────────────────
 
@@ -81,6 +118,75 @@ export interface BulkAction<T> {
     variant?: "default" | "destructive";
 }
 
+// ─── Kanban Definitions ─────────────────────────────────────
+
+export interface KanbanLaneDef {
+    id: string;
+    label: string;
+    icon?: LucideIcon;
+}
+
+export interface KanbanConfig<T> {
+    getLaneId: (item: T) => string;
+    lanes: KanbanLaneDef[];
+    cardRenderer?: (item: T) => React.ReactNode;
+    draggable?: boolean;
+    onDrop?: (item: T, fromLane: string, toLane: string) => void;
+    /** Show pagination in kanban mode. Default: false (show all items). */
+    paginate?: boolean;
+}
+
+// ─── View Presets ───────────────────────────────────────────
+
+export type PresetScope = "personal" | "team" | "tenant";
+
+export interface ViewPreset {
+    id: string;
+    label: string;
+    scope?: PresetScope;
+    viewMode?: ViewMode;
+    filters?: Record<string, string>;
+    search?: string;
+    /** @deprecated Use sortRules for multi-sort. Kept for backwards compat. */
+    sortKey?: string | null;
+    /** @deprecated Use sortRules for multi-sort. Kept for backwards compat. */
+    sortDir?: "asc" | "desc";
+    sortRules?: SortRule[];
+    groupBy?: GroupRule[];
+    columnVisibility?: Record<string, boolean>;
+    columnOrder?: string[];
+    columnSizing?: Record<string, number>;
+    filterBarFields?: string[];
+    density?: Density;
+    pageSize?: number;
+    showPreview?: boolean;
+    isDefault?: boolean;
+}
+
+// ─── Explorer Capabilities ─────────────────────────────────
+
+export interface ExplorerCapabilities {
+    supportsBoard: boolean;
+    supportsGroup: boolean;
+    supportsCards: boolean;
+    supportsAdjustableColumns: boolean;
+    groupableColumns: string[];
+    boardCandidateColumns: string[];
+}
+
+// ─── Grouped Items ─────────────────────────────────────────
+
+export interface ItemGroup<T> {
+    key: string;
+    label: string;
+    items: T[];
+    collapsed: boolean;
+}
+
+// ─── Preview ────────────────────────────────────────────────
+
+export type PreviewRenderer<T> = (item: T, onClose: () => void) => React.ReactNode;
+
 // ─── List Page Configuration ─────────────────────────────────
 
 export interface ListPageConfig<T> {
@@ -90,7 +196,7 @@ export interface ListPageConfig<T> {
     entityLabelPlural: string;
     icon: LucideIcon;
     basePath: string;
-    getItemId: (item: T) => string;
+    getId: (item: T) => string;
     getItemHref?: (item: T) => string;
 
     // Zone 2 — KPI summary
@@ -109,8 +215,21 @@ export interface ListPageConfig<T> {
     columns: ColumnDef<T>[];
     cardRenderer: (item: T) => React.ReactNode;
 
+    // Zone 4 — View configuration
+    availableViews?: ViewMode[];
+    defaultViewMode?: ViewMode;
+    /** Desktop default (>= 1024px). Falls back to defaultViewMode. */
+    defaultViewModeDesktop?: ViewMode;
+    kanban?: KanbanConfig<T>;
+    previewRenderer?: PreviewRenderer<T>;
+    presets?: ViewPreset[];
+
     // Zone 5 — Row expansion
     expandRenderer?: (item: T) => React.ReactNode;
+
+    // Zone 5 — Filter mode
+    /** "auto" = instant apply (default), "explicit" = Go/Clear buttons */
+    filterMode?: "auto" | "explicit";
 
     // Actions
     primaryAction?: { label: string; icon?: LucideIcon; onClick: () => void };
@@ -125,13 +244,29 @@ export interface ListPageState {
     filters: Record<string, string>;
     advancedFilters: Record<string, string>;
     advancedOpen: boolean;
+    /** @deprecated Legacy single-sort. Use sortRules for multi-sort. */
     sortKey: string | null;
+    /** @deprecated Legacy single-sort. Use sortRules for multi-sort. */
     sortDir: "asc" | "desc";
-    viewMode: "grid" | "table";
+    sortRules: SortRule[];
+    groupBy: GroupRule[];
+    density: Density;
+    viewMode: ViewMode;
     selectedIds: Set<string>;
     expandedIds: Set<string>;
     page: number;
     pageSize: number;
+    columnVisibility: Record<string, boolean>;
+    columnOrder: string[];
+    columnSizing: Record<string, number>;
+    filterBarFields: string[];
+    previewItemId: string | null;
+    activePresetId: string | null;
+    settingsOpen: boolean;
+    settingsDraft: Partial<ListPageState> | null;
+    adaptFiltersOpen: boolean;
+    presetDirty: boolean;
+    collapsedGroups: Set<string>;
 }
 
 // ─── Reducer Actions ─────────────────────────────────────────
@@ -147,10 +282,26 @@ export type ListPageAction =
     | { type: "CLEAR_ADVANCED_FILTERS" }
     | { type: "TOGGLE_ADVANCED" }
     | { type: "SET_SORT"; payload: { key: string } }
-    | { type: "SET_VIEW_MODE"; payload: "grid" | "table" }
+    | { type: "SET_SORT_RULES"; payload: SortRule[] }
+    | { type: "SET_GROUP_BY"; payload: GroupRule[] }
+    | { type: "TOGGLE_GROUP_COLLAPSE"; payload: string }
+    | { type: "SET_DENSITY"; payload: Density }
+    | { type: "SET_VIEW_MODE"; payload: ViewMode }
     | { type: "TOGGLE_SELECT"; payload: string }
     | { type: "SELECT_ALL"; payload: string[] }
     | { type: "DESELECT_ALL" }
     | { type: "TOGGLE_EXPAND"; payload: string }
     | { type: "SET_PAGE"; payload: number }
-    | { type: "SET_PAGE_SIZE"; payload: number };
+    | { type: "SET_PAGE_SIZE"; payload: number }
+    | { type: "SET_COLUMN_VISIBILITY"; payload: Record<string, boolean> }
+    | { type: "SET_COLUMN_ORDER"; payload: string[] }
+    | { type: "SET_COLUMN_SIZING"; payload: Record<string, number> }
+    | { type: "SET_FILTER_BAR"; payload: string[] }
+    | { type: "SET_PREVIEW_ITEM"; payload: string | null }
+    | { type: "APPLY_PRESET"; payload: ViewPreset }
+    | { type: "OPEN_SETTINGS" }
+    | { type: "CLOSE_SETTINGS" }
+    | { type: "APPLY_SETTINGS"; payload: Partial<ListPageState> }
+    | { type: "OPEN_ADAPT_FILTERS" }
+    | { type: "CLOSE_ADAPT_FILTERS" }
+    | { type: "SET_PRESET_DIRTY"; payload: boolean };

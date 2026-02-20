@@ -3,14 +3,15 @@
 // components/mesh/list/ListCommandBar.tsx
 //
 // Zone 3 — Command Bar + Quick Filters.
-// Search | Quick filters | View toggle | Refresh | Advanced toggle | Primary CTA
+// Search | Quick filters | Presets | View toggle | Refresh | Advanced toggle | Primary CTA
 
 import {
+    AlignJustify,
     Filter,
-    LayoutGrid,
-    List,
+    Maximize2,
     RefreshCw,
     Search,
+    Shrink,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -24,9 +25,26 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 import { useListPage, useListPageActions } from "./ListPageContext";
+import { ViewPresetSelector } from "./ViewPresetSelector";
+import { ViewSwitcher } from "./ViewSwitcher";
+
+import type { Density } from "./types";
+
+const DENSITY_OPTIONS: { value: Density; label: string; icon: typeof AlignJustify }[] = [
+    { value: "compact", label: "Compact", icon: Shrink },
+    { value: "comfortable", label: "Comfortable", icon: AlignJustify },
+    { value: "spacious", label: "Spacious", icon: Maximize2 },
+];
 
 export function ListCommandBar<T>() {
     const { state, config, loading, refresh } = useListPage<T>();
@@ -116,31 +134,39 @@ export function ListCommandBar<T>() {
                 </Button>
             )}
 
-            {/* View Toggle */}
-            <div className="flex items-center rounded-md border">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                        "h-8 rounded-r-none px-2",
-                        state.viewMode === "grid" && "bg-muted",
-                    )}
-                    onClick={() => actions.setViewMode("grid")}
+            {/* View Presets */}
+            <ViewPresetSelector<T> />
+
+            {/* View Switcher */}
+            <ViewSwitcher<T> />
+
+            {/* Density */}
+            <TooltipProvider delayDuration={300}>
+                <ToggleGroup
+                    type="single"
+                    value={state.density}
+                    onValueChange={(v) => {
+                        if (v) actions.setDensity(v as Density);
+                    }}
+                    className="h-9 gap-0 rounded-md border"
                 >
-                    <LayoutGrid className="size-3.5" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                        "h-8 rounded-l-none px-2",
-                        state.viewMode === "table" && "bg-muted",
-                    )}
-                    onClick={() => actions.setViewMode("table")}
-                >
-                    <List className="size-3.5" />
-                </Button>
-            </div>
+                    {DENSITY_OPTIONS.map((opt) => (
+                        <Tooltip key={opt.value}>
+                            <TooltipTrigger asChild>
+                                <ToggleGroupItem
+                                    value={opt.value}
+                                    className="h-full rounded-none px-2 first:rounded-l-md last:rounded-r-md data-[state=on]:bg-muted"
+                                >
+                                    <opt.icon className="size-3.5" />
+                                </ToggleGroupItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="text-xs">
+                                {opt.label}
+                            </TooltipContent>
+                        </Tooltip>
+                    ))}
+                </ToggleGroup>
+            </TooltipProvider>
 
             {/* Refresh */}
             <Button

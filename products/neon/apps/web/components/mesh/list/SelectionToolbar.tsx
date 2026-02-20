@@ -19,7 +19,7 @@ export function SelectionToolbar<T>() {
     if (count === 0) return null;
 
     const selectedItems = paginatedItems.filter((item) =>
-        state.selectedIds.has(config.getItemId(item)),
+        state.selectedIds.has(config.getId(item)),
     );
 
     return (

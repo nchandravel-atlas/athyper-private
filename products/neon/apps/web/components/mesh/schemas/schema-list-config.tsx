@@ -72,28 +72,6 @@ export function createSchemaListConfig(basePath: string): ListPageConfig<EntityS
             return true;
         },
 
-        // Zone 3B — Advanced filters
-        advancedFilters: [
-            {
-                id: "tableSchema",
-                label: "Table Schema",
-                type: "text",
-                placeholder: "e.g. ent, ref, doc",
-            },
-            {
-                id: "module",
-                label: "Module",
-                type: "select",
-                options: [
-                    { value: "all", label: "All Modules" },
-                    { value: "meta", label: "Meta" },
-                    { value: "iam", label: "IAM" },
-                    { value: "content", label: "Content" },
-                    { value: "document", label: "Document" },
-                ],
-            },
-        ],
-
         // Zone 4 — Columns
         columns: [
             {

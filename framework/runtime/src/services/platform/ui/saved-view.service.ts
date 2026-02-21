@@ -9,7 +9,7 @@
 
 import { createHash } from "node:crypto";
 
-import { HttpError } from "./http-error.js";
+import { HttpError } from "./http-error";
 
 import type { SavedViewMeta, SavedViewRepository, SavedViewRow } from "./saved-view.repository.js";
 import type { Logger } from "../../../kernel/logger.js";

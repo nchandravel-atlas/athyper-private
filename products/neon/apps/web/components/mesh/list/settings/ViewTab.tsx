@@ -10,9 +10,7 @@ import {
     Kanban,
     LayoutGrid,
     List,
-    Monitor,
     SlidersHorizontal,
-    Smartphone,
 } from "lucide-react";
 
 import { Separator } from "@/components/ui/separator";
@@ -171,24 +169,6 @@ export function ViewTab<T>({
                     </>
                 )}
 
-                <Separator />
-
-                {/* ── Default View info ────────────────── */}
-                <div className="rounded-md bg-muted/50 px-2.5 py-2 space-y-1">
-                    <p className="text-[10px] font-medium text-muted-foreground">
-                        Default View
-                    </p>
-                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                            <Monitor className="size-3" />
-                            {VIEW_LABEL_MAP[desktopDefault] ?? desktopDefault}
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <Smartphone className="size-3" />
-                            {VIEW_LABEL_MAP[mobileDefault] ?? mobileDefault}
-                        </span>
-                    </div>
-                </div>
             </div>
         </TooltipProvider>
     );

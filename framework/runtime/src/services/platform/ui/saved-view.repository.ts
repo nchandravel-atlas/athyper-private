@@ -7,7 +7,7 @@
 
 import type { Kysely } from "kysely";
 
-import { HttpError } from "./http-error.js";
+import { HttpError } from "./http-error";
 
 // ─────────────────────────────────────────────
 // Types (aligned with ui.saved_view DDL)

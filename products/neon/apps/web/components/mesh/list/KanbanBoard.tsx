@@ -258,8 +258,8 @@ export function KanbanBoard<T>() {
                             </Badge>
                         </div>
 
-                        {/* Lane body */}
-                        <ScrollArea className="flex-1 min-h-[200px] max-h-[calc(100vh-400px)]">
+                        {/* Lane body — min 3 cards visible, then scroll */}
+                        <ScrollArea className="flex-1 min-h-[360px] max-h-[calc(100vh-280px)]">
                             <div className={DENSITY_SPACING[state.density]}>
                                 {items.length === 0 ? (
                                     <div className="text-center py-8">

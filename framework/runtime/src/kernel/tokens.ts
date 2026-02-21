@@ -60,6 +60,7 @@ export const TOKENS = {
 
     // UI Services
     dashboardService: "ui.dashboard",
+    savedViewService: "ui.savedView",
     widgetRegistry: "ui.widgetRegistry",
     contributionLoader: "ui.contributionLoader",
 

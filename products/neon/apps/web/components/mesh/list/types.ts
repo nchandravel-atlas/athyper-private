@@ -8,7 +8,7 @@ import type React from "react";
 
 // ─── View Mode ──────────────────────────────────────────────
 
-export type ViewMode = "table" | "table-columns" | "card-grid" | "kanban";
+export type ViewMode = "table" | "table-columns" | "card-grid" | "kanban" | "timeline";
 
 export interface ViewModeDef {
     mode: ViewMode;
@@ -161,12 +161,15 @@ export interface ViewPreset {
     pageSize?: number;
     showPreview?: boolean;
     isDefault?: boolean;
+    /** DB version for optimistic concurrency (present only for API-backed presets). */
+    version?: number;
 }
 
 // ─── Explorer Capabilities ─────────────────────────────────
 
 export interface ExplorerCapabilities {
     supportsBoard: boolean;
+    supportsTimeline: boolean;
     supportsGroup: boolean;
     supportsCards: boolean;
     supportsAdjustableColumns: boolean;
@@ -221,6 +224,8 @@ export interface ListPageConfig<T> {
     /** Desktop default (>= 1024px). Falls back to defaultViewMode. */
     defaultViewModeDesktop?: ViewMode;
     kanban?: KanbanConfig<T>;
+    /** Timeline view configuration. When defined, enables the timeline view mode. */
+    timeline?: { dateField: string; endDateField?: string };
     previewRenderer?: PreviewRenderer<T>;
     presets?: ViewPreset[];
 
@@ -267,6 +272,8 @@ export interface ListPageState {
     adaptFiltersOpen: boolean;
     presetDirty: boolean;
     collapsedGroups: Set<string>;
+    /** Which tab to open by default when ViewSettingsSheet opens */
+    settingsDefaultTab: "view" | "filter" | "columns" | "sort" | "group" | null;
 }
 
 // ─── Reducer Actions ─────────────────────────────────────────
@@ -304,4 +311,5 @@ export type ListPageAction =
     | { type: "APPLY_SETTINGS"; payload: Partial<ListPageState> }
     | { type: "OPEN_ADAPT_FILTERS" }
     | { type: "CLOSE_ADAPT_FILTERS" }
-    | { type: "SET_PRESET_DIRTY"; payload: boolean };
+    | { type: "SET_PRESET_DIRTY"; payload: boolean }
+    | { type: "SET_SETTINGS_DEFAULT_TAB"; payload: "view" | "filter" | "columns" | "sort" | "group" | null };

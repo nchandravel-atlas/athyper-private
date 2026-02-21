@@ -33,7 +33,7 @@ import type {
     ViewPreset,
 } from "./types";
 
-const VALID_VIEW_MODES: ViewMode[] = ["table", "table-columns", "card-grid", "kanban"];
+const VALID_VIEW_MODES: ViewMode[] = ["table", "table-columns", "card-grid", "kanban", "timeline"];
 
 // ─── Default State ───────────────────────────────────────────
 
@@ -52,9 +52,9 @@ function createInitialState(
 
     const columnOrder = config.columns.map((c) => c.id);
 
-    // Use a stable default for SSR — client will sync in useEffect
+    // Use a stable default for SSR (mobile-first) — client will sync in useEffect
     const viewMode: ViewMode =
-        config.defaultViewMode ?? config.availableViews?.[0] ?? "card-grid";
+        config.defaultViewMode ?? "card-grid";
 
     // Derive initial filter bar fields from quick filters
     const filterBarFields = config.quickFilters.map((f) => f.id);
@@ -85,6 +85,7 @@ function createInitialState(
         adaptFiltersOpen: false,
         presetDirty: false,
         collapsedGroups: new Set(),
+        settingsDefaultTab: null,
     };
 }
 
@@ -98,17 +99,17 @@ function resolveClientViewMode(config: ListPageConfig<unknown>): ViewMode | null
         return saved as ViewMode;
     }
 
-    // Responsive default: desktop may differ from mobile
+    // Responsive default: cards for mobile/tablet, list for desktop
     const isDesktop = window.innerWidth >= 1024;
     const mobileDefault: ViewMode =
-        config.defaultViewMode ?? config.availableViews?.[0] ?? "card-grid";
+        config.defaultViewMode ?? "card-grid";
     const desktopDefault: ViewMode =
-        config.defaultViewModeDesktop ?? mobileDefault;
+        config.defaultViewModeDesktop ?? "table";
     const resolved = isDesktop ? desktopDefault : mobileDefault;
 
-    // Only return if different from the SSR default
+    // Only return if different from the SSR default (mobile-first)
     const ssrDefault: ViewMode =
-        config.defaultViewMode ?? config.availableViews?.[0] ?? "card-grid";
+        config.defaultViewMode ?? "card-grid";
     return resolved !== ssrDefault ? resolved : null;
 }
 
@@ -299,6 +300,9 @@ function reducer(state: ListPageState, action: ListPageAction): ListPageState {
 
         case "SET_PRESET_DIRTY":
             return { ...state, presetDirty: action.payload };
+
+        case "SET_SETTINGS_DEFAULT_TAB":
+            return { ...state, settingsDefaultTab: action.payload };
 
         default:
             return state;
@@ -561,7 +565,12 @@ export function useListPageActions() {
                 dispatch({ type: "SET_DENSITY", payload: density }),
             setFilterBar: (fields: string[]) =>
                 dispatch({ type: "SET_FILTER_BAR", payload: fields }),
-            openSettings: () => dispatch({ type: "OPEN_SETTINGS" }),
+            openSettings: (defaultTab?: "view" | "filter" | "columns" | "sort" | "group") => {
+                if (defaultTab) {
+                    dispatch({ type: "SET_SETTINGS_DEFAULT_TAB", payload: defaultTab });
+                }
+                dispatch({ type: "OPEN_SETTINGS" });
+            },
             closeSettings: () => dispatch({ type: "CLOSE_SETTINGS" }),
             applySettings: (draft: Partial<ListPageState>) =>
                 dispatch({ type: "APPLY_SETTINGS", payload: draft }),

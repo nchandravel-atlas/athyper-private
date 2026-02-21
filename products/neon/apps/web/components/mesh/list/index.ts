@@ -39,9 +39,9 @@ export { KpiSummaryBar } from "./KpiSummaryBar";
 
 // Zone 3 — Command Bar
 export { ListCommandBar } from "./ListCommandBar";
+export { ViewDropdown } from "./ViewDropdown";
+export { SettingsDropdown } from "./SettingsDropdown";
 export { ViewSwitcher, ViewModeToggle } from "./ViewSwitcher";
-export { ViewPresetSelector } from "./ViewPresetSelector";
-
 // Filter Chips
 export { FilterChips } from "./FilterChips";
 

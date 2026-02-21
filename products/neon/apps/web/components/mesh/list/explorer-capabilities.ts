@@ -30,6 +30,7 @@ export function computeCapabilities<T>(
 
     return {
         supportsBoard: !!config.kanban,
+        supportsTimeline: !!config.timeline,
         supportsGroup: groupableColumns.length > 0,
         supportsCards: !!config.cardRenderer,
         supportsAdjustableColumns: config.columns.length >= 3,
@@ -63,6 +64,11 @@ export function getUnavailableReason<T>(
         case "table-columns":
             if (!capabilities.supportsAdjustableColumns) {
                 return "Adjustable columns requires at least 3 column definitions";
+            }
+            return null;
+        case "timeline":
+            if (!capabilities.supportsTimeline) {
+                return "Timeline mapping not configured";
             }
             return null;
         default:

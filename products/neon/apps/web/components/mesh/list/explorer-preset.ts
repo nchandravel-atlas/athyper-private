@@ -17,7 +17,7 @@ import type {
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
-const ViewModeSchema = z.enum(["table", "table-columns", "card-grid", "kanban"]);
+const ViewModeSchema = z.enum(["table", "table-columns", "card-grid", "kanban", "timeline"]);
 const DensitySchema = z.enum(["compact", "comfortable", "spacious"]);
 const PresetScopeSchema = z.enum(["personal", "team", "tenant"]);
 

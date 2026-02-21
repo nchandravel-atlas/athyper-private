@@ -1,7 +1,7 @@
 /**
- * UI Dashboard HTTP Module
+ * UI HTTP Module
  *
- * Registers all dashboard HTTP handlers, routes, and services.
+ * Registers all dashboard and saved-view HTTP handlers, routes, and services.
  * Follows the RuntimeModule pattern (register + contribute).
  *
  * During contribute(), seeds system dashboards from contribution JSON files.
@@ -30,6 +30,15 @@ import {
     SaveDraftLayoutHandler,
     UpdateDashboardHandler,
 } from "./handlers/dashboards.handler.js";
+import { SavedViewRepository } from "./saved-view.repository.js";
+import { SavedViewService } from "./saved-view.service.js";
+import {
+    CreateSavedViewHandler,
+    DeleteSavedViewHandler,
+    GetSavedViewHandler,
+    ListSavedViewsHandler,
+    UpdateSavedViewHandler,
+} from "./handlers/saved-views.handler.js";
 
 import type { Container } from "../../../kernel/container.js";
 import type { Logger } from "../../../kernel/logger.js";
@@ -42,6 +51,7 @@ import type { Kysely } from "kysely";
 // ============================================================================
 
 const UI_HANDLER_TOKENS = {
+    // Dashboards
     listDashboards: "ui.handler.dashboards.list",
     getDashboard: "ui.handler.dashboards.get",
     getDraft: "ui.handler.dashboards.getDraft",
@@ -55,6 +65,12 @@ const UI_HANDLER_TOKENS = {
     addAcl: "ui.handler.dashboards.addAcl",
     removeAcl: "ui.handler.dashboards.removeAcl",
     deleteDashboard: "ui.handler.dashboards.delete",
+    // Saved Views
+    listViews: "ui.handler.views.list",
+    getView: "ui.handler.views.get",
+    createView: "ui.handler.views.create",
+    updateView: "ui.handler.views.update",
+    deleteView: "ui.handler.views.delete",
 } as const;
 
 // ============================================================================
@@ -80,7 +96,14 @@ export const module: RuntimeModule = {
             return new DashboardContributionSeeder(repo, logger);
         }, "singleton");
 
-        // ── HTTP handlers ──────────────────────────────────────────────
+        c.register(TOKENS.savedViewService, async () => {
+            const db = await c.resolve<Kysely<any>>(TOKENS.db);
+            const logger = await c.resolve<Logger>(TOKENS.logger);
+            const repo = new SavedViewRepository(db);
+            return new SavedViewService(repo, logger);
+        }, "singleton");
+
+        // ── Dashboard HTTP handlers ─────────────────────────────────────
         c.register(UI_HANDLER_TOKENS.listDashboards, async () => new ListDashboardsHandler(), "singleton");
         c.register(UI_HANDLER_TOKENS.getDashboard, async () => new GetDashboardHandler(), "singleton");
         c.register(UI_HANDLER_TOKENS.getDraft, async () => new GetDraftHandler(), "singleton");
@@ -94,6 +117,13 @@ export const module: RuntimeModule = {
         c.register(UI_HANDLER_TOKENS.addAcl, async () => new AddAclHandler(), "singleton");
         c.register(UI_HANDLER_TOKENS.removeAcl, async () => new RemoveAclHandler(), "singleton");
         c.register(UI_HANDLER_TOKENS.deleteDashboard, async () => new DeleteDashboardHandler(), "singleton");
+
+        // ── Saved View HTTP handlers ────────────────────────────────────
+        c.register(UI_HANDLER_TOKENS.listViews, async () => new ListSavedViewsHandler(), "singleton");
+        c.register(UI_HANDLER_TOKENS.getView, async () => new GetSavedViewHandler(), "singleton");
+        c.register(UI_HANDLER_TOKENS.createView, async () => new CreateSavedViewHandler(), "singleton");
+        c.register(UI_HANDLER_TOKENS.updateView, async () => new UpdateSavedViewHandler(), "singleton");
+        c.register(UI_HANDLER_TOKENS.deleteView, async () => new DeleteSavedViewHandler(), "singleton");
     },
 
     async contribute(c: Container) {
@@ -213,6 +243,50 @@ export const module: RuntimeModule = {
             handlerToken: UI_HANDLER_TOKENS.removeAcl,
             authRequired: true,
             tags: ["ui", "dashboards", "acl"],
+        });
+
+        // ====================================================================
+        // Saved View Routes
+        // ====================================================================
+
+        routes.add({
+            method: "GET",
+            path: "/api/ui/views",
+            handlerToken: UI_HANDLER_TOKENS.listViews,
+            authRequired: true,
+            tags: ["ui", "views"],
+        });
+
+        routes.add({
+            method: "GET",
+            path: "/api/ui/views/:id",
+            handlerToken: UI_HANDLER_TOKENS.getView,
+            authRequired: true,
+            tags: ["ui", "views"],
+        });
+
+        routes.add({
+            method: "POST",
+            path: "/api/ui/views",
+            handlerToken: UI_HANDLER_TOKENS.createView,
+            authRequired: true,
+            tags: ["ui", "views"],
+        });
+
+        routes.add({
+            method: "PATCH",
+            path: "/api/ui/views/:id",
+            handlerToken: UI_HANDLER_TOKENS.updateView,
+            authRequired: true,
+            tags: ["ui", "views"],
+        });
+
+        routes.add({
+            method: "DELETE",
+            path: "/api/ui/views/:id",
+            handlerToken: UI_HANDLER_TOKENS.deleteView,
+            authRequired: true,
+            tags: ["ui", "views"],
         });
 
         // ====================================================================

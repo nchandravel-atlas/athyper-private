@@ -32,40 +32,47 @@ create index if not exists idx_user_preference_principal
   on ui.user_preference (principal_id);
 
 -- ============================================================================
--- UI: Saved View (saved list/grid filters and sorts)
+-- UI: Saved View (saved list/grid view configurations with scoped access)
 -- ============================================================================
+drop table if exists ui.saved_view cascade;
+
 create table if not exists ui.saved_view (
-  id             uuid primary key default gen_random_uuid(),
-  tenant_id      uuid not null references core.tenant(id) on delete cascade,
-  principal_id   uuid not null references core.principal(id) on delete cascade,
+  id              uuid primary key default gen_random_uuid(),
+  tenant_id       uuid not null references core.tenant(id) on delete cascade,
 
-  entity_type    text not null,
-  view_name      text not null,
-  description    text,
+  entity_key      text not null,                -- e.g. "batches", "documents"
+  scope           text not null default 'USER'
+                    constraint saved_view_scope_chk
+                    check (scope in ('SYSTEM', 'USER', 'SHARED')),
+  owner_user_id   uuid references core.principal(id) on delete cascade,
 
-  is_default     boolean not null default false,
-  is_shared      boolean not null default false,
+  name            text not null,
+  is_pinned       boolean not null default false,
+  is_default      boolean not null default false,
 
-  filters        jsonb,
-  sort_order     jsonb,
-  columns        jsonb,
-  group_by       jsonb,
+  state_json      jsonb not null,               -- full ViewPreset payload
+  state_hash      text not null,                -- truncated SHA-256 for dirty detection
 
-  metadata       jsonb,
+  version         int not null default 1,       -- optimistic concurrency
 
-  created_at     timestamptz not null default now(),
-  created_by     text not null,
-  updated_at     timestamptz,
-  updated_by     text
+  created_at      timestamptz not null default now(),
+  created_by      text not null,
+  updated_at      timestamptz,
+  updated_by      text,
+  deleted_at      timestamptz,                  -- soft delete
+
+  constraint saved_view_entity_name_scope_uniq
+    unique nulls not distinct (tenant_id, entity_key, scope, owner_user_id, name)
 );
 
-comment on table ui.saved_view is 'Saved list/grid view configurations (filters, sorts, columns).';
+comment on table ui.saved_view is 'Saved list/grid view configurations (view mode, filters, sorts, columns, density).';
 
-create index if not exists idx_saved_view_principal_entity
-  on ui.saved_view (principal_id, entity_type);
+create index if not exists idx_saved_view_list
+  on ui.saved_view (tenant_id, entity_key) where deleted_at is null;
 
-create index if not exists idx_saved_view_shared
-  on ui.saved_view (tenant_id, entity_type) where is_shared = true;
+create index if not exists idx_saved_view_user
+  on ui.saved_view (tenant_id, owner_user_id, entity_key)
+  where deleted_at is null and scope = 'USER';
 
 -- ============================================================================
 -- UI: Dashboard Widget (per-user dashboard layout)

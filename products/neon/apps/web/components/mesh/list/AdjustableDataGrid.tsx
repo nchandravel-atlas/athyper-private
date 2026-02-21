@@ -17,16 +17,9 @@ import type {
     ColumnSizingState,
     VisibilityState,
 } from "@tanstack/react-table";
-import { Eye, GripVertical, RotateCcw } from "lucide-react";
+import { GripVertical } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -101,16 +94,6 @@ export function AdjustableDataGrid<T>() {
         columnResizeMode: "onChange",
     });
 
-    const handleReset = () => {
-        const vis: Record<string, boolean> = {};
-        for (const col of config.columns) {
-            vis[col.id] = !col.hidden;
-        }
-        actions.setColumnVisibility(vis);
-        actions.setColumnOrder(config.columns.map((c) => c.id));
-        actions.setColumnSizing({});
-    };
-
     if (loading) {
         return (
             <div className="space-y-2">
@@ -144,44 +127,7 @@ export function AdjustableDataGrid<T>() {
     }
 
     return (
-        <div className="space-y-2">
-            {/* Column settings toolbar */}
-            <div className="flex items-center justify-end gap-2">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-8 gap-1.5">
-                            <Eye className="size-3" />
-                            <span className="text-xs">Columns</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                        {table
-                            .getAllColumns()
-                            .filter((col) => col.getCanHide?.() !== false)
-                            .map((col) => (
-                                <DropdownMenuCheckboxItem
-                                    key={col.id}
-                                    checked={col.getIsVisible()}
-                                    onCheckedChange={(val) => col.toggleVisibility(val)}
-                                    className="text-xs"
-                                >
-                                    {config.columns.find((c) => c.id === col.id)?.header ?? col.id}
-                                </DropdownMenuCheckboxItem>
-                            ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 gap-1.5"
-                    onClick={handleReset}
-                >
-                    <RotateCcw className="size-3" />
-                    <span className="text-xs">Reset</span>
-                </Button>
-            </div>
-
-            {/* Table */}
+        <div>
             <div className="rounded-md border overflow-auto">
                 <Table style={{ width: table.getCenterTotalSize() }} className={DENSITY_CLASSES[state.density]}>
                     <TableHeader>

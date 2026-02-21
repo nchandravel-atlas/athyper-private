@@ -28,6 +28,14 @@
     "./services/platform-services/notification/persistence/InAppNotificationRepo": {
       "types": "./src/services/platform-services/notification/persistence/InAppNotificationRepo.ts",
       "default": "./src/services/platform-services/notification/persistence/InAppNotificationRepo.ts"
+    },
+    "./services/platform/ui/saved-view.repository": {
+      "types": "./src/services/platform/ui/saved-view.repository.ts",
+      "default": "./src/services/platform/ui/saved-view.repository.ts"
+    },
+    "./services/platform/ui/saved-view.service": {
+      "types": "./src/services/platform/ui/saved-view.service.ts",
+      "default": "./src/services/platform/ui/saved-view.service.ts"
     }
   },
   "files": [

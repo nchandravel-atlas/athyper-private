@@ -8,6 +8,7 @@
 // to View Settings and Adapt Filters.
 
 import {
+    CalendarRange,
     Check,
     ChevronDown,
     Filter,
@@ -43,6 +44,7 @@ const ALL_VIEW_MODES: ViewModeDef[] = [
     { mode: "table-columns", label: "Columns", icon: SlidersHorizontal },
     { mode: "card-grid", label: "Cards", icon: LayoutGrid },
     { mode: "kanban", label: "Board", icon: Kanban },
+    { mode: "timeline", label: "Timeline", icon: CalendarRange },
 ];
 
 export function ViewSwitcher<T>() {

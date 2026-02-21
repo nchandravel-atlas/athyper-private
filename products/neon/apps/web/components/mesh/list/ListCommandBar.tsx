@@ -3,15 +3,12 @@
 // components/mesh/list/ListCommandBar.tsx
 //
 // Zone 3 — Command Bar + Quick Filters.
-// Search | Quick filters | Presets | View toggle | Refresh | Advanced toggle | Primary CTA
+// Search | Quick filters | Advanced toggle | Settings | Presets | Refresh | CTA
 
 import {
-    AlignJustify,
     Filter,
-    Maximize2,
     RefreshCw,
     Search,
-    Shrink,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -25,26 +22,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 import { useListPage, useListPageActions } from "./ListPageContext";
-import { ViewPresetSelector } from "./ViewPresetSelector";
-import { ViewSwitcher } from "./ViewSwitcher";
-
-import type { Density } from "./types";
-
-const DENSITY_OPTIONS: { value: Density; label: string; icon: typeof AlignJustify }[] = [
-    { value: "compact", label: "Compact", icon: Shrink },
-    { value: "comfortable", label: "Comfortable", icon: AlignJustify },
-    { value: "spacious", label: "Spacious", icon: Maximize2 },
-];
+import { SettingsDropdown } from "./SettingsDropdown";
 
 export function ListCommandBar<T>() {
     const { state, config, loading, refresh } = useListPage<T>();
@@ -76,7 +57,7 @@ export function ListCommandBar<T>() {
         if (!state.search && searchInput) {
             setSearchInput("");
         }
-    }, [state.search]);
+    }, [state.search]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Count active advanced filters
     const advancedCount = config.advancedFilters
@@ -134,39 +115,8 @@ export function ListCommandBar<T>() {
                 </Button>
             )}
 
-            {/* View Presets */}
-            <ViewPresetSelector<T> />
-
-            {/* View Switcher */}
-            <ViewSwitcher<T> />
-
-            {/* Density */}
-            <TooltipProvider delayDuration={300}>
-                <ToggleGroup
-                    type="single"
-                    value={state.density}
-                    onValueChange={(v) => {
-                        if (v) actions.setDensity(v as Density);
-                    }}
-                    className="h-9 gap-0 rounded-md border"
-                >
-                    {DENSITY_OPTIONS.map((opt) => (
-                        <Tooltip key={opt.value}>
-                            <TooltipTrigger asChild>
-                                <ToggleGroupItem
-                                    value={opt.value}
-                                    className="h-full rounded-none px-2 first:rounded-l-md last:rounded-r-md data-[state=on]:bg-muted"
-                                >
-                                    <opt.icon className="size-3.5" />
-                                </ToggleGroupItem>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="text-xs">
-                                {opt.label}
-                            </TooltipContent>
-                        </Tooltip>
-                    ))}
-                </ToggleGroup>
-            </TooltipProvider>
+            {/* Settings — opens drawer with View, Filter, Columns, Sort, Group */}
+            <SettingsDropdown<T> />
 
             {/* Refresh */}
             <Button
